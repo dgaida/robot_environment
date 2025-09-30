@@ -1,0 +1,5 @@
+pyniryo2
+pyniryo
+# either elevenlabs or kokoro is used for t2s
+# elevenlabs
+kokoro
