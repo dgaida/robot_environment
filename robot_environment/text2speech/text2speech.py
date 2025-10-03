@@ -47,10 +47,12 @@ class Text2Speech:
             )
             raise Exception("Sorry, we do not use ElevenLabs anymore.")
         except (NameError, Exception) as e:
-            print(e)
+            if verbose:
+                print(e)
             # 🇺🇸 'a' => American English, 🇬🇧 'b' => British English
             self._client = KPipeline(lang_code='a')  # <= make sure lang_code matches voice
-            print('using Kokoro instead!')
+            if verbose:
+                print('using Kokoro instead!')
             # use another t2s model as an alternative, such as TTS, see other TODO
             # self._client = None
             # TODO: has to be done in ubuntu only so that meeting owl is used for output

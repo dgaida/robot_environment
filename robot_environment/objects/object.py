@@ -95,7 +95,7 @@ class Object(ObjectAPI):
 
         self._calc_size()
 
-        print(workspace)
+        # print(workspace)
 
         self._pose_center, self._u_rel_o, self._v_rel_o = self._calc_pose_from_uv_coords(u_0, v_0)
         self._pose_com, self._u_rel_com, self._v_rel_com = self._calc_pose_from_uv_coords(cx, cy)
@@ -327,7 +327,7 @@ class Object(ObjectAPI):
                 workspace=workspace
             )
 
-            print(obj.label(), obj.uv_rel_o(), obj.x_com(), obj.y_com(), obj.pose_com(), obj.pose_center())
+            # print(obj.label(), obj.uv_rel_o(), obj.x_com(), obj.y_com(), obj.pose_com(), obj.pose_center())
 
             # Restore additional properties if needed
             if 'confidence' in data:

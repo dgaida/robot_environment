@@ -5,7 +5,7 @@ Provides abstract and concrete implementations for different robotic arms
 including Niryo Ned2 and WidowX.
 """
 
-from .robot import Robot
+# from .robot import Robot
 from .robot_controller import RobotController
 from .robot_api import RobotAPI, Location
 

@@ -29,7 +29,7 @@ class NiryoWorkspaces(Workspaces):
 
         if not environment.use_simulation():
             # Define Workspace
-            workspace_id = "niryo_ws"
+            workspace_id = "niryo_ws2"  # "niryo_ws"
         else:
             workspace_id = "gazebo_1"
 

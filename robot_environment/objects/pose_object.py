@@ -305,10 +305,10 @@ class PoseObjectPNP:
         Returns:
             pnp_robot_genai.pose_object.PoseObject
         """
-        print("pose_object", pose_object)
+        # print("pose_object", pose_object)
         pose = PoseObjectPNP(pose_object.x, pose_object.y, pose_object.z,
                              pose_object.roll, pose_object.pitch, pose_object.yaw)
-        print("pose", pose)
+        # print("pose", pose)
         return pose
 
     @staticmethod

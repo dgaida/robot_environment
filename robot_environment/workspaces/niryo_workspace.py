@@ -91,10 +91,10 @@ class NiryoWorkspace(Workspace):
         gripper mounted camera can observe the complete workspace.
         """
         # TODO: add more workspaces and their observation spaces
-        if self._id == "niryo_ws":
+        if self._id == "niryo_ws" or self._id == "niryo_ws2":
             self._observation_pose = PoseObjectPNP(  # position for the robot to watch the workspace in the real world
-                x=0.173-0.02, y=-0.002, z=0.247,
-                roll=-3.042, pitch=1.327-0.2, yaw=-3.027,
+                x=0.173-0.0, y=-0.002, z=0.247+0.03,
+                roll=-3.042, pitch=1.327-0.0, yaw=-3.027,
             )
         elif self._id == "gazebo_1":
             self._observation_pose = PoseObjectPNP(  # position for the robot to watch the workspace in the simulation

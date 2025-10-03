@@ -632,7 +632,7 @@ class Robot(RobotAPI):
         # TODO: 12 means 12 seconds, change to 2 in real environment
         objects_dict_list = self._broker.get_latest_objects(12)
 
-        print([obj['label'] for obj in objects_dict_list])
+        # print([obj['label'] for obj in objects_dict_list])
 
         # Convert dictionaries back to Object instances
         latest_objects = Objects.dict_list_to_objects(objects_dict_list, self.environment().get_workspace(0))
@@ -652,7 +652,7 @@ class Robot(RobotAPI):
         """
         detected_objects = self.get_detected_objects()
 
-        print(detected_objects)
+        # print(detected_objects)
 
         if len(target_coords) == 0:  # then no target coords are given, true for push method
             nearest_object = next((obj for obj in detected_objects if obj.label() == label),

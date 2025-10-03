@@ -66,13 +66,15 @@ class Environment:
             self._framegrabber = NiryoFrameGrabber(self, verbose=verbose)
             self._workspaces = NiryoWorkspaces(self, verbose)
 
-            print(self._workspaces.get_home_workspace())
+            if verbose:
+                print(self._workspaces.get_home_workspace())
         elif isinstance(self.get_robot_controller(), WidowXRobotController):
             self._framegrabber = WidowXFrameGrabber(self, verbose=verbose)
             # TODO: WidowXWorkspaces erstellen
             self._workspaces = Workspaces(self, verbose)
         else:
-            print("error:", self.get_robot_controller())
+            if verbose:
+                print("error:", self.get_robot_controller())
 
         self._oralcom = Text2Speech(el_api_key, verbose=verbose)
 
@@ -89,12 +91,16 @@ class Environment:
             config=config
         )
 
+        # Start background camera updates
+        self.start_camera_updates(visualize=True)  # set visualize=False if you don't want OpenCV windows
+
     def __del__(self):
         """
 
         """
         if hasattr(self, '_stop_event'):
-            print("Shutting down environment in del...")
+            if self.verbose():
+                print("Shutting down environment in del...")
             self._stop_event.set()
 
     def cleanup(self):
@@ -103,10 +109,21 @@ class Environment:
         This is more reliable than relying on __del__.
         """
         if hasattr(self, '_stop_event'):
-            print("Shutting down environment...")
+            if self.verbose():
+                print("Shutting down environment...")
             self._stop_event.set()
 
     # PUBLIC methods
+
+    def start_camera_updates(self, visualize=False):
+        def loop():
+            for img in self.update_camera_and_objects(visualize=visualize):
+                # In CLI, we might not use img, but you could save or log info here
+                pass  # or print("Camera updated")
+
+        t = threading.Thread(target=loop, daemon=True)
+        t.start()
+        return t
 
     def update_camera_and_objects(self, visualize: bool = False):
         """
@@ -128,10 +145,14 @@ class Environment:
 
             # Display the image if visualize is True
             if visualize:
+                # TODO: nicht der richtige Ort hier, nur temporär
+                annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
+
                 cv2.imshow("Camera View", annotated_image)
                 # Break the loop if ESC key is pressed
                 if cv2.waitKey(1) & 0xFF == 27:  # 27 is the ASCII code for the ESC key
-                    print("Exiting camera update loop.")
+                    if self.verbose():
+                        print("Exiting camera update loop.")
                     break
 
             yield img
