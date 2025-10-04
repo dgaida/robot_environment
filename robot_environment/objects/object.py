@@ -267,8 +267,9 @@ class Object(ObjectAPI):
         """
         try:
             # Convert list to tuple if necessary
+            # print(shape, dtype)
             if isinstance(shape, list):
-                shape = tuple(*shape)
+                shape = tuple(shape)
 
             mask_bytes = base64.b64decode(mask_data.encode('utf-8'))
             mask = np.frombuffer(mask_bytes, dtype=np.dtype(dtype))

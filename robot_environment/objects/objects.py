@@ -45,7 +45,8 @@ class Objects(List):
     # *** PUBLIC methods ***
 
     @log_start_end_cls()
-    def get_detected_object(self, coordinate: List[float], label: Optional[str] = None) -> Optional["Object"]:
+    def get_detected_object(self, coordinate: List[float], label: Optional[str] = None,
+                            serializable: bool = False) -> Optional[Union["Object", Dict]]:
         """
         Retrieves a detected object at or near a specified world coordinate, optionally filtering by label.
 
@@ -65,7 +66,7 @@ class Objects(List):
         detected_objects = self.get_detected_objects(Location.CLOSE_TO, coordinate, label)
 
         if detected_objects:
-            return detected_objects[0]
+            return Object.to_dict(detected_objects[0]) if serializable else detected_objects[0]
         else:
             return None
 
@@ -115,6 +116,33 @@ class Objects(List):
             print("Error in get_detected_objects: Unknown Location:", location)
             return None
 
+    def get_detected_objects_serializable(self, location: Union["Location", str] = Location.NONE,
+                                          coordinate: List[float] = None,
+                                          label: Optional[str] = None) -> Optional[List[Dict]]:
+        """
+        Get list of objects detected by the camera in the workspace.
+
+        Args:
+            location (Location, optional): acts as filter. can have the values:
+            - "left next to": Only objects left of the given coordinate are returned,
+            - "right next to": Only objects right of the given coordinate are returned,
+            - "above": Only objects above the given coordinate are returned,
+            - "below": Only objects below the given coordinate are returned,
+            - "close to": Only objects close to the given coordinate are returned (within 2 centimeters),
+            - None: no filter, all objects are returned (default).
+            coordinate (List[float], optional): some (x,y) coordinate in the world coordinate system.
+            Together with 'location' it acts as a filter. Required if 'location' is specified.
+            label (str, optional): Only objects with the given label are returned.
+
+        Returns:
+            Optional["Objects"]: list of objects detected by the camera in the workspace.
+        """
+        detected_objects = self.get_detected_objects(location, coordinate, label)
+
+        objects = Objects.objects_to_dict_list(detected_objects)
+
+        return objects
+
     def get_nearest_detected_object(self, coordinate: List[float],
                                     label: Optional[str] = None) -> tuple[Optional["Object"], float]:
         """
@@ -160,7 +188,8 @@ class Objects(List):
         """
         return f"""{', '.join(f"'{item.label()}'" for item in self)}"""
 
-    def get_largest_detected_object(self) -> tuple[Optional["Object"], float]:
+    def get_largest_detected_object(self,
+                                    serializable: bool = False) -> Union[tuple["Objects", float], tuple[List[Dict], float]]:
         """
         Returns the largest detected object based on its size in square meters.
 
@@ -170,9 +199,12 @@ class Objects(List):
                 - largest_size_m2 (float): The size of the largest object in square meters.
         """
         largest_object = max(self, key=lambda obj: obj.size_m2())
-        return largest_object, largest_object.size_m2()
 
-    def get_smallest_detected_object(self) -> tuple[Optional["Object"], float]:
+        size = largest_object.size_m2()
+
+        return (Object.to_dict(largest_object), size) if serializable else (largest_object, size)
+
+    def get_smallest_detected_object(self, serializable: bool = False) -> Union[tuple["Objects", float], tuple[List[Dict], float]]:
         """
         Returns the smallest detected object based on its size in square meters.
 
@@ -182,9 +214,13 @@ class Objects(List):
                 - smallest_size_m2 (float): The size of the smallest object in square meters.
         """
         smallest_object = min(self, key=lambda obj: obj.size_m2())
-        return smallest_object, smallest_object.size_m2()
 
-    def get_detected_objects_sorted(self, ascending: bool = True) -> "Objects":
+        size = smallest_object.size_m2()
+
+        return (Object.to_dict(smallest_object), size) if serializable else (smallest_object, size)
+
+    def get_detected_objects_sorted(self, ascending: bool = True,
+                                    serializable: bool = False) -> Union["Objects", List[Dict]]:
         """
         Returns the detected objects sorted by size in square meters.
 
@@ -195,7 +231,9 @@ class Objects(List):
         Returns:
             Objects: The list of detected objects sorted by size.
         """
-        return Objects(sorted(self, key=lambda obj: obj.size_m2(), reverse=not ascending))
+        sorted_objs = Objects(sorted(self, key=lambda obj: obj.size_m2(), reverse=not ascending))
+
+        return Object.objects_to_dict_list(sorted_objs) if serializable else sorted_objs
 
     # *** PUBLIC methods ***
 
@@ -228,9 +266,19 @@ class Objects(List):
         Returns:
             List[Object]: List of reconstructed Object instances
         """
+        # print("***********")
+        # print(workspace)
+        # print("***********")
+
         objects = Objects()
         for obj_dict in dict_list:
+            # print("***********")
+            # print(obj_dict)
+            # print("***********")
             obj = Object.from_dict(obj_dict, workspace)
+            # print("***********")
+            # print(obj)
+            # print("***********")
             if obj is not None:
                 objects.append(obj)
         return objects
