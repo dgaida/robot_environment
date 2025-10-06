@@ -164,7 +164,7 @@ class Environment:
                         print("Exiting camera update loop.")
                     break
 
-            yield img
+            yield annotated_image  # img
 
             if self.get_robot_in_motion():
                 # TODO: change back to 0.5 and 0.25
