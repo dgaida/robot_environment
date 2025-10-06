@@ -630,7 +630,7 @@ class Robot(RobotAPI):
 
     def get_detected_objects(self):
         # TODO: 12 means 12 seconds, change to 2 in real environment
-        objects_dict_list = self._broker.get_latest_objects(12)
+        objects_dict_list = self._broker.get_latest_objects(2)
 
         # print([obj['label'] for obj in objects_dict_list])
 

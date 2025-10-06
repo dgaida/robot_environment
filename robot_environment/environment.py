@@ -81,6 +81,13 @@ class Environment:
 
         self._oralcom = Text2Speech(el_api_key, verbose=verbose)
 
+        # Initialize speech recognition
+        # self._speech2text = Speech2Text(
+        #     el_api_key=el_api_key,
+        #     use_whisper_mic=True,
+        #     verbose=verbose
+        # )
+
         self._stop_event = threading.Event()
 
         # self._streamer = RedisImageStreamer()
@@ -198,6 +205,15 @@ class Environment:
 
     def stop_camera_updates(self):
         self._stop_event.set()
+
+    # def speech2text_record_and_transcribe(self) -> str:
+    #     """
+    #     Record from microphone and transcribe using Whisper ASR model until silence is detected.
+    #
+    #     Returns:
+    #         transcribed text
+    #     """
+    #     return self._speech2text.record_and_transcribe()
 
     def oralcom_call_text2speech_async(self, text: str) -> threading.Thread:
         """
