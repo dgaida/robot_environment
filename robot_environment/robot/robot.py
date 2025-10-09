@@ -237,7 +237,11 @@ class Robot(RobotAPI):
 
         if location is not None and location is not Location.NONE:
             obj_where_to_place = self._get_nearest_object(None, place_coordinate)
-            place_pose = obj_where_to_place.pose_center()
+            if obj_where_to_place is None:
+                place_pose = PoseObjectPNP(place_coordinate[0], place_coordinate[1], 0.09,  # 0.068,
+                                           0.0, 1.57, 0.0)
+            else:
+                place_pose = obj_where_to_place.pose_center()
         else:
             # gegeben eine xyz Koordinate, wie kann ich die benötigte greifer pose berechnen? das ist so korrekt und
             # funkt so in der Simulation
@@ -630,12 +634,14 @@ class Robot(RobotAPI):
 
     def get_detected_objects(self):
         # TODO: 12 means 12 seconds, change to 2 in real environment
-        objects_dict_list = self._broker.get_latest_objects(2)
+        # objects_dict_list = self._broker.get_latest_objects(10)
+
+        latest_objects = self._environment.get_detected_objects_from_memory()
 
         # print([obj['label'] for obj in objects_dict_list])
 
         # Convert dictionaries back to Object instances
-        latest_objects = Objects.dict_list_to_objects(objects_dict_list, self.environment().get_workspace(0))
+        # latest_objects = Objects.dict_list_to_objects(objects_dict_list, self.environment().get_workspace(0))
 
         return latest_objects
 
@@ -650,9 +656,12 @@ class Robot(RobotAPI):
         Returns:
             object:
         """
+        # TODO: hier muss ich eine FUnktion aufrufen, die dtected objects von einem buffer holt, denn wenn roboter
+        # einmal in bewegung, erkennt er ja keine objekte mehr. bzw. wenn robote rin motion, dann sollte keine neuen objekte
+        # detektiert werden.
         detected_objects = self.get_detected_objects()
 
-        # print(detected_objects)
+        print("detected_objects", detected_objects)
 
         if len(target_coords) == 0:  # then no target coords are given, true for push method
             nearest_object = next((obj for obj in detected_objects if obj.label() == label),

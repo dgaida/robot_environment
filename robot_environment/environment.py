@@ -92,6 +92,8 @@ class Environment:
 
         # self._streamer = RedisImageStreamer()
 
+        self._obj_position_memory = Objects()
+
         config = get_default_config("owlv2")
 
         self._visual_cortex = VisualCortex(
@@ -141,6 +143,28 @@ class Environment:
         t.start()
         return t
 
+    def _check_new_detections(self, detected_objects: "Objects") -> None:
+        """
+        Check for newly detected objects and update the memory with their positions.
+
+        Args:
+            detected_objects (Objects): List of objects detected in the current frame.
+        """
+        for obj in detected_objects:
+            x_center, y_center = obj.xy_com()
+            # obj_position = (obj.label(), x_center, y_center)
+            if not any(
+                    memory.label() == obj.label() and
+                    abs(memory.x_com() - x_center) <= 0.05 and
+                    abs(memory.y_com() - y_center) <= 0.05
+                    for memory in self._obj_position_memory
+            ):
+                self._obj_position_memory.append(obj)
+                # message = obj.as_string_for_chat_window()
+
+    def get_detected_objects_from_memory(self) -> "Objects":
+        return self._obj_position_memory
+
     def update_camera_and_objects(self, visualize: bool = False):
         """
         Continuously updates the camera and detected objects.
@@ -157,6 +181,13 @@ class Environment:
             time.sleep(0.5)
 
             success = self._visual_cortex.detect_objects_from_redis()
+
+            time.sleep(0.5)
+
+            detected_objects = self.get_detected_objects()
+
+            self._check_new_detections(detected_objects)
+
             annotated_image = self._visual_cortex.get_annotated_image()
 
             # Display the image if visualize is True
