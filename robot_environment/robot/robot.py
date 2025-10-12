@@ -7,7 +7,7 @@ from ..common.logger import log_start_end_cls
 from .robot_api import RobotAPI, Location
 
 from .niryo_robot_controller import NiryoRobotController
-from redis_robot_comm import RedisMessageBroker
+# from redis_robot_comm import RedisMessageBroker
 from ..objects.pose_object import PoseObjectPNP
 from ..objects.object import Object
 from ..objects.objects import Objects
@@ -52,7 +52,7 @@ class Robot(RobotAPI):
         else:
             self._robot = None
 
-        self._broker = RedisMessageBroker()
+        # self._broker = RedisMessageBroker()
 
     # *** PUBLIC SET methods ***
 
