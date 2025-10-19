@@ -99,7 +99,7 @@ class Environment:
         self._visual_cortex = VisualCortex(
             objdetect_model_id="owlv2",
             device="auto",
-            verbose=True,
+            verbose=verbose,
             config=config
         )
 
