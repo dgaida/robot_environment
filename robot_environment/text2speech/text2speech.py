@@ -1,8 +1,4 @@
-# class with ASR and text-2-speech capabilities
-# as automatic speech recognition model OpenAI's whisper model is used
-# as text-2-speech model ElevenLabs is used
-# Should be final, except of TODO with TTS alternative
-# Documentation and type definitions are NOT YET final (let chatgpt do it).
+# class with text-2-speech capabilities
 
 from ..common.logger import log_start_end_cls
 
@@ -15,83 +11,64 @@ except ImportError as e:
 from kokoro import KPipeline
 import torchaudio
 import torch
-
 import sounddevice as sd
-
 import threading
 
 
 class Text2Speech:
-    """
-    class with ASR and text-2-speech capabilities
+    """Text-to-Speech (TTS) and Automatic Speech Recognition (ASR) class.
 
+    This class provides text-to-speech functionality using the Kokoro model (as a replacement
+    for the deprecated ElevenLabs integration). It supports asynchronous speech synthesis
+    and safe audio playback with dynamic resampling.
     """
 
-    # *** CONSTRUCTORS ***
-    def __init__(self, el_api_key: str, verbose: bool = False):
-        """
-        Loads the ASR model and creates an ElevenLabs client object
+    def __init__(self, el_api_key: str, verbose: bool = False) -> None:
+        """Initialize the Text2Speech instance.
+
+        Attempts to initialize the ElevenLabs client, but defaults to using the Kokoro
+        model for TTS instead. This ensures the system works even if ElevenLabs is
+        unavailable or deprecated.
 
         Args:
-            el_api_key: API Key of ElevenLabs
-            verbose:
-
-        Returns:
-            object:
+            el_api_key (str): API key for ElevenLabs (no longer used).
+            verbose (bool, optional): If True, prints detailed debug information. Defaults to False.
         """
         self._verbose = verbose
 
         try:
-            self._client = ElevenLabs(
-                api_key=el_api_key,
-            )
+            self._client = ElevenLabs(api_key=el_api_key)
             raise Exception("Sorry, we do not use ElevenLabs anymore.")
         except (NameError, Exception) as e:
             if verbose:
                 print(e)
             # 🇺🇸 'a' => American English, 🇬🇧 'b' => British English
-            self._client = KPipeline(lang_code='a')  # <= make sure lang_code matches voice
+            self._client = KPipeline(lang_code='a')  # Make sure lang_code matches desired voice
             if verbose:
-                print('using Kokoro instead!')
-            # use another t2s model as an alternative, such as TTS, see other TODO
-            # self._client = None
-            # TODO: has to be done in ubuntu only so that meeting owl is used for output
-            # sd.default.device[1] = 4  # Output only
-
-
-    # *** PUBLIC SET methods ***
-
-    # *** PUBLIC GET methods ***
-
-    # *** PUBLIC methods ***
+                print('Using Kokoro instead!')
+        # TODO: has to be done in ubuntu only so that meeting owl is used for output
+        # sd.default.device[1] = 4  # Output only
 
     @log_start_end_cls()
     def call_text2speech_async(self, text: str) -> threading.Thread:
-        """
-        Asynchronously calls the text2speech ElevenLabs API with the given text
+        """Call text-to-speech asynchronously using the Kokoro model.
 
         Args:
-            text: a message that should be passed to text2speech API of ElevenLabs
+            text (str): The text to be spoken.
 
         Returns:
-            the thread object is returned. Once the text is spoken, the thread is being closed.
+            threading.Thread: The thread handling the asynchronous TTS operation.
         """
         thread = threading.Thread(target=self._text2speech_kokoro, args=(text,))
         thread.start()
         return thread
 
-    # *** PUBLIC STATIC/CLASS GET methods ***
-
-    # *** PRIVATE methods ***
-
     @log_start_end_cls()
-    # https://github.com/elevenlabs/elevenlabs-python
     def _text2speech(self, mytext: str) -> None:
-        """
-        Calls the text2speech ElevenLabs API with the given mytext
+        """Legacy ElevenLabs TTS method (no longer used).
 
         Args:
-            mytext: a message that is passed to text2speech API of ElevenLabs
+            mytext (str): The text to be synthesized and played.
         """
         if self._client is not None:
             try:
@@ -106,52 +83,52 @@ class Text2Speech:
 
     @log_start_end_cls()
     def _text2speech_kokoro(self, mytext: str) -> None:
-        """
-        Calls the text2speech kokoro model with the given mytext
+        """Perform TTS using the Kokoro model.
 
         Args:
-            mytext: a message that is passed to text2speech API of kokoro model
+            mytext (str): Text to convert to speech.
         """
         if self._client is not None:
             try:
                 generator = self._client(
-                    mytext, voice='af_heart',  # 'af_nicole', #
-                    speed=1, split_pattern=r'\n+'
+                    mytext,
+                    voice='af_heart',
+                    speed=1,
+                    split_pattern=r'\n+'
                 )
-                for gs, ps, audio in generator:
+                for _, _, audio in generator:
                     Text2Speech._play_audio_safely(audio, original_sample_rate=24000)
                     sd.wait()
             except Exception as e:
                 print(f"Error with Kokoro: {e, e.with_traceback(None)}")
 
     @staticmethod
-    def _play_audio_safely(audio_tensor: torch.Tensor, original_sample_rate: int = 24000,
-                           device: int = None, volume: float = 0.8):
-        """
-        Safely plays audio by checking the current output device's supported sample rate
-        and resampling the audio if needed.
+    def _play_audio_safely(
+        audio_tensor: torch.Tensor,
+        original_sample_rate: int = 24000,
+        device: int | None = None,
+        volume: float = 0.8
+    ) -> None:
+        """Play audio safely by checking supported sample rate and adjusting volume.
 
         Args:
-            audio_tensor: A 1D torch tensor containing the audio waveform
-            original_sample_rate: The sample rate of the input audio
-            device: Optional. Index of the sounddevice output device to use
+            audio_tensor (torch.Tensor): The 1D audio waveform tensor.
+            original_sample_rate (int, optional): Original sample rate of the audio. Defaults to 24000.
+            device (int | None, optional): Output device index. Defaults to system default.
+            volume (float, optional): Playback volume multiplier (0.0–1.0). Defaults to 0.8.
         """
         try:
-            # Use the selected device or default output device
             if device is None:
-                device = sd.default.device[1]  # Get default output device
-
-            # print(device)
+                device = sd.default.device[1]  # Default output device
 
             device_info = sd.query_devices(device, 'output')
             supported_rate = int(device_info['default_samplerate'])
 
-            # print(supported_rate)
-
-            # Resample if needed
             if original_sample_rate != supported_rate:
-                resampler = torchaudio.transforms.Resample(orig_freq=original_sample_rate,
-                                                           new_freq=supported_rate)
+                resampler = torchaudio.transforms.Resample(
+                    orig_freq=original_sample_rate,
+                    new_freq=supported_rate
+                )
                 audio_tensor = resampler(audio_tensor)
 
             # Normalize and scale volume
@@ -168,16 +145,10 @@ class Text2Speech:
         except Exception as e:
             print(f"❌ Error during safe audio playback: {e}")
 
-    # *** PUBLIC properties ***
-
     def verbose(self) -> bool:
-        """
+        """Check whether verbose mode is enabled.
 
-        Returns: True, if verbose is on, else False
-
+        Returns:
+            bool: True if verbose mode is active, otherwise False.
         """
         return self._verbose
-
-    # *** PRIVATE variables ***
-
-    _verbose = False
