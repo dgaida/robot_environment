@@ -1,49 +1,46 @@
-# class with ASR and text-2-speech capabilities
+# class with ASR capabilities
 # as automatic speech recognition model OpenAI's whisper model is used
-# as text-2-speech model ElevenLabs is used
-# Should be final, except of
-# Documentation and type definitions are NOT YET final (let chatgpt do it).
 
 from robot_environment.common import log_start_end_cls
-
 import numpy as np
-
 import torch
-
 from transformers import pipeline
-
 import os
 import time
-
 import sounddevice as sd
 from scipy.io.wavfile import write
 import tempfile
-
 from whisper_mic import WhisperMic
 
 
 class Speech2Text:
-    """
-    class with ASR and text-2-speech capabilities
+    """Speech-to-text class with automatic speech recognition (ASR) capabilities.
 
+    This class supports two ASR modes:
+    1. Using the `whisper_mic` package for live transcription via microphone.
+    2. Using the Hugging Face Whisper model for local recording and transcription.
+
+    Attributes:
+        _verbose (bool): Whether verbose logging is enabled.
+        _asr_model: The Whisper ASR model loaded via Hugging Face (optional).
+        _whisper_mic: The WhisperMic instance used for microphone-based ASR (optional).
     """
 
     # *** CONSTRUCTORS ***
-    def __init__(self, el_api_key: str, device: str, torch_dtype: type, use_whisper_mic: bool = True,
-                 verbose: bool = False):
-        """
-        Loads the ASR model and creates an ElevenLabs client object
+    def __init__(
+        self,
+        device: str,
+        torch_dtype: type,
+        use_whisper_mic: bool = True,
+        verbose: bool = False,
+    ) -> None:
+        """Initializes the Speech2Text class and loads the ASR model.
 
         Args:
-            el_api_key: API Key of ElevenLabs
-            device: "cpu" or "cuda"
-            torch_dtype: torch.float16 or torch.float32
-            use_whisper_mic: if True, then use the package whisper_mic to do ASR, else use the own implementation of
-              ASR with whisper model from HuggingFace
-            verbose:
-
-        Returns:
-            object:
+            device (str): The device to run the ASR model on ("cpu" or "cuda").
+            torch_dtype (type): The torch data type (e.g., torch.float16 or torch.float32).
+            use_whisper_mic (bool, optional): Whether to use the `whisper_mic` package. Defaults to True.
+            verbose (bool, optional): Whether to enable verbose output. Defaults to False.
         """
         self._verbose = verbose
 
@@ -55,69 +52,55 @@ class Speech2Text:
                 self._whisper_mic = None
             self._asr_model = None
         else:
-            # TODO: whisper-large-v3 is better but if gpu is too small...
-            # Load the ASR model
-            self._asr_model = pipeline("automatic-speech-recognition",
-                                       # model="openai/whisper-large-v3",
-                                       model="openai/whisper-medium",
-                                       torch_dtype=torch_dtype, device=device)
+            self._asr_model = pipeline(
+                "automatic-speech-recognition",
+                model="openai/whisper-medium",
+                torch_dtype=torch_dtype,
+                device=device,
+            )
             self._whisper_mic = None
-
-    # *** PUBLIC SET methods ***
-
-    # *** PUBLIC GET methods ***
 
     # *** PUBLIC methods ***
 
     def record_and_transcribe(self) -> str:
-        """
-        Record from microphone and transcribe using Whisper ASR model until silence is detected.
+        """Records speech from the microphone and transcribes it using the selected ASR backend.
 
         Returns:
-            transcribed text
+            str: The transcribed text.
         """
         if self._whisper_mic is None:
             return self._record_and_transcribe()
         else:
             return self._record_and_transcribe_whisper_mic()
 
-    # *** PUBLIC STATIC/CLASS GET methods ***
-
     # *** PRIVATE methods ***
 
     def _record_and_transcribe(self) -> str:
-        """
-        Records speech until silence, transcribes the speech and returns transcribed message. If the speech is
-        another language than English, then the speech is translated to English.
+        """Records speech until silence is detected, then performs transcription.
+
+        If the speech is in a non-English language, Whisper automatically translates it to English.
 
         Returns:
-            str : transcribed text
+            str: The transcribed and (if needed) translated text.
         """
         audio_data, sample_rate = self._record_audio_until_silence()
 
-        # Temporäre Datei im temporären Ordner erstellen
-        temp_dir = tempfile.gettempdir()  # Verzeichnis für temporäre Dateien
-        temp_path = os.path.join(temp_dir, "temp_audio.wav")  # Dateipfad für temporäre Datei
+        temp_dir = tempfile.gettempdir()
+        temp_path = os.path.join(temp_dir, "temp_audio.wav")
 
-        # Audio-Daten in Datei speichern und sicherstellen, dass die Datei geschlossen wird
         write(temp_path, sample_rate, (audio_data * 32767).astype(np.int16))
 
-        # ASR-Modell anwenden: Transkription mit Whisper durchführen
         result = self._asr_model(temp_path, generate_kwargs={"task": "translate"})
 
-        # Temporäre Datei löschen, nachdem sie genutzt wurde
         os.remove(temp_path)
 
-        # Return transcription text
         return result["text"]
 
     def _record_and_transcribe_whisper_mic(self) -> str:
-        """
-        Records speech until silence, transcribes the speech and returns transcribed message. Uses whisper_mic package.
-        If the speech is another language than English, then the speech is translated to English.
+        """Uses `whisper_mic` to record and transcribe speech directly from the microphone.
 
         Returns:
-            str : transcribed text
+            str: The transcribed text.
         """
         result = self._whisper_mic.listen()
 
@@ -127,59 +110,54 @@ class Speech2Text:
         return result
 
     @classmethod
-    def _record_audio_until_silence(cls, silence_threshold: float = 0.0005, silence_duration: float = 3.0):
-        """
-        Record audio until 3 second of silence is detected
+    def _record_audio_until_silence(
+        cls, silence_threshold: float = 0.0005, silence_duration: float = 3.0
+    ) -> tuple[np.ndarray, int]:
+        """Records audio until a specified duration of silence is detected.
 
         Args:
-            silence_threshold:
-            silence_duration:
+            silence_threshold (float, optional): Amplitude threshold to detect silence. Defaults to 0.0005.
+            silence_duration (float, optional): Duration of continuous silence (in seconds) to stop recording. Defaults to 3.0.
 
         Returns:
-            object:
+            tuple[np.ndarray, int]: A tuple containing the recorded audio data and the sample rate.
         """
-        sample_rate = 16000  # Whisper expects 16kHz audio
+        sample_rate = 16000
         audio_data = []
         silence_start = None
 
         print("Recording... Speak now.")
 
-        # Start recording in chunks to check for silence
         with sd.InputStream(samplerate=sample_rate, channels=1) as stream:
             while True:
-                # Read audio in short chunks
-                chunk, overflowed = stream.read(int(sample_rate * 0.1))  # 100ms chunks
+                chunk, _ = stream.read(int(sample_rate * 0.1))
                 audio_data.append(chunk)
 
-                # Compute the volume level of the chunk
                 volume = np.linalg.norm(chunk) / len(chunk)
-
                 print(volume)
 
-                # Check for silence (volume below threshold)
                 if volume < silence_threshold:
                     if silence_start is None:
                         silence_start = time.time()
                     elif time.time() - silence_start >= silence_duration:
                         print("Silence detected. Stopping recording.")
-                        break  # Stop recording after silence_duration of silence
+                        break
                 else:
-                    silence_start = None  # Reset silence timer if speaking resumes
+                    silence_start = None
 
-        # Concatenate chunks and return
         audio_data = np.concatenate(audio_data, axis=0)
         return audio_data, sample_rate
 
     # *** PUBLIC properties ***
 
     def verbose(self) -> bool:
-        """
+        """Returns whether verbose mode is active.
 
-        Returns: True, if verbose is on, else False
-
+        Returns:
+            bool: True if verbose output is enabled, False otherwise.
         """
         return self._verbose
 
     # *** PRIVATE variables ***
 
-    _verbose = False
+    _verbose: bool = False
