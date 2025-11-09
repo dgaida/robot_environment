@@ -2,6 +2,15 @@
 
 A comprehensive Python framework for robotic pick-and-place operations with vision-based object detection and manipulation capabilities.
 
+## Badges
+
+![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code Quality](https://github.com/dgaida/robot_environment/actions/workflows/lint.yml/badge.svg)](https://github.com/dgaida/robot_environment/actions/workflows/lint.yml)
+[![CodeQL](https://github.com/dgaida/robot_environment/actions/workflows/codeql.yml/badge.svg)](https://github.com/dgaida/robot_environment/actions/workflows/codeql.yml)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 ## Overview
 
 This project provides a complete software stack for controlling robotic arms (currently supporting Niryo Ned2 and WidowX) with integrated computer vision for object detection, workspace management, and intelligent manipulation. The system combines real-time camera processing, Redis-based communication, and natural language interaction capabilities.
