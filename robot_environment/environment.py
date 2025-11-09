@@ -19,7 +19,7 @@ from .robot.robot import Robot
 from .robot.niryo_robot_controller import NiryoRobotController
 from .robot.widowx_robot_controller import WidowXRobotController
 
-from .text2speech.text2speech import Text2Speech
+from text2speech import Text2Speech
 from .objects.object import Object
 from .objects.objects import Objects
 from redis_robot_comm import RedisMessageBroker
@@ -180,7 +180,7 @@ class Environment:
 
             time.sleep(0.5)
 
-            success = self._visual_cortex.detect_objects_from_redis()
+            self._visual_cortex.detect_objects_from_redis()
 
             time.sleep(0.5)
 
@@ -228,7 +228,7 @@ class Environment:
         Returns:
             str: Message saying that the given object_name was added to the list of recognizable objects.
         """
-        self._visualcortex.add_object_name2object_labels(object_name)
+        self._visual_cortex.add_object_name2object_labels(object_name)
         mymessage = f"Added {object_name} to the list of recognizable objects."
         thread_oral = self._oralcom.call_text2speech_async(mymessage)
         thread_oral.join()

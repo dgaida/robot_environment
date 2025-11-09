@@ -240,7 +240,7 @@ class Object(ObjectAPI):
             str: Unique object identifier
         """
         import hashlib
-        import uuid
+        # import uuid
 
         # Option 1: Hash-based ID (deterministic)
         id_string = f"{self._label}_{self.x_com():.3f}_{self.y_com():.3f}_{time.time()}"
@@ -294,7 +294,7 @@ class Object(ObjectAPI):
         try:
             # Extract bounding box from relative coordinates
             # bbox_rel = data['image_coordinates']['bounding_box_rel']
-            img_shape = workspace.img_shape()
+            # img_shape = workspace.img_shape()
 
             # u_min = int(bbox_rel['u_min'] * img_shape[0])
             # v_min = int(bbox_rel['v_min'] * img_shape[1])

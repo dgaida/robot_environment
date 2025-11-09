@@ -12,7 +12,7 @@ if pyniryo_v == "pyniryo2":
 else:
     from pyniryo.api.objects import PoseObject
 
-from typing import TYPE_CHECKING, List
+from typing import List
 
 # if TYPE_CHECKING:
     # from pyniryo.api.objects import PoseObject

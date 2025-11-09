@@ -1,5 +1,3 @@
 pyniryo2
 pyniryo
-# either elevenlabs or kokoro is used for t2s
-# elevenlabs
-kokoro
+git+https://github.com/dgaida/text2speech.git

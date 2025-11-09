@@ -44,8 +44,6 @@ dependencies = [
     "opencv-python>=4.5.0",
     "redis>=4.0.0",
     "torch>=2.0.0",
-    "torchaudio>=2.0.0",
-    "sounddevice>=0.4.0",
 ]
 
 [project.optional-dependencies]
@@ -57,8 +55,7 @@ vision = [
 
 # Text-to-speech capabilities
 tts = [
-    "elevenlabs>=0.2.0",
-    "kokoro>=0.1.0",
+    "text2speech @ git+https://github.com/dgaida/text2speech.git",
 ]
 
 # Niryo robot support
