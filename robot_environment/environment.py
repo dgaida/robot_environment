@@ -24,8 +24,8 @@ from .objects.object import Object
 from .objects.objects import Objects
 from redis_robot_comm import RedisMessageBroker
 
-from vision_detect_segment.visualcortex import VisualCortex
-from vision_detect_segment.config import get_default_config
+from vision_detect_segment.core.visualcortex import VisualCortex
+from vision_detect_segment.utils.config import get_default_config
 
 from typing import TYPE_CHECKING, List, Optional
 
