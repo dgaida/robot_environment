@@ -2,8 +2,7 @@
 Unit tests for Workspace classes
 """
 import pytest
-from unittest.mock import Mock, MagicMock
-from robot_environment.workspaces.workspace import Workspace
+from unittest.mock import Mock
 from robot_environment.workspaces.niryo_workspace import NiryoWorkspace
 from robot_environment.workspaces.workspaces import Workspaces
 from robot_environment.workspaces.niryo_workspaces import NiryoWorkspaces

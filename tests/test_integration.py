@@ -3,7 +3,7 @@ Integration tests for robot_environment package
 """
 import pytest
 import numpy as np
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock
 from robot_environment.objects.object import Object
 from robot_environment.objects.objects import Objects
 from robot_environment.objects.pose_object import PoseObjectPNP
@@ -169,7 +169,7 @@ class TestSerializationIntegration:
         original = Object("test", 100, 100, 200, 200, None, integrated_workspace)
         
         # To dict
-        obj_dict = original.to_dict()
+        original.to_dict()
         
         # To JSON
         json_str = original.to_json()
@@ -264,6 +264,8 @@ class TestWorkspaceOperations:
         assert ul.x > ll.x
         # Upper right should be "right of" upper left (lower y for Niryo)
         assert ur.y < ul.y
+        # Lower right should be "right of" lower left (lower y for Niryo)
+        assert lr.y < ll.y
 
     def test_workspace_dimensions(self, integrated_workspace):
         """Test workspace dimension calculations"""

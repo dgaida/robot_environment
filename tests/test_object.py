@@ -4,7 +4,7 @@ Unit tests for Object class
 import pytest
 import numpy as np
 import json
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 from robot_environment.objects.object import Object
 from robot_environment.objects.pose_object import PoseObjectPNP
 
