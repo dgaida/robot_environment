@@ -93,10 +93,6 @@ Repository = "https://github.com/dgaida/robot_environment"
 [project.scripts]
 robot-env = "robot_environment.cli:main"
 
-[tool.setuptools]
-# Automatically discover all subpackages
-packages = { find = {} }
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["robot_environment*"]
