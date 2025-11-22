@@ -17,10 +17,15 @@ def mock_environment():
     env.use_simulation.return_value = False
     env.verbose.return_value = False
 
-    # Mock robot target pose method
+    # Mock robot target pose method - FIXED coordinate system
+    # For Niryo: width goes along y-axis, height along x-axis
+    # Upper-left corner should have higher x and higher y than lower-right
     def mock_get_target_pose(ws_id, u_rel, v_rel, yaw):
-        x = 0.1 + u_rel * 0.3
-        y = -0.15 + v_rel * 0.3
+        # Map relative coords to world coords properly
+        # u_rel: 0 (top) -> 1 (bottom), x should go from high to low
+        # v_rel: 0 (left) -> 1 (right), y should go from high to low
+        x = 0.4 - u_rel * 0.3  # x decreases as u increases (0.4 to 0.1)
+        y = 0.15 - v_rel * 0.3  # y decreases as v increases (0.15 to -0.15)
         return PoseObjectPNP(x, y, 0.05, 0.0, 1.57, yaw)
 
     env.get_robot_target_pose_from_rel = mock_get_target_pose

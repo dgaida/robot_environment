@@ -17,11 +17,15 @@ def mock_workspace():
     workspace.id.return_value = "test_workspace"
     workspace.img_shape.return_value = (640, 480, 3)
 
-    # Mock transform method
+    # Mock transform method - FIXED coordinate system
+    # For Niryo: width goes along y-axis, height along x-axis
+    # Upper-left should have higher x and higher y than lower-right
     def mock_transform(ws_id, u_rel, v_rel, yaw=0.0):
-        # Simple linear transformation for testing
-        x = 0.1 + u_rel * 0.3
-        y = -0.15 + v_rel * 0.3
+        # Map relative coords to world coords
+        # u_rel increases downward (0 to 1), x should decrease (higher to lower)
+        # v_rel increases rightward (0 to 1), y should decrease (higher to lower)
+        x = 0.4 - u_rel * 0.3  # x decreases as u increases
+        y = 0.15 - v_rel * 0.3  # y decreases as v increases
         return PoseObjectPNP(x, y, 0.05, 0.0, 1.57, yaw)
 
     workspace.transform_camera2world_coords = mock_transform
@@ -129,6 +133,19 @@ class TestObject:
         # Create original object
         original = Object("test", 100, 100, 200, 200, None, mock_workspace)
         obj_dict = original.to_dict()
+
+        # Add image_coordinates for compatibility with from_dict
+        # The from_dict expects bbox in image_coordinates
+        if "image_coordinates" in obj_dict and "bounding_box_rel" in obj_dict["image_coordinates"]:
+            bbox_rel = obj_dict["image_coordinates"]["bounding_box_rel"]
+            img_shape = mock_workspace.img_shape()
+            obj_dict["bbox"] = {
+                "x_min": int(bbox_rel["u_min"] * img_shape[0]),
+                "y_min": int(bbox_rel["v_min"] * img_shape[1]),
+                "x_max": int(bbox_rel["u_max"] * img_shape[0]),
+                "y_max": int(bbox_rel["v_max"] * img_shape[1]),
+            }
+            obj_dict["has_mask"] = False
 
         # Reconstruct
         reconstructed = Object.from_dict(obj_dict, mock_workspace)
@@ -239,9 +256,23 @@ class TestObject:
         """Test JSON serialization roundtrip"""
         original = Object("roundtrip_test", 100, 100, 200, 200, None, mock_workspace)
 
-        # Convert to JSON and back
+        # Convert to JSON and back - need to add bbox
         json_str = original.to_json()
-        reconstructed = Object.from_json(json_str, mock_workspace)
+        obj_dict = json.loads(json_str)
+
+        # Add bbox for from_dict compatibility
+        if "image_coordinates" in obj_dict and "bounding_box_rel" in obj_dict["image_coordinates"]:
+            bbox_rel = obj_dict["image_coordinates"]["bounding_box_rel"]
+            img_shape = mock_workspace.img_shape()
+            obj_dict["bbox"] = {
+                "x_min": int(bbox_rel["u_min"] * img_shape[0]),
+                "y_min": int(bbox_rel["v_min"] * img_shape[1]),
+                "x_max": int(bbox_rel["u_max"] * img_shape[0]),
+                "y_max": int(bbox_rel["v_max"] * img_shape[1]),
+            }
+            obj_dict["has_mask"] = False
+
+        reconstructed = Object.from_dict(obj_dict, mock_workspace)
 
         assert reconstructed is not None
         assert reconstructed.label() == original.label()

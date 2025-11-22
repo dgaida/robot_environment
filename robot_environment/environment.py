@@ -97,7 +97,8 @@ class Environment:
 
         config = get_default_config("owlv2")
 
-        self._visual_cortex = VisualCortex(objdetect_model_id="owlv2", device="auto", verbose=verbose, config=config)
+        # owlv2
+        self._visual_cortex = VisualCortex(objdetect_model_id="yoloe-11s", device="auto", verbose=verbose, config=config)
 
         if start_camera_thread:
             if verbose:
