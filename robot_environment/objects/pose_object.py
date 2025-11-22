@@ -15,8 +15,8 @@ else:
 from typing import List
 
 # if TYPE_CHECKING:
-    # from pyniryo.api.objects import PoseObject
-    # from pyniryo2 import PoseObject
+# from pyniryo.api.objects import PoseObject
+# from pyniryo2 import PoseObject
 
 
 class PoseObjectPNP:
@@ -80,8 +80,14 @@ class PoseObjectPNP:
         return PoseObjectPNP(x, y, z, roll, pitch, yaw)
 
     def __eq__(self, other: "PoseObjectPNP") -> bool:
-        return self.x == other.x and self.y == other.y and self.z == other.z \
-            and self.roll == other.roll and self.pitch == other.pitch and self.yaw == other.yaw
+        return (
+            self.x == other.x
+            and self.y == other.y
+            and self.z == other.z
+            and self.roll == other.roll
+            and self.pitch == other.pitch
+            and self.yaw == other.yaw
+        )
 
     @log_start_end_cls()
     def approx_eq(self, other: "PoseObjectPNP", eps_position: float = 0.1, eps_orientation: float = 0.1) -> bool:
@@ -97,11 +103,7 @@ class PoseObjectPNP:
             bool: True if poses are approximately the same, False otherwise.
         """
         # Calculate position differences
-        delta_position = math.sqrt(
-            (self.x - other.x) ** 2 +
-            (self.y - other.y) ** 2 +
-            (self.z - other.z) ** 2
-        )
+        delta_position = math.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2)
 
         # Calculate orientation differences
         delta_roll = abs(PoseObjectPNP._angular_difference(self.roll, other.roll))
@@ -110,10 +112,10 @@ class PoseObjectPNP:
 
         # Check if both position and orientation differences are within tolerances
         return (
-                delta_position < eps_position and
-                delta_roll < eps_orientation and
-                delta_pitch < eps_orientation and
-                delta_yaw < eps_orientation
+            delta_position < eps_position
+            and delta_roll < eps_orientation
+            and delta_pitch < eps_orientation
+            and delta_yaw < eps_orientation
         )
 
     def approx_eq_xyz(self, other: "PoseObjectPNP", eps: float = 0.1) -> bool:
@@ -129,12 +131,11 @@ class PoseObjectPNP:
             bool: True if the difference in x, y, and z coordinates between the two poses
             is less than the specified tolerance (eps), otherwise False.
         """
-        return (np.abs(self.x - other.x) < eps and
-                np.abs(self.y - other.y) < eps and
-                np.abs(self.z - other.z) < eps)
+        return np.abs(self.x - other.x) < eps and np.abs(self.y - other.y) < eps and np.abs(self.z - other.z) < eps
 
-    def copy_with_offsets(self, x_offset=0., y_offset=0., z_offset=0.,
-                          roll_offset=0., pitch_offset=0., yaw_offset=0.) -> "PoseObjectPNP":
+    def copy_with_offsets(
+        self, x_offset=0.0, y_offset=0.0, z_offset=0.0, roll_offset=0.0, pitch_offset=0.0, yaw_offset=0.0
+    ) -> "PoseObjectPNP":
         """
         Creates a new pose object by copying the current pose and applying specified offsets
         to its position (x, y, z) and orientation (roll, pitch, yaw).
@@ -150,8 +151,14 @@ class PoseObjectPNP:
         Returns:
             PoseObjectPNP: A new pose object with the offsets applied.
         """
-        return PoseObjectPNP(self.x + x_offset, self.y + y_offset, self.z + z_offset,
-                             self.roll + roll_offset, self.pitch + pitch_offset, self.yaw + yaw_offset)
+        return PoseObjectPNP(
+            self.x + x_offset,
+            self.y + y_offset,
+            self.z + z_offset,
+            self.roll + roll_offset,
+            self.pitch + pitch_offset,
+            self.yaw + yaw_offset,
+        )
 
     def to_list(self) -> list[float, float, float, float, float, float]:
         """
@@ -177,23 +184,11 @@ class PoseObjectPNP:
                 - The bottom row is [0, 0, 0, 1] for homogeneity.
         """
         # Compute the rotation matrix from roll, pitch, yaw
-        rx = np.array([
-            [1, 0, 0],
-            [0, np.cos(self.roll), -np.sin(self.roll)],
-            [0, np.sin(self.roll), np.cos(self.roll)]
-        ])
+        rx = np.array([[1, 0, 0], [0, np.cos(self.roll), -np.sin(self.roll)], [0, np.sin(self.roll), np.cos(self.roll)]])
 
-        ry = np.array([
-            [np.cos(self.pitch), 0, np.sin(self.pitch)],
-            [0, 1, 0],
-            [-np.sin(self.pitch), 0, np.cos(self.pitch)]
-        ])
+        ry = np.array([[np.cos(self.pitch), 0, np.sin(self.pitch)], [0, 1, 0], [-np.sin(self.pitch), 0, np.cos(self.pitch)]])
 
-        rz = np.array([
-            [np.cos(self.yaw), -np.sin(self.yaw), 0],
-            [np.sin(self.yaw), np.cos(self.yaw), 0],
-            [0, 0, 1]
-        ])
+        rz = np.array([[np.cos(self.yaw), -np.sin(self.yaw), 0], [np.sin(self.yaw), np.cos(self.yaw), 0], [0, 0, 1]])
 
         # Combined rotation matrix (Rz * Ry * Rx)
         rotation_matrix = rz @ ry @ rx
@@ -243,14 +238,10 @@ class PoseObjectPNP:
         :return: quaternion in a list [qx, qy, qz, qw]
         :rtype: list[float, float, float, float]
         """
-        qx = np.sin(roll / 2) * np.cos(pitch / 2) * np.cos(yaw / 2) - np.cos(roll / 2) * np.sin(pitch / 2) * np.sin(
-            yaw / 2)
-        qy = np.cos(roll / 2) * np.sin(pitch / 2) * np.cos(yaw / 2) + np.sin(roll / 2) * np.cos(pitch / 2) * np.sin(
-            yaw / 2)
-        qz = np.cos(roll / 2) * np.cos(pitch / 2) * np.sin(yaw / 2) - np.sin(roll / 2) * np.sin(pitch / 2) * np.cos(
-            yaw / 2)
-        qw = np.cos(roll / 2) * np.cos(pitch / 2) * np.cos(yaw / 2) + np.sin(roll / 2) * np.sin(pitch / 2) * np.sin(
-            yaw / 2)
+        qx = np.sin(roll / 2) * np.cos(pitch / 2) * np.cos(yaw / 2) - np.cos(roll / 2) * np.sin(pitch / 2) * np.sin(yaw / 2)
+        qy = np.cos(roll / 2) * np.sin(pitch / 2) * np.cos(yaw / 2) + np.sin(roll / 2) * np.cos(pitch / 2) * np.sin(yaw / 2)
+        qz = np.cos(roll / 2) * np.cos(pitch / 2) * np.sin(yaw / 2) - np.sin(roll / 2) * np.sin(pitch / 2) * np.cos(yaw / 2)
+        qw = np.cos(roll / 2) * np.cos(pitch / 2) * np.cos(yaw / 2) + np.sin(roll / 2) * np.sin(pitch / 2) * np.sin(yaw / 2)
 
         return [qx, qy, qz, qw]
 
@@ -306,8 +297,7 @@ class PoseObjectPNP:
             pnp_robot_genai.pose_object.PoseObject
         """
         # print("pose_object", pose_object)
-        pose = PoseObjectPNP(pose_object.x, pose_object.y, pose_object.z,
-                             pose_object.roll, pose_object.pitch, pose_object.yaw)
+        pose = PoseObjectPNP(pose_object.x, pose_object.y, pose_object.z, pose_object.roll, pose_object.pitch, pose_object.yaw)
         # print("pose", pose)
         return pose
 
@@ -322,8 +312,7 @@ class PoseObjectPNP:
         Returns:
             PoseObject: Pose object that the Niryo robot defines
         """
-        pose = PoseObject(pose_object.x, pose_object.y, pose_object.z,
-                          pose_object.roll, pose_object.pitch, pose_object.yaw)
+        pose = PoseObject(pose_object.x, pose_object.y, pose_object.z, pose_object.roll, pose_object.pitch, pose_object.yaw)
         return pose
 
     # *** PRIVATE methods ***

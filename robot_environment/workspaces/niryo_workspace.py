@@ -37,8 +37,9 @@ class NiryoWorkspace(Workspace):
     # *** PUBLIC methods ***
 
     # @log_start_end_cls()
-    def transform_camera2world_coords(self, workspace_id: str, u_rel: float, v_rel: float,
-                                      yaw: float = 0.0) -> "PoseObjectPNP":
+    def transform_camera2world_coords(
+        self, workspace_id: str, u_rel: float, v_rel: float, yaw: float = 0.0
+    ) -> "PoseObjectPNP":
         """
         Given relative image coordinates [u_rel, v_rel] and optionally an orientation of the point (yaw),
         calculate the corresponding pose in world coordinates. The parameter yaw is useful, if we want to pick at the
@@ -93,18 +94,30 @@ class NiryoWorkspace(Workspace):
         # TODO: add more workspaces and their observation spaces
         if self._id == "niryo_ws" or self._id == "niryo_ws2":
             self._observation_pose = PoseObjectPNP(  # position for the robot to watch the workspace in the real world
-                x=0.173-0.0, y=-0.002, z=0.247+0.03,
-                roll=-3.042, pitch=1.327-0.0, yaw=-3.027,
+                x=0.173 - 0.0,
+                y=-0.002,
+                z=0.247 + 0.03,
+                roll=-3.042,
+                pitch=1.327 - 0.0,
+                yaw=-3.027,
             )
         elif self._id == "gazebo_1":
             self._observation_pose = PoseObjectPNP(  # position for the robot to watch the workspace in the simulation
-                x=0.18, y=0, z=0.36,
-                roll=2.4, pitch=math.pi / 2, yaw=2.4,  # roll=0.0, pitch=math.pi / 2, yaw=0.0,
+                x=0.18,
+                y=0,
+                z=0.36,
+                roll=2.4,
+                pitch=math.pi / 2,
+                yaw=2.4,  # roll=0.0, pitch=math.pi / 2, yaw=0.0,
             )
         elif self._id == "gazebo_1_chocolate_bars":
             self._observation_pose = PoseObjectPNP(  # position for the robot to watch the workspace
-                x=0.18, y=0, z=0.36,
-                roll=0.0, pitch=math.pi / 2 + 0.3, yaw=0.0,
+                x=0.18,
+                y=0,
+                z=0.36,
+                roll=0.0,
+                pitch=math.pi / 2 + 0.3,
+                yaw=0.0,
             )
         else:
             self._observation_pose = None

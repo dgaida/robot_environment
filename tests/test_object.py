@@ -1,6 +1,7 @@
 """
 Unit tests for Object class
 """
+
 import pytest
 import numpy as np
 import json
@@ -15,14 +16,14 @@ def mock_workspace():
     workspace = Mock()
     workspace.id.return_value = "test_workspace"
     workspace.img_shape.return_value = (640, 480, 3)
-    
+
     # Mock transform method
     def mock_transform(ws_id, u_rel, v_rel, yaw=0.0):
         # Simple linear transformation for testing
         x = 0.1 + u_rel * 0.3
         y = -0.15 + v_rel * 0.3
         return PoseObjectPNP(x, y, 0.05, 0.0, 1.57, yaw)
-    
+
     workspace.transform_camera2world_coords = mock_transform
     return workspace
 
@@ -32,16 +33,8 @@ class TestObject:
 
     def test_initialization_without_mask(self, mock_workspace):
         """Test object initialization without segmentation mask"""
-        obj = Object(
-            label="test_object",
-            u_min=100,
-            v_min=100,
-            u_max=200,
-            v_max=200,
-            mask_8u=None,
-            workspace=mock_workspace
-        )
-        
+        obj = Object(label="test_object", u_min=100, v_min=100, u_max=200, v_max=200, mask_8u=None, workspace=mock_workspace)
+
         assert obj.label() == "test_object"
         assert obj.workspace() == mock_workspace
 
@@ -50,17 +43,9 @@ class TestObject:
         # Create a simple rectangular mask
         mask = np.zeros((640, 480), dtype=np.uint8)
         mask[100:200, 100:200] = 255
-        
-        obj = Object(
-            label="masked_object",
-            u_min=100,
-            v_min=100,
-            u_max=200,
-            v_max=200,
-            mask_8u=mask,
-            workspace=mock_workspace
-        )
-        
+
+        obj = Object(label="masked_object", u_min=100, v_min=100, u_max=200, v_max=200, mask_8u=mask, workspace=mock_workspace)
+
         assert obj.label() == "masked_object"
         assert obj.largest_contour() is not None
 
@@ -73,7 +58,7 @@ class TestObject:
         """Test coordinate property returns [x, y]"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         coords = obj.coordinate()
-        
+
         assert isinstance(coords, list)
         assert len(coords) == 2
         assert isinstance(coords[0], float)
@@ -83,7 +68,7 @@ class TestObject:
         """Test center of mass coordinates"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         x, y = obj.xy_com()
-        
+
         assert isinstance(x, float)
         assert isinstance(y, float)
 
@@ -91,7 +76,7 @@ class TestObject:
         """Test center coordinates"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         x, y = obj.xy_center()
-        
+
         assert isinstance(x, float)
         assert isinstance(y, float)
 
@@ -99,7 +84,7 @@ class TestObject:
         """Test shape in meters"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         width, height = obj.shape_m()
-        
+
         assert width > 0
         assert height > 0
 
@@ -107,7 +92,7 @@ class TestObject:
         """Test size in square meters"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         size = obj.size_m2()
-        
+
         assert size > 0
         assert isinstance(size, float)
 
@@ -115,7 +100,7 @@ class TestObject:
         """Test gripper rotation"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         rotation = obj.gripper_rotation()
-        
+
         assert isinstance(rotation, float)
         assert 0 <= rotation <= 2 * np.pi
 
@@ -123,31 +108,31 @@ class TestObject:
         """Test conversion to dictionary"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         obj_dict = obj.to_dict()
-        
+
         assert isinstance(obj_dict, dict)
-        assert obj_dict['label'] == "test"
-        assert 'position' in obj_dict
-        assert 'dimensions' in obj_dict
-        assert 'workspace_id' in obj_dict
+        assert obj_dict["label"] == "test"
+        assert "position" in obj_dict
+        assert "dimensions" in obj_dict
+        assert "workspace_id" in obj_dict
 
     def test_to_json(self, mock_workspace):
         """Test conversion to JSON"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         json_str = obj.to_json()
-        
+
         # Should be valid JSON
         parsed = json.loads(json_str)
-        assert parsed['label'] == "test"
+        assert parsed["label"] == "test"
 
     def test_from_dict(self, mock_workspace):
         """Test reconstruction from dictionary"""
         # Create original object
         original = Object("test", 100, 100, 200, 200, None, mock_workspace)
         obj_dict = original.to_dict()
-        
+
         # Reconstruct
         reconstructed = Object.from_dict(obj_dict, mock_workspace)
-        
+
         assert reconstructed is not None
         assert reconstructed.label() == original.label()
 
@@ -155,7 +140,7 @@ class TestObject:
         """Test LLM string formatting"""
         obj = Object("test_object", 100, 100, 200, 200, None, mock_workspace)
         llm_str = obj.as_string_for_llm()
-        
+
         assert "test_object" in llm_str
         assert "meters" in llm_str
         assert "centimeters" in llm_str
@@ -164,7 +149,7 @@ class TestObject:
         """Test chat window string formatting"""
         obj = Object("test_object", 100, 100, 200, 200, None, mock_workspace)
         chat_str = obj.as_string_for_chat_window()
-        
+
         assert "Detected" in chat_str
         assert "test_object" in chat_str
 
@@ -172,16 +157,16 @@ class TestObject:
         """Test static width/height calculation"""
         pose_ul = PoseObjectPNP(0.3, 0.2, 0.0, 0.0, 0.0, 0.0)
         pose_lr = PoseObjectPNP(0.1, -0.1, 0.0, 0.0, 0.0, 0.0)
-        
+
         width, height = Object.calc_width_height(pose_ul, pose_lr)
-        
+
         assert width == 0.3  # y_ul - y_lr
         assert height == 0.2  # x_ul - x_lr
 
     def test_invalid_mask_dtype(self, mock_workspace):
         """Test that invalid mask dtype raises error"""
         invalid_mask = np.zeros((640, 480), dtype=np.float32)
-        
+
         with pytest.raises(ValueError):
             Object("test", 100, 100, 200, 200, invalid_mask, mock_workspace)
 
@@ -189,7 +174,7 @@ class TestObject:
         """Test relative UV coordinates"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         u, v = obj.uv_rel_o()
-        
+
         assert 0 <= u <= 1
         assert 0 <= v <= 1
 
@@ -197,14 +182,14 @@ class TestObject:
         """Test pose_center returns PoseObjectPNP"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         pose = obj.pose_center()
-        
+
         assert isinstance(pose, PoseObjectPNP)
 
     def test_pose_com(self, mock_workspace):
         """Test pose_com returns PoseObjectPNP"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         pose = obj.pose_com()
-        
+
         assert isinstance(pose, PoseObjectPNP)
 
     def test_workspace_property(self, mock_workspace):
@@ -216,14 +201,14 @@ class TestObject:
         """Test getting workspace ID"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         ws_id = obj.get_workspace_id()
-        
+
         assert ws_id == "test_workspace"
 
     def test_str_representation(self, mock_workspace):
         """Test string representation"""
         obj = Object("test_object", 100, 100, 200, 200, None, mock_workspace)
         str_repr = str(obj)
-        
+
         assert "test_object" in str_repr
 
     def test_repr_equals_str(self, mock_workspace):
@@ -236,9 +221,9 @@ class TestObject:
         # Create a simple mask with uniform distribution
         mask = np.zeros((100, 100), dtype=np.uint8)
         mask[40:60, 40:60] = 255
-        
+
         cx, cy = Object._calculate_center_of_mass(mask)
-        
+
         # Center should be around (50, 50)
         assert 48 < cx < 52
         assert 48 < cy < 52
@@ -247,17 +232,17 @@ class TestObject:
         """Test center of mass with empty mask"""
         mask = np.zeros((100, 100), dtype=np.uint8)
         result = Object._calculate_center_of_mass(mask)
-        
+
         assert result is None
 
     def test_json_roundtrip(self, mock_workspace):
         """Test JSON serialization roundtrip"""
         original = Object("roundtrip_test", 100, 100, 200, 200, None, mock_workspace)
-        
+
         # Convert to JSON and back
         json_str = original.to_json()
         reconstructed = Object.from_json(json_str, mock_workspace)
-        
+
         assert reconstructed is not None
         assert reconstructed.label() == original.label()
 
@@ -270,6 +255,6 @@ class TestObject:
         """Test object ID generation"""
         obj = Object("test", 100, 100, 200, 200, None, mock_workspace)
         obj_id = obj.generate_object_id()
-        
+
         assert isinstance(obj_id, str)
         assert len(obj_id) == 8  # MD5 hash truncated to 8 chars

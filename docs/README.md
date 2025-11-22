@@ -215,7 +215,7 @@ Abstract base class defining a robot workspace.
 
 **Key Concept - Coordinate Transformation:**
 ```
-Image Coordinates (pixels) 
+Image Coordinates (pixels)
     ↓ normalize
 Relative Coordinates [0,1]
     ↓ transform_camera2world_coords()
@@ -420,7 +420,7 @@ def get_target_pose_from_rel(self, ws_id, u_rel, v_rel, yaw):
         except (NiryoRobotException, UnicodeDecodeError) as e:
             print(f"Error: {e}")
             obj_coords = PoseObject(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    
+
     return PoseObjectPNP.convert_niryo_pose_object2pose_object(obj_coords)
 ```
 
@@ -687,13 +687,13 @@ class MyObjects(Objects):
 
 The `robot_environment` architecture provides:
 
-✅ **Modular Design** - Clear separation of concerns  
-✅ **Hardware Abstraction** - Easy to add new robots  
-✅ **Thread Safety** - Concurrent camera and control  
-✅ **External Integration** - Clean package boundaries  
-✅ **Redis Communication** - Decoupled data flow  
-✅ **Flexible Workspaces** - Multiple workspace support  
-✅ **Rich Object Representation** - Full spatial information  
+✅ **Modular Design** - Clear separation of concerns
+✅ **Hardware Abstraction** - Easy to add new robots
+✅ **Thread Safety** - Concurrent camera and control
+✅ **External Integration** - Clean package boundaries
+✅ **Redis Communication** - Decoupled data flow
+✅ **Flexible Workspaces** - Multiple workspace support
+✅ **Rich Object Representation** - Full spatial information
 ✅ **Natural Interaction** - Text-to-speech feedback
 
 This architecture enables robust pick-and-place operations with vision-based object detection while maintaining extensibility and clean code organization.

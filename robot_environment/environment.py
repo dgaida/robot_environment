@@ -40,8 +40,9 @@ if TYPE_CHECKING:
 
 class Environment:
     # *** CONSTRUCTORS ***
-    def __init__(self, el_api_key: str, use_simulation: bool, robot_id: str, verbose: bool = False,
-                 start_camera_thread: bool = True):
+    def __init__(
+        self, el_api_key: str, use_simulation: bool, robot_id: str, verbose: bool = False, start_camera_thread: bool = True
+    ):
         """
         Creates environment object. Creates these objects:
         - FrameGrabber
@@ -96,12 +97,7 @@ class Environment:
 
         config = get_default_config("owlv2")
 
-        self._visual_cortex = VisualCortex(
-            objdetect_model_id="owlv2",
-            device="auto",
-            verbose=verbose,
-            config=config
-        )
+        self._visual_cortex = VisualCortex(objdetect_model_id="owlv2", device="auto", verbose=verbose, config=config)
 
         if start_camera_thread:
             if verbose:
@@ -113,10 +109,8 @@ class Environment:
                 print("Camera thread disabled (manual control)")
 
     def __del__(self):
-        """
-
-        """
-        if hasattr(self, '_stop_event'):
+        """ """
+        if hasattr(self, "_stop_event"):
             if self.verbose():
                 print("Shutting down environment in del...")
             self._stop_event.set()
@@ -126,7 +120,7 @@ class Environment:
         Explicit cleanup method - call this when you're done with the object.
         This is more reliable than relying on __del__.
         """
-        if hasattr(self, '_stop_event'):
+        if hasattr(self, "_stop_event"):
             if self.verbose():
                 print("Shutting down environment...")
             self._stop_event.set()
@@ -154,10 +148,10 @@ class Environment:
             x_center, y_center = obj.xy_com()
             # obj_position = (obj.label(), x_center, y_center)
             if not any(
-                    memory.label() == obj.label() and
-                    abs(memory.x_com() - x_center) <= 0.05 and
-                    abs(memory.y_com() - y_center) <= 0.05
-                    for memory in self._obj_position_memory
+                memory.label() == obj.label()
+                and abs(memory.x_com() - x_center) <= 0.05
+                and abs(memory.y_com() - y_center) <= 0.05
+                for memory in self._obj_position_memory
             ):
                 self._obj_position_memory.append(obj)
                 # message = obj.as_string_for_chat_window()
@@ -176,7 +170,7 @@ class Environment:
         self.robot_move2observation_pose(self._workspaces.get_workspace_home_id())
 
         while not self._stop_event.is_set():
-            img = self.get_current_frame()
+            self.get_current_frame()  # img =
 
             time.sleep(0.5)
 
@@ -388,7 +382,7 @@ class Environment:
                 print(u_start, v_start, u_end, v_end)
 
             # Mark grid cells as occupied
-            grid[v_start:v_end + 1, u_start:u_end + 1] = 1
+            grid[v_start : v_end + 1, u_start : u_end + 1] = 1
 
         # Find the largest rectangle of zeros in the grid
         def max_rectangle_area(matrix):
@@ -417,7 +411,7 @@ class Environment:
             return max_area, top_left, bottom_right
 
         largest_area_cells, (v_start, u_start), (v_end, u_end) = max_rectangle_area(grid)
-        largest_area_m2 = (largest_area_cells / (grid_resolution ** 2)) * (workspace_width * workspace_height)
+        largest_area_m2 = (largest_area_cells / (grid_resolution**2)) * (workspace_width * workspace_height)
 
         # Calculate the center of the largest rectangle in grid coordinates
         v_center = (v_start + v_end) // 2
@@ -427,7 +421,7 @@ class Environment:
         center_x, center_y = to_world_coords(u_center, v_center)
 
         if self.verbose():
-            grid[v_center:v_center + 1, u_center:u_center + 1] = 2
+            grid[v_center : v_center + 1, u_center : u_center + 1] = 2
 
             # Normalize grid to 0–255 for visualization
             grid_visual = (grid * 255 // 2).astype(np.uint8)
@@ -456,15 +450,15 @@ class Environment:
         Returns:
             List[float]: (x,y) world coordinate of the point on the workspace that was specified by the argument point.
         """
-        if point == 'upper left corner':
+        if point == "upper left corner":
             return self.get_workspace_by_id(workspace_id).xy_ul_wc().xy_coordinate()
-        elif point == 'upper right corner':
+        elif point == "upper right corner":
             return self.get_workspace_by_id(workspace_id).xy_ur_wc().xy_coordinate()
-        elif point == 'lower left corner':
+        elif point == "lower left corner":
             return self.get_workspace_by_id(workspace_id).xy_ll_wc().xy_coordinate()
-        elif point == 'lower right corner':
+        elif point == "lower right corner":
             return self.get_workspace_by_id(workspace_id).xy_lr_wc().xy_coordinate()
-        elif point == 'center point':
+        elif point == "center point":
             return self.get_workspace_by_id(workspace_id).xy_center_wc().xy_coordinate()
         else:
             print("Error: get_workspace_coordinate_from_point:", point)
@@ -589,8 +583,7 @@ class Environment:
         return self._robot.get_pose()
 
     @log_start_end_cls()
-    def get_robot_target_pose_from_rel(self, workspace_id: str, u_rel: float, v_rel: float,
-                                       yaw: float) -> "PoseObjectPNP":
+    def get_robot_target_pose_from_rel(self, workspace_id: str, u_rel: float, v_rel: float, yaw: float) -> "PoseObjectPNP":
         """
         Given relative image coordinates [u_rel, v_rel] and optionally an orientation of the point (yaw),
         calculate the corresponding pose in world coordinates. The parameter yaw is useful, if we want to pick at the

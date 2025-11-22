@@ -11,6 +11,7 @@ def start_camera_updates(environment, visualize=False):
         for img in environment.update_camera_and_objects(visualize=visualize):
             # In CLI, we might not use img, but you could save or log info here
             pass  # or print("Camera updated")
+
     t = threading.Thread(target=loop, daemon=True)
     t.start()
     return t
@@ -32,14 +33,13 @@ if __name__ == "__main__":
 
     # print(detected_objects)
 
-#     robot.pick_place_object("red square", [0.235, 0.3], [0.54, 0.43], location="right next to")
+    #     robot.pick_place_object("red square", [0.235, 0.3], [0.54, 0.43], location="right next to")
     robot.pick_place_object("pencil", [-0.1, 0.01], [0.1, 0.11], location="right next to")
 
-#     robot.pick_place_object("red cube", [0.235, 0.3], [0.54, 0.43], location="right next to")
+    #     robot.pick_place_object("red cube", [0.235, 0.3], [0.54, 0.43], location="right next to")
 
     env.robot_move2observation_pose(env.get_workspace_home_id())
 
     # print("End of program")
 
     # del env
-

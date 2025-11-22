@@ -12,7 +12,6 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeou
 
 if pyniryo_v == "pyniryo2":
     from pyniryo2 import RobotAxis, NiryoRobot, PoseObject
-    import pyniryo
 else:
     from pyniryo import NiryoRobot
     from pyniryo.api.objects import PoseObject
@@ -58,13 +57,13 @@ class NiryoRobotController(RobotController):
     def __del__(self):
         super().__del__()
 
-        if hasattr(self, '_executor') and self._executor:
+        if hasattr(self, "_executor") and self._executor:
             print("Shutting down ThreadPoolExecutor in destructor...")
             self._executor.shutdown(wait=True)
 
-        print('Destructor called, Robot deleted.')
+        print("Destructor called, Robot deleted.")
         with self._lock:
-            print('Destructor called, Robot deleted.2')
+            print("Destructor called, Robot deleted.2")
             self._shutdown()
 
     # ============================================
@@ -75,7 +74,7 @@ class NiryoRobotController(RobotController):
         Explicit cleanup method - call this when you're done with the object.
         This is more reliable than relying on __del__.
         """
-        if hasattr(self, '_executor') and self._executor:
+        if hasattr(self, "_executor") and self._executor:
             print("Shutting down ThreadPoolExecutor...")
             self._shutdown_v = True
             self._executor.shutdown(wait=True)
@@ -250,11 +249,9 @@ class NiryoRobotController(RobotController):
                 y_rel = max(0.0, min(v_rel, 1.0))
 
                 if pyniryo_v == "pyniryo2":
-                    obj_coords = self._robot_ctrl.vision.get_target_pose_from_rel(workspace_id, 0.0,
-                                                                                  x_rel, y_rel, yaw)
+                    obj_coords = self._robot_ctrl.vision.get_target_pose_from_rel(workspace_id, 0.0, x_rel, y_rel, yaw)
                 else:
-                    obj_coords = self._robot_ctrl.get_target_pose_from_rel(workspace_id, 0.0,
-                                                                           x_rel, y_rel, yaw)
+                    obj_coords = self._robot_ctrl.get_target_pose_from_rel(workspace_id, 0.0, x_rel, y_rel, yaw)
             except (NiryoRobotException, UnicodeDecodeError, SyntaxError, TcpCommandException) as e:
                 print(f"Thread {threading.current_thread().name} Error: {e}")
                 obj_coords = PoseObject(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
@@ -268,8 +265,9 @@ class NiryoRobotController(RobotController):
 
         return obj_coords
 
-    def get_target_pose_from_rel_timeout(self, workspace_id: str, x_rel: float, y_rel: float, yaw: float,
-                                 timeout: float = 0.75) -> "PoseObjectPNP":
+    def get_target_pose_from_rel_timeout(
+        self, workspace_id: str, x_rel: float, y_rel: float, yaw: float, timeout: float = 0.75
+    ) -> "PoseObjectPNP":
         print(f"Thread {threading.current_thread().name} entering: {workspace_id}, {x_rel}, {y_rel}, {yaw}")
 
         if not self._lock.acquire(timeout=timeout):
@@ -278,8 +276,7 @@ class NiryoRobotController(RobotController):
 
         try:
             print(f"Thread {threading.current_thread().name} acquired lock")
-            future = self._executor.submit(self._robot_ctrl.get_target_pose_from_rel,
-                                           workspace_id, 0.0, x_rel, y_rel, yaw)
+            future = self._executor.submit(self._robot_ctrl.get_target_pose_from_rel, workspace_id, 0.0, x_rel, y_rel, yaw)
 
             try:
                 obj_coords = future.result(timeout=timeout)

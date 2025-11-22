@@ -1,6 +1,7 @@
 """
 Unit tests for Robot API classes
 """
+
 import pytest
 from robot_environment.robot.robot_api import Location, RobotAPI
 
@@ -71,64 +72,63 @@ class TestRobotAPI:
 
     def test_has_required_methods(self):
         """Test that RobotAPI defines required abstract methods"""
-        required_methods = [
-            'pick_place_object',
-            'pick_object',
-            'place_object',
-            'push_object',
-            'move2observation_pose'
-        ]
-        
+        required_methods = ["pick_place_object", "pick_object", "place_object", "push_object", "move2observation_pose"]
+
         for method in required_methods:
             assert hasattr(RobotAPI, method)
 
     def test_pick_place_object_signature(self):
         """Test pick_place_object method signature"""
         import inspect
+
         sig = inspect.signature(RobotAPI.pick_place_object)
         params = list(sig.parameters.keys())
-        
-        assert 'object_name' in params
-        assert 'pick_coordinate' in params
-        assert 'place_coordinate' in params
-        assert 'location' in params
+
+        assert "object_name" in params
+        assert "pick_coordinate" in params
+        assert "place_coordinate" in params
+        assert "location" in params
 
     def test_pick_object_signature(self):
         """Test pick_object method signature"""
         import inspect
+
         sig = inspect.signature(RobotAPI.pick_object)
         params = list(sig.parameters.keys())
-        
-        assert 'object_name' in params
-        assert 'pick_coordinate' in params
+
+        assert "object_name" in params
+        assert "pick_coordinate" in params
 
     def test_place_object_signature(self):
         """Test place_object method signature"""
         import inspect
+
         sig = inspect.signature(RobotAPI.place_object)
         params = list(sig.parameters.keys())
-        
-        assert 'place_coordinate' in params
-        assert 'location' in params
+
+        assert "place_coordinate" in params
+        assert "location" in params
 
     def test_push_object_signature(self):
         """Test push_object method signature"""
         import inspect
+
         sig = inspect.signature(RobotAPI.push_object)
         params = list(sig.parameters.keys())
-        
-        assert 'object_name' in params
-        assert 'push_coordinate' in params
-        assert 'direction' in params
-        assert 'distance' in params
+
+        assert "object_name" in params
+        assert "push_coordinate" in params
+        assert "direction" in params
+        assert "distance" in params
 
     def test_move2observation_pose_signature(self):
         """Test move2observation_pose method signature"""
         import inspect
+
         sig = inspect.signature(RobotAPI.move2observation_pose)
         params = list(sig.parameters.keys())
-        
-        assert 'workspace_id' in params
+
+        assert "workspace_id" in params
 
 
 class TestLocationIntegration:
@@ -136,11 +136,8 @@ class TestLocationIntegration:
 
     def test_location_in_dict(self):
         """Test that Location can be used as dict key"""
-        loc_dict = {
-            Location.LEFT_NEXT_TO: "left",
-            Location.RIGHT_NEXT_TO: "right"
-        }
-        
+        loc_dict = {Location.LEFT_NEXT_TO: "left", Location.RIGHT_NEXT_TO: "right"}
+
         assert loc_dict[Location.LEFT_NEXT_TO] == "left"
         assert loc_dict[Location.RIGHT_NEXT_TO] == "right"
 
@@ -149,7 +146,7 @@ class TestLocationIntegration:
         loc1 = Location.LEFT_NEXT_TO
         loc2 = Location.LEFT_NEXT_TO
         loc3 = Location.RIGHT_NEXT_TO
-        
+
         assert loc1 == loc2
         assert loc1 != loc3
         assert loc1 is loc2  # Same enum instance
@@ -157,7 +154,7 @@ class TestLocationIntegration:
     def test_location_string_representation(self):
         """Test string representation of Location"""
         loc = Location.LEFT_NEXT_TO
-        
+
         # The name property
         assert loc.name == "LEFT_NEXT_TO"
         # The value property
@@ -166,13 +163,14 @@ class TestLocationIntegration:
     def test_location_in_set(self):
         """Test that Location can be used in sets"""
         locations = {Location.LEFT_NEXT_TO, Location.RIGHT_NEXT_TO, Location.LEFT_NEXT_TO}
-        
+
         # Should deduplicate
         assert len(locations) == 2
         assert Location.LEFT_NEXT_TO in locations
 
     def test_location_switch_pattern(self):
         """Test switch-like pattern with Location"""
+
         def get_offset(location: Location):
             if location == Location.LEFT_NEXT_TO:
                 return (0, 1)
@@ -184,7 +182,7 @@ class TestLocationIntegration:
                 return (-1, 0)
             else:
                 return (0, 0)
-        
+
         assert get_offset(Location.LEFT_NEXT_TO) == (0, 1)
         assert get_offset(Location.RIGHT_NEXT_TO) == (0, -1)
         assert get_offset(Location.ABOVE) == (1, 0)
@@ -194,7 +192,9 @@ class TestLocationIntegration:
     def test_location_with_match_statement(self):
         """Test Location with match statement (Python 3.10+)"""
         import sys
+
         if sys.version_info >= (3, 10):
+
             def describe_location(loc: Location) -> str:
                 match loc:
                     case Location.LEFT_NEXT_TO:
@@ -207,6 +207,6 @@ class TestLocationIntegration:
                         return "below"
                     case _:
                         return "somewhere"
-            
+
             assert describe_location(Location.LEFT_NEXT_TO) == "to the left"
             assert describe_location(Location.NONE) == "somewhere"

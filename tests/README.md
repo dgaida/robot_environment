@@ -142,10 +142,10 @@ def test_my_feature():
     """Test description"""
     # Arrange
     obj = Object(...)
-    
+
     # Act
     result = obj.some_method()
-    
+
     # Assert
     assert result == expected_value
 ```

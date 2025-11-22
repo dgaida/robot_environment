@@ -1,6 +1,7 @@
 """
 Unit tests for PoseObjectPNP class
 """
+
 import pytest
 import numpy as np
 import math
@@ -35,7 +36,7 @@ class TestPoseObjectPNP:
         pose1 = PoseObjectPNP(1.0, 2.0, 3.0, 0.1, 0.2, 0.3)
         pose2 = PoseObjectPNP(0.5, 0.5, 0.5, 0.05, 0.05, 0.05)
         result = pose1 + pose2
-        
+
         assert result.x == 1.5
         assert result.y == 2.5
         assert result.z == 3.5
@@ -48,7 +49,7 @@ class TestPoseObjectPNP:
         pose1 = PoseObjectPNP(1.0, 2.0, 3.0, 0.1, 0.2, 0.3)
         pose2 = PoseObjectPNP(0.5, 0.5, 0.5, 0.05, 0.05, 0.05)
         result = pose1 - pose2
-        
+
         assert result.x == 0.5
         assert result.y == 1.5
         assert result.z == 2.5
@@ -61,7 +62,7 @@ class TestPoseObjectPNP:
         pose1 = PoseObjectPNP(1.0, 2.0, 3.0, 0.1, 0.2, 0.3)
         pose2 = PoseObjectPNP(1.0, 2.0, 3.0, 0.1, 0.2, 0.3)
         pose3 = PoseObjectPNP(1.1, 2.0, 3.0, 0.1, 0.2, 0.3)
-        
+
         assert pose1 == pose2
         assert pose1 != pose3
 
@@ -69,10 +70,10 @@ class TestPoseObjectPNP:
         """Test approximate equality"""
         pose1 = PoseObjectPNP(1.0, 2.0, 3.0, 0.1, 0.2, 0.3)
         pose2 = PoseObjectPNP(1.05, 2.05, 3.05, 0.12, 0.22, 0.32)
-        
+
         # Should be equal with tolerance 0.1
         assert pose1.approx_eq(pose2, eps_position=0.1, eps_orientation=0.1)
-        
+
         # Should not be equal with tight tolerance
         assert not pose1.approx_eq(pose2, eps_position=0.01, eps_orientation=0.01)
 
@@ -80,7 +81,7 @@ class TestPoseObjectPNP:
         """Test approximate xyz equality"""
         pose1 = PoseObjectPNP(1.0, 2.0, 3.0, 0.1, 0.2, 0.3)
         pose2 = PoseObjectPNP(1.05, 2.05, 3.05, 0.5, 0.6, 0.7)
-        
+
         # Should be equal in position only
         assert pose1.approx_eq_xyz(pose2, eps=0.1)
         assert not pose1.approx_eq_xyz(pose2, eps=0.01)
@@ -89,14 +90,14 @@ class TestPoseObjectPNP:
         """Test copying with offsets"""
         pose = PoseObjectPNP(1.0, 2.0, 3.0, 0.1, 0.2, 0.3)
         new_pose = pose.copy_with_offsets(x_offset=0.5, y_offset=0.5, z_offset=0.5)
-        
+
         assert new_pose.x == 1.5
         assert new_pose.y == 2.5
         assert new_pose.z == 3.5
         assert new_pose.roll == 0.1
         assert new_pose.pitch == 0.2
         assert new_pose.yaw == 0.3
-        
+
         # Original should be unchanged
         assert pose.x == 1.0
 
@@ -104,45 +105,45 @@ class TestPoseObjectPNP:
         """Test conversion to list"""
         pose = PoseObjectPNP(1.0, 2.0, 3.0, 0.1, 0.2, 0.3)
         pose_list = pose.to_list()
-        
+
         assert len(pose_list) == 6
         assert pose_list == [1.0, 2.0, 3.0, 0.1, 0.2, 0.3]
 
     def test_to_transformation_matrix(self):
         """Test conversion to transformation matrix"""
-        pose = PoseObjectPNP(1.0, 2.0, 3.0, 0.0, 0.0, math.pi/2)
+        pose = PoseObjectPNP(1.0, 2.0, 3.0, 0.0, 0.0, math.pi / 2)
         matrix = pose.to_transformation_matrix()
-        
+
         # Check matrix shape
         assert matrix.shape == (4, 4)
-        
+
         # Check translation part
         assert matrix[0, 3] == 1.0
         assert matrix[1, 3] == 2.0
         assert matrix[2, 3] == 3.0
-        
+
         # Check homogeneous row
         assert np.allclose(matrix[3, :], [0, 0, 0, 1])
-        
+
         # Check rotation part for 90° yaw rotation
         assert pytest.approx(matrix[0, 0], abs=1e-5) == 0.0
         assert pytest.approx(matrix[1, 1], abs=1e-5) == 0.0
 
     def test_quaternion_property(self):
         """Test quaternion conversion"""
-        pose = PoseObjectPNP(0.0, 0.0, 0.0, 0.0, 0.0, math.pi/2)
+        pose = PoseObjectPNP(0.0, 0.0, 0.0, 0.0, 0.0, math.pi / 2)
         quat = pose.quaternion
-        
+
         assert len(quat) == 4
         # For 90° yaw rotation, qw should be cos(pi/4) and qz should be sin(pi/4)
-        assert pytest.approx(quat[3], abs=1e-5) == math.cos(math.pi/4)
-        assert pytest.approx(quat[2], abs=1e-5) == math.sin(math.pi/4)
+        assert pytest.approx(quat[3], abs=1e-5) == math.cos(math.pi / 4)
+        assert pytest.approx(quat[2], abs=1e-5) == math.sin(math.pi / 4)
 
     def test_quaternion_pose_property(self):
         """Test quaternion pose conversion"""
         pose = PoseObjectPNP(1.0, 2.0, 3.0, 0.0, 0.0, 0.0)
         quat_pose = pose.quaternion_pose
-        
+
         assert len(quat_pose) == 7
         assert quat_pose[0] == 1.0
         assert quat_pose[1] == 2.0
@@ -151,7 +152,7 @@ class TestPoseObjectPNP:
     def test_euler_to_quaternion(self):
         """Test Euler to quaternion conversion"""
         quat = PoseObjectPNP.euler_to_quaternion(0.0, 0.0, 0.0)
-        
+
         # Identity rotation
         assert len(quat) == 4
         assert pytest.approx(quat[0]) == 0.0
@@ -163,7 +164,7 @@ class TestPoseObjectPNP:
         """Test quaternion to Euler conversion"""
         # Identity quaternion
         roll, pitch, yaw = PoseObjectPNP.quaternion_to_euler_angle(0, 0, 0, 1)
-        
+
         assert pytest.approx(roll) == 0.0
         assert pytest.approx(pitch) == 0.0
         assert pytest.approx(yaw) == 0.0
@@ -173,13 +174,13 @@ class TestPoseObjectPNP:
         original_roll = 0.1
         original_pitch = 0.2
         original_yaw = 0.3
-        
+
         # Convert to quaternion
         quat = PoseObjectPNP.euler_to_quaternion(original_roll, original_pitch, original_yaw)
-        
+
         # Convert back to Euler
         roll, pitch, yaw = PoseObjectPNP.quaternion_to_euler_angle(*quat)
-        
+
         assert pytest.approx(roll) == original_roll
         assert pytest.approx(pitch) == original_pitch
         assert pytest.approx(yaw) == original_yaw
@@ -188,7 +189,7 @@ class TestPoseObjectPNP:
         """Test xy_coordinate property"""
         pose = PoseObjectPNP(1.0, 2.0, 3.0, 0.0, 0.0, 0.0)
         xy = pose.xy_coordinate()
-        
+
         assert len(xy) == 2
         assert xy[0] == 1.0
         assert xy[1] == 2.0
@@ -197,7 +198,7 @@ class TestPoseObjectPNP:
         """Test string representation"""
         pose = PoseObjectPNP(1.234, 2.345, 3.456, 0.1, 0.2, 0.3)
         str_repr = str(pose)
-        
+
         assert "1.23" in str_repr
         assert "2.35" in str_repr
         assert "3.46" in str_repr

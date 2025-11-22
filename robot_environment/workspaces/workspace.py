@@ -90,8 +90,9 @@ class Workspace(ABC):
         self._img_shape = img_shape
 
     @abstractmethod
-    def transform_camera2world_coords(self, workspace_id: str, u_rel: float, v_rel: float,
-                                      yaw: float = 0.0) -> "PoseObjectPNP":
+    def transform_camera2world_coords(
+        self, workspace_id: str, u_rel: float, v_rel: float, yaw: float = 0.0
+    ) -> "PoseObjectPNP":
         """
         Given relative image coordinates [u_rel, v_rel] and optionally an orientation of the point (yaw),
         calculate the corresponding pose in world coordinates. The parameter yaw is useful, if we want to pick at the
@@ -152,7 +153,7 @@ class Workspace(ABC):
         dx = self._xy_ll_wc.x - self._xy_ul_wc.x
         dy = self._xy_ll_wc.y - self._xy_lr_wc.y
 
-        self._xy_center_wc = self._xy_lr_wc.copy_with_offsets(-dx/2., dy/2.)
+        self._xy_center_wc = self._xy_lr_wc.copy_with_offsets(-dx / 2.0, dy / 2.0)
 
         if self.verbose():
             print("_calc_center_of_workspace:", self._xy_center_wc, self._xy_ll_wc.x, self._xy_ur_wc.x)

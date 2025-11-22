@@ -42,15 +42,14 @@ classifiers = [
 dependencies = [
     "numpy>=1.20.0",
     "opencv-python>=4.5.0",
-    "redis>=4.0.0",
     "torch>=2.0.0",
 ]
 
 [project.optional-dependencies]
 # Core vision and communication
 vision = [
-    "vision_detect_segment>=0.1.0 @ git+https://github.com/dgaida/vision_detect_segment.git",
     "redis_robot_comm>=0.1.0 @ git+https://github.com/dgaida/redis_robot_comm.git",
+    "vision_detect_segment>=0.1.0 @ git+https://github.com/dgaida/vision_detect_segment.git",
 ]
 
 # Text-to-speech capabilities

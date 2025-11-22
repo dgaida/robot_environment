@@ -7,6 +7,7 @@ from ..common.logger import log_start_end_cls
 from .robot_api import RobotAPI, Location
 
 from .niryo_robot_controller import NiryoRobotController
+
 # from redis_robot_comm import RedisMessageBroker
 from ..objects.pose_object import PoseObjectPNP
 from ..objects.object import Object
@@ -23,14 +24,14 @@ import math
 import re
 import json
 import ast
-import traceback
 
 
 class Robot(RobotAPI):
     # *** CONSTRUCTORS ***
     @log_start_end_cls()
-    def __init__(self, environment: "Environment", use_simulation: bool = False, robot_id: str = "niryo",
-                 verbose: bool = False):
+    def __init__(
+        self, environment: "Environment", use_simulation: bool = False, robot_id: str = "niryo", verbose: bool = False
+    ):
         """
         Creates robot object. Creates these objects:
         - RobotController
@@ -120,8 +121,9 @@ class Robot(RobotAPI):
     # TODO: the documentation of these pick methods is more upto date as teh one in robot_api
 
     @log_start_end_cls()
-    def pick_place_object(self, object_name: str, pick_coordinate: List, place_coordinate: List,
-                          location: Union["Location", str, None] = None) -> bool:
+    def pick_place_object(
+        self, object_name: str, pick_coordinate: List, place_coordinate: List, location: Union["Location", str, None] = None
+    ) -> bool:
         """
         Instructs the pick-and-place robot arm to pick a specific object and place it using its gripper.
         The gripper will move to the specified 'pick_coordinate' and pick the named object. It will then move to the
@@ -185,7 +187,7 @@ class Robot(RobotAPI):
             bool: True
         """
         coords_str = "[" + ", ".join(f"{x:.2f}" for x in pick_coordinate) + "]"
-        message = f'Going to pick {object_name} at coordinate {coords_str}.'
+        message = f"Going to pick {object_name} at coordinate {coords_str}."
         print(message)
 
         thread_oral = self.environment().oralcom_call_text2speech_async(message)
@@ -226,10 +228,12 @@ class Robot(RobotAPI):
         location = Location.convert_str2location(location)
 
         if self._object_last_picked:
-            message = (f'Going to place {self._object_last_picked.label()} {location} coordinate ['
-                       f'{place_coordinate[0]:.2f}, {place_coordinate[1]:.2f}].')
+            message = (
+                f"Going to place {self._object_last_picked.label()} {location} coordinate ["
+                f"{place_coordinate[0]:.2f}, {place_coordinate[1]:.2f}]."
+            )
         else:
-            message = f'Going to place it {location} coordinate [{place_coordinate[0]:.2f}, {place_coordinate[1]:.2f}].'
+            message = f"Going to place it {location} coordinate [{place_coordinate[0]:.2f}, {place_coordinate[1]:.2f}]."
         print(message)
 
         thread_oral = self.environment().oralcom_call_text2speech_async(message)
@@ -238,8 +242,7 @@ class Robot(RobotAPI):
         if location is not None and location is not Location.NONE:
             obj_where_to_place = self._get_nearest_object(None, place_coordinate)
             if obj_where_to_place is None:
-                place_pose = PoseObjectPNP(place_coordinate[0], place_coordinate[1], 0.09,  # 0.068,
-                                           0.0, 1.57, 0.0)
+                place_pose = PoseObjectPNP(place_coordinate[0], place_coordinate[1], 0.09, 0.0, 1.57, 0.0)  # 0.068,
             else:
                 place_pose = obj_where_to_place.pose_center()
         else:
@@ -247,8 +250,7 @@ class Robot(RobotAPI):
             # funkt so in der Simulation
             # TODO: die Zahl 0.068 kommt von Niryo Robot greifer. bei der Höhe des Greifers, schwebt der Greifer gerade
             # über den Workspace
-            place_pose = PoseObjectPNP(place_coordinate[0], place_coordinate[1], 0.09,  # 0.068,
-                                       0.0, 1.57, 0.0)
+            place_pose = PoseObjectPNP(place_coordinate[0], place_coordinate[1], 0.09, 0.0, 1.57, 0.0)  # 0.068,
             if self.verbose():
                 print("place_object:", place_pose)
 
@@ -286,7 +288,7 @@ class Robot(RobotAPI):
             elif location is Location.NONE or location is None:
                 pass  # I do not have to do anything as the given location is where to place the object
             else:
-                print('unknown location!!!!!!!!!!!', location, type(location))
+                print("unknown location!!!!!!!!!!!", location, type(location))
 
             success = self._robot.robot_place_object(place_pose)
 
@@ -329,7 +331,7 @@ class Robot(RobotAPI):
         Returns:
             bool: True
         """
-        message = f'Calling push with {object_name} and {direction}'
+        message = f"Calling push with {object_name} and {direction}"
         print(message)
 
         thread_oral = self.environment().oralcom_call_text2speech_async(message)
@@ -443,7 +445,7 @@ class Robot(RobotAPI):
                     # Map the string to the corresponding Location enum
                     keyword_args["location"] = next(
                         (loc for loc in Location if loc.value == location_value),
-                        Location.NONE  # Default to Location.NONE if no match
+                        Location.NONE,  # Default to Location.NONE if no match
                     )
 
             return target_object, method, positional_args, keyword_args
@@ -501,92 +503,90 @@ class Robot(RobotAPI):
             self.environment().append_assistant_message2chat_history(f"Error executing command: {e}")
             return False
 
-    @log_start_end_cls()
-    def execute_python_code_not_safe(self, python_code: str) -> tuple[dict, bool]:
-        """
-        Execute the provided Python code within the context of the Robot instance.
-
-        Args:
-            python_code (str): The Python code to execute.
-
-        Returns:
-            tuple:
-            - dict: A dictionary of local variables after code execution.
-            - bool: success
-        """
-        self._robot_in_motion = True
-
-        message = f"Executing python code:\n{python_code}"
-
-        self.environment().append_assistant_message2chat_history(message)
-
-        # Execute the Python code in the context of this instance
-        local_vars = {"robot": self}  # Pass 'self' as 'robot' to make methods accessible in the code
-
-        if self.verbose():
-            print(message, local_vars)
-
-        try:
-            exec(python_code, globals(), local_vars)
-            success = True
-        except (Exception, RuntimeError, UnicodeDecodeError) as e:
-            self.environment().append_assistant_message2chat_history(
-                f"Error executing generated Python code: {e}")
-            # Log or re-raise with additional context
-            # raise RuntimeError(f"Error executing generated Python code: {e}")
-            success = False
-
-        self._robot_in_motion = False
-
-        return local_vars, success  # Return all local variables for further analysis if needed
-
-    @log_start_end_cls()
-    def execute_python_code(self, python_code: str) -> tuple[None, bool]:
-        """
-        Safely execute Python code using an isolated function.
-
-        Args:
-            python_code (str): The Python code to execute.
-
-        Returns:
-            tuple[None, bool]: (None, success)
-        """
-        self._robot_in_motion = True
-
-        # Indent the code properly for function encapsulation
-        indented_code = "\n".join(f"    {line}" for line in python_code.splitlines())
-
-        # Wrap the indented code in a function definition
-        wrapped_code = f"def generated_function():\n{indented_code}"
-
-        print(wrapped_code)
-
-        message = f"Executing python code:\n{wrapped_code}"
-        self.environment().append_assistant_message2chat_history(message)
-
-        if self.verbose():
-            print(message)
-
-        try:
-            # with self.environment().lock():
-            # Create an isolated function for the code
-            exec_globals = {"robot": self, "agent": self.environment().agent()}
-            exec_locals = {}
-            exec(wrapped_code, exec_globals, exec_locals)
-
-            # Call the generated function
-            exec_locals["generated_function"]()
-            success = True
-        except Exception as e:
-            self.environment().append_assistant_message2chat_history(
-                f"Error executing generated Python code: {e}")
-            # Get the full stack trace as a string
-            self.environment().append_assistant_message2chat_history(traceback.format_exc())
-            success = False
-        finally:
-            self._robot_in_motion = False
-
-        return None, success
+    # @log_start_end_cls()
+    # def execute_python_code_not_safe(self, python_code: str) -> tuple[dict, bool]:
+    #     """
+    #     Execute the provided Python code within the context of the Robot instance.
+    #
+    #     Args:
+    #         python_code (str): The Python code to execute.
+    #
+    #     Returns:
+    #         tuple:
+    #         - dict: A dictionary of local variables after code execution.
+    #         - bool: success
+    #     """
+    #     self._robot_in_motion = True
+    #
+    #     message = f"Executing python code:\n{python_code}"
+    #
+    #     self.environment().append_assistant_message2chat_history(message)
+    #
+    #     # Execute the Python code in the context of this instance
+    #     local_vars = {"robot": self}  # Pass 'self' as 'robot' to make methods accessible in the code
+    #
+    #     if self.verbose():
+    #         print(message, local_vars)
+    #
+    #     try:
+    #         exec(python_code, globals(), local_vars)
+    #         success = True
+    #     except (Exception, RuntimeError, UnicodeDecodeError) as e:
+    #         self.environment().append_assistant_message2chat_history(f"Error executing generated Python code: {e}")
+    #         # Log or re-raise with additional context
+    #         # raise RuntimeError(f"Error executing generated Python code: {e}")
+    #         success = False
+    #
+    #     self._robot_in_motion = False
+    #
+    #     return local_vars, success  # Return all local variables for further analysis if needed
+    #
+    # @log_start_end_cls()
+    # def execute_python_code(self, python_code: str) -> tuple[None, bool]:
+    #     """
+    #     Safely execute Python code using an isolated function.
+    #
+    #     Args:
+    #         python_code (str): The Python code to execute.
+    #
+    #     Returns:
+    #         tuple[None, bool]: (None, success)
+    #     """
+    #     self._robot_in_motion = True
+    #
+    #     # Indent the code properly for function encapsulation
+    #     indented_code = "\n".join(f"    {line}" for line in python_code.splitlines())
+    #
+    #     # Wrap the indented code in a function definition
+    #     wrapped_code = f"def generated_function():\n{indented_code}"
+    #
+    #     print(wrapped_code)
+    #
+    #     message = f"Executing python code:\n{wrapped_code}"
+    #     self.environment().append_assistant_message2chat_history(message)
+    #
+    #     if self.verbose():
+    #         print(message)
+    #
+    #     try:
+    #         # with self.environment().lock():
+    #         # Create an isolated function for the code
+    #         exec_globals = {"robot": self, "agent": self.environment().agent()}
+    #         exec_locals = {}
+    #         exec(wrapped_code, exec_globals, exec_locals)
+    #
+    #         # Call the generated function
+    #         exec_locals["generated_function"]()
+    #         success = True
+    #     except Exception as e:
+    #         self.environment().append_assistant_message2chat_history(f"Error executing generated Python code: {e}")
+    #         # Get the full stack trace as a string
+    #         self.environment().append_assistant_message2chat_history(traceback.format_exc())
+    #         success = False
+    #     finally:
+    #         self._robot_in_motion = False
+    #
+    #     return None, success
 
     # this is old, not used anymore
     # Function to parse and execute
@@ -664,18 +664,16 @@ class Robot(RobotAPI):
         print("detected_objects", detected_objects)
 
         if len(target_coords) == 0:  # then no target coords are given, true for push method
-            nearest_object = next((obj for obj in detected_objects if obj.label() == label),
-                                  None)
+            nearest_object = next((obj for obj in detected_objects if obj.label() == label), None)
             min_distance = 0
         else:
-            nearest_object, min_distance = (detected_objects.get_nearest_detected_object(target_coords, label))
+            nearest_object, min_distance = detected_objects.get_nearest_detected_object(target_coords, label)
 
         if nearest_object:
             print(f"Nearest object found: {nearest_object} with {min_distance}")
         else:
             # TODO: append_assistant_message2chat_history not used anymore
-            print(f"Object {label} does not exist: "
-                  f"{detected_objects.get_detected_objects_as_comma_separated_string()}")
+            print(f"Object {label} does not exist: " f"{detected_objects.get_detected_objects_as_comma_separated_string()}")
             # self.environment().append_assistant_message2chat_history(
             #    f"Object {label} does not exist: "
             #    f"{detected_objects.get_detected_objects_as_comma_separated_string()}")
@@ -699,8 +697,7 @@ class Robot(RobotAPI):
                 if answer != "yes":
                     return None
                 else:
-                    nearest_object = next(
-                        (obj for obj in detected_objects if obj.label() == nearest_object_name), None)
+                    nearest_object = next((obj for obj in detected_objects if obj.label() == nearest_object_name), None)
 
         # print("nearest_object", nearest_object)
 

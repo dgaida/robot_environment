@@ -5,6 +5,7 @@
 from ..common.logger import log_start_end_cls, pyniryo_v
 
 import cv2
+
 # from pyniryo2 import NiryoRobot
 from pyniryo import uncompress_image, undistort_image, extract_img_workspace
 
@@ -29,7 +30,7 @@ class NiryoFrameGrabber(FrameGrabber):
 
     # *** CONSTRUCTORS ***
     @log_start_end_cls()
-    def __init__(self, environment: "Environment", stream_name='robot_camera', verbose: bool = False):
+    def __init__(self, environment: "Environment", stream_name="robot_camera", verbose: bool = False):
         """
 
         Args:
@@ -123,25 +124,21 @@ class NiryoFrameGrabber(FrameGrabber):
 
         return self._current_frame
 
-    def publish_workspace_image(self, image: np.ndarray, workspace_id: str,
-                                robot_pose: Dict[str, float] = None):
+    def publish_workspace_image(self, image: np.ndarray, workspace_id: str, robot_pose: Dict[str, float] = None):
         """
         Publish workspace image with robot context
         Image size can vary based on workspace and robot position
         """
         metadata = {
-            'workspace_id': workspace_id,
-            'frame_id': self.frame_counter,
-            'robot_pose': robot_pose or {},
-            'image_source': 'robot_mounted_camera'
+            "workspace_id": workspace_id,
+            "frame_id": self.frame_counter,
+            "robot_pose": robot_pose or {},
+            "image_source": "robot_mounted_camera",
         }
 
         # Redis automatically handles the variable image size
         stream_id = self.streamer.publish_image(
-            image,
-            metadata=metadata,
-            compress_jpeg=True,
-            quality=85  # Good balance of quality/size for robotics
+            image, metadata=metadata, compress_jpeg=True, quality=85  # Good balance of quality/size for robotics
         )
 
         self.frame_counter += 1

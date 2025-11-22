@@ -1,6 +1,7 @@
 """
 Pytest configuration and shared fixtures for robot_environment tests
 """
+
 import pytest
 import sys
 from pathlib import Path
@@ -20,6 +21,7 @@ def test_data_dir():
 def sample_image():
     """Provide a sample test image"""
     import numpy as np
+
     # Create a simple test image (640x480, RGB)
     return np.random.randint(0, 255, (640, 480, 3), dtype=np.uint8)
 
@@ -28,6 +30,7 @@ def sample_image():
 def sample_mask():
     """Provide a sample segmentation mask"""
     import numpy as np
+
     # Create a simple binary mask
     mask = np.zeros((640, 480), dtype=np.uint8)
     mask[200:400, 200:400] = 255
@@ -36,18 +39,10 @@ def sample_mask():
 
 # Mark configuration for slow tests
 def pytest_configure(config):
-    config.addinivalue_line(
-        "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
-    )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "requires_robot: marks tests that require real robot hardware"
-    )
-    config.addinivalue_line(
-        "markers", "requires_redis: marks tests that require Redis server"
-    )
+    config.addinivalue_line("markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')")
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
+    config.addinivalue_line("markers", "requires_robot: marks tests that require real robot hardware")
+    config.addinivalue_line("markers", "requires_redis: marks tests that require Redis server")
 
 
 # Skip tests based on markers
@@ -57,7 +52,7 @@ def pytest_collection_modifyitems(config, items):
     skip_integration = pytest.mark.skip(reason="integration test")
     skip_robot = pytest.mark.skip(reason="requires robot hardware")
     skip_redis = pytest.mark.skip(reason="requires Redis server")
-    
+
     for item in items:
         if "slow" in item.keywords and not config.getoption("-m") == "slow":
             item.add_marker(skip_slow)
@@ -75,6 +70,7 @@ def pytest_collection_modifyitems(config, items):
 def mock_redis():
     """Provide a mock Redis client"""
     from unittest.mock import Mock
+
     redis_mock = Mock()
     redis_mock.ping.return_value = True
     return redis_mock
@@ -85,14 +81,15 @@ def clean_environment():
     """Ensure clean test environment"""
     import os
     import tempfile
-    
+
     # Create temporary directory for test outputs
     temp_dir = tempfile.mkdtemp()
     original_cwd = os.getcwd()
-    
+
     yield temp_dir
-    
+
     # Cleanup
     os.chdir(original_cwd)
     import shutil
+
     shutil.rmtree(temp_dir, ignore_errors=True)

@@ -18,6 +18,7 @@ def log_start_end(verbose: bool = True):
     Returns:
         function: Decorator for logging start and end of functions.
     """
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             if verbose:
@@ -26,7 +27,9 @@ def log_start_end(verbose: bool = True):
             if verbose:
                 print(f"END {func.__name__}")
             return result
+
         return wrapper
+
     return decorator
 
 
@@ -34,10 +37,11 @@ def log_start_end_cls():
     """
     Decorator to log the start and end of a method, including class name and line number.
     """
+
     def decorator(func):
         def wrapper(self, *args, **kwargs):
             # Get verbose attribute from the instance or class
-            verbose = getattr(self, '_verbose', False)
+            verbose = getattr(self, "_verbose", False)
             class_name = None
             func_line_number = None
 
@@ -53,5 +57,7 @@ def log_start_end_cls():
                 # Log end message
                 print(f"END {func.__name__} (Class: {class_name}, Line: {func_line_number})")
             return result
+
         return wrapper
+
     return decorator

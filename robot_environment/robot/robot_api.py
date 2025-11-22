@@ -64,8 +64,9 @@ class RobotAPI(ABC):
     # *** PUBLIC GET methods ***
 
     @abstractmethod
-    def pick_place_object(self, object_name: str, pick_coordinate: List, place_coordinate: List,
-                          location: Union["Location", str, None] = None) -> bool:
+    def pick_place_object(
+        self, object_name: str, pick_coordinate: List, place_coordinate: List, location: Union["Location", str, None] = None
+    ) -> bool:
         """
         Command the pick-and-place robot arm to pick a specific object and place it using its gripper.
         The gripper will move to the specified 'pick_coordinate' and pick the named object. Then it will move to the

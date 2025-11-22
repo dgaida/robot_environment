@@ -39,8 +39,17 @@ class Object(ObjectAPI):
 
     # *** CONSTRUCTORS ***
     @log_start_end_cls()
-    def __init__(self, label: str, u_min: int, v_min: int, u_max: int, v_max: int, mask_8u: np.ndarray,
-                 workspace: "Workspace", verbose: bool = False):
+    def __init__(
+        self,
+        label: str,
+        u_min: int,
+        v_min: int,
+        u_max: int,
+        v_max: int,
+        mask_8u: np.ndarray,
+        workspace: "Workspace",
+        verbose: bool = False,
+    ):
         """
         Initializes an Object instance.
 
@@ -101,10 +110,10 @@ class Object(ObjectAPI):
         self._pose_com, self._u_rel_com, self._v_rel_com = self._calc_pose_from_uv_coords(cx, cy)
 
     def __str__(self):
-        position = "x = {:.2f}, y = {:.2f}, z = {:.2f}".format(self._pose_com.x, self._pose_com.y,
-                                                               self._pose_com.z)
-        orientation = "roll = {:.3f}, pitch = {:.3f}, yaw = {:.3f}".format(self._pose_com.roll,
-                                                                           self._pose_com.pitch, self._pose_com.yaw)
+        position = "x = {:.2f}, y = {:.2f}, z = {:.2f}".format(self._pose_com.x, self._pose_com.y, self._pose_com.z)
+        orientation = "roll = {:.3f}, pitch = {:.3f}, yaw = {:.3f}".format(
+            self._pose_com.roll, self._pose_com.pitch, self._pose_com.yaw
+        )
         return self.label() + "\n" + position + "\n" + orientation
 
     def __repr__(self):
@@ -144,9 +153,9 @@ class Object(ObjectAPI):
         Returns:
             str: String containing detailed object information, line by line.
         """
-        return f"""- '{self.label()}' at world coordinates [{self.x_com():.2f}, {self.y_com():.2f}] with 
-    - width: {self.width_m():.2f} meters, 
-    - height: {self.height_m():.2f} meters and 
+        return f"""- '{self.label()}' at world coordinates [{self.x_com():.2f}, {self.y_com():.2f}] with
+    - width: {self.width_m():.2f} meters,
+    - height: {self.height_m():.2f} meters and
     - size: {self.size_m2() * 10000:.2f} square centimeters."""
 
     def as_string_for_chat_window(self) -> str:
@@ -171,56 +180,45 @@ class Object(ObjectAPI):
             Dict[str, Any]: Dictionary representation of the object
         """
         return {
-            'id': self.generate_object_id(),  # Generate unique ID
-            'label': self._label,
-            'workspace_id': self.get_workspace_id(),
-            'timestamp': time.time(),
-
+            "id": self.generate_object_id(),  # Generate unique ID
+            "label": self._label,
+            "workspace_id": self.get_workspace_id(),
+            "timestamp": time.time(),
             # Position information
-            'position': {
-                'center_of_mass': {
-                    'x': float(self.x_com()),
-                    'y': float(self.y_com()),
-                    'z': float(self._pose_com.z) if hasattr(self._pose_com, 'z') else 0.0
+            "position": {
+                "center_of_mass": {
+                    "x": float(self.x_com()),
+                    "y": float(self.y_com()),
+                    "z": float(self._pose_com.z) if hasattr(self._pose_com, "z") else 0.0,
                 },
-                'center': {
-                    'x': float(self.x_center()),
-                    'y': float(self.y_center()),
-                    'z': float(self._pose_center.z) if hasattr(self._pose_center, 'z') else 0.0
-                }
+                "center": {
+                    "x": float(self.x_center()),
+                    "y": float(self.y_center()),
+                    "z": float(self._pose_center.z) if hasattr(self._pose_center, "z") else 0.0,
+                },
             },
-
             # Relative coordinates in image
-            'image_coordinates': {
-                'center_rel': {
-                    'u': float(self._u_rel_o),
-                    'v': float(self._v_rel_o)
+            "image_coordinates": {
+                "center_rel": {"u": float(self._u_rel_o), "v": float(self._v_rel_o)},
+                "center_of_mass_rel": {"u": float(self._u_rel_com), "v": float(self._v_rel_com)},
+                "bounding_box_rel": {
+                    "u_min": float(self._u_rel_min),
+                    "v_min": float(self._v_rel_min),
+                    "u_max": float(self._u_rel_max),
+                    "v_max": float(self._v_rel_max),
                 },
-                'center_of_mass_rel': {
-                    'u': float(self._u_rel_com),
-                    'v': float(self._v_rel_com)
-                },
-                'bounding_box_rel': {
-                    'u_min': float(self._u_rel_min),
-                    'v_min': float(self._v_rel_min),
-                    'u_max': float(self._u_rel_max),
-                    'v_max': float(self._v_rel_max)
-                }
             },
-
             # Physical dimensions
-            'dimensions': {
-                'width_m': float(self._width_m),
-                'height_m': float(self._height_m),
-                'size_m2': float(self._size_m2)
+            "dimensions": {
+                "width_m": float(self._width_m),
+                "height_m": float(self._height_m),
+                "size_m2": float(self._size_m2),
             },
-
             # Orientation
-            'gripper_rotation': float(self._gripper_rotation),
-
+            "gripper_rotation": float(self._gripper_rotation),
             # Additional metadata
-            'confidence': getattr(self, '_confidence', 1.0),  # If you have confidence
-            'class_id': getattr(self, '_class_id', 0)  # If you have class ID
+            "confidence": getattr(self, "_confidence", 1.0),  # If you have confidence
+            "class_id": getattr(self, "_class_id", 0),  # If you have class ID
         }
 
     def to_json(self) -> str:
@@ -240,6 +238,7 @@ class Object(ObjectAPI):
             str: Unique object identifier
         """
         import hashlib
+
         # import uuid
 
         # Option 1: Hash-based ID (deterministic)
@@ -250,7 +249,7 @@ class Object(ObjectAPI):
         # return str(uuid.uuid4())[:8]
 
     @staticmethod
-    def _deserialize_mask(mask_data: str, shape: Union[tuple, list], dtype: str = 'uint8') -> np.ndarray:
+    def _deserialize_mask(mask_data: str, shape: Union[tuple, list], dtype: str = "uint8") -> np.ndarray:
         """
         Deserialize base64 string back to numpy mask.
 
@@ -271,7 +270,7 @@ class Object(ObjectAPI):
             if isinstance(shape, list):
                 shape = tuple(shape)
 
-            mask_bytes = base64.b64decode(mask_data.encode('utf-8'))
+            mask_bytes = base64.b64decode(mask_data.encode("utf-8"))
             mask = np.frombuffer(mask_bytes, dtype=np.dtype(dtype))
             mask = mask.reshape(shape)
             return mask
@@ -301,40 +300,39 @@ class Object(ObjectAPI):
             # u_max = int(bbox_rel['u_max'] * img_shape[0])
             # v_max = int(bbox_rel['v_max'] * img_shape[1])
 
-            bbox = data['bbox']
+            bbox = data["bbox"]
 
-            u_min = bbox['x_min']
-            v_min = bbox['y_min']
-            u_max = bbox['x_max']
-            v_max = bbox['y_max']
+            u_min = bbox["x_min"]
+            v_min = bbox["y_min"]
+            u_max = bbox["x_max"]
+            v_max = bbox["y_max"]
 
             # print(data)
 
-            if data['has_mask'] and 'mask_shape' in data:
+            if data["has_mask"] and "mask_shape" in data:
                 # print(data["mask_shape"], tuple(data["mask_shape"]))
-                mask_8u = Object._deserialize_mask(
-                    data["mask_data"], data["mask_shape"], data["mask_dtype"])
+                mask_8u = Object._deserialize_mask(data["mask_data"], data["mask_shape"], data["mask_dtype"])
             else:
                 mask_8u = None
 
             # Create object without mask (mask will be None)
             obj = cls(
-                label=data['label'],
+                label=data["label"],
                 u_min=u_min,
                 v_min=v_min,
                 u_max=u_max,
                 v_max=v_max,
                 mask_8u=mask_8u,  # No mask available from JSON
-                workspace=workspace
+                workspace=workspace,
             )
 
             # print(obj.label(), obj.uv_rel_o(), obj.x_com(), obj.y_com(), obj.pose_com(), obj.pose_center())
 
             # Restore additional properties if needed
-            if 'confidence' in data:
-                obj._confidence = data['confidence']
-            if 'class_id' in data:
-                obj._class_id = data['class_id']
+            if "confidence" in data:
+                obj._confidence = data["confidence"]
+            if "class_id" in data:
+                obj._class_id = data["class_id"]
 
             return obj
 
@@ -458,9 +456,7 @@ class Object(ObjectAPI):
         """
         u_rel, v_rel = self._calc_rel_coordinates(u, v)
 
-        pose = self._workspace.transform_camera2world_coords(self._workspace.id(),
-                                                             u_rel, v_rel,
-                                                             self._gripper_rotation)
+        pose = self._workspace.transform_camera2world_coords(self._workspace.id(), u_rel, v_rel, self._gripper_rotation)
 
         return pose, u_rel, v_rel
 
@@ -815,7 +811,7 @@ class Object(ObjectAPI):
     def verbose(self) -> bool:
         """
 
-        Returns: 
+        Returns:
             True, if verbose is on, else False
         """
         return self._verbose

@@ -25,12 +25,7 @@ from .workspaces import Workspaces
 from .niryo_workspace import NiryoWorkspace
 from .niryo_workspaces import NiryoWorkspaces
 
-__all__ = [
-    "Workspace",
-    "Workspaces",
-    "NiryoWorkspace",
-    "NiryoWorkspaces"
-]
+__all__ = ["Workspace", "Workspaces", "NiryoWorkspace", "NiryoWorkspaces"]
 
 __version__ = "0.1.0"
 __author__ = "Daniel Gaida"
