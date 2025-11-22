@@ -4,7 +4,7 @@ A comprehensive Python framework for robotic pick-and-place operations with visi
 
 ## Badges
 
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code Quality](https://github.com/dgaida/robot_environment/actions/workflows/lint.yml/badge.svg)](https://github.com/dgaida/robot_environment/actions/workflows/lint.yml)
 [![Tests](https://github.com/dgaida/robot_environment/actions/workflows/tests.yml/badge.svg)](https://github.com/dgaida/robot_environment/actions/workflows/tests.yml)

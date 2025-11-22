@@ -239,7 +239,7 @@ class Objects(List):
         """
         sorted_objs = Objects(sorted(self, key=lambda obj: obj.size_m2(), reverse=not ascending))
 
-        return Object.objects_to_dict_list(sorted_objs) if serializable else sorted_objs
+        return Objects.objects_to_dict_list(sorted_objs) if serializable else sorted_objs
 
     # *** PUBLIC methods ***
 
