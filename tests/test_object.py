@@ -160,8 +160,8 @@ class TestObject:
 
         width, height = Object.calc_width_height(pose_ul, pose_lr)
 
-        assert width == 0.3  # y_ul - y_lr
-        assert height == 0.2  # x_ul - x_lr
+        assert abs(width - 0.3) < 0.0001  # y_ul - y_lr
+        assert abs(height - 0.2) < 0.0001  # x_ul - x_lr
 
     def test_invalid_mask_dtype(self, mock_workspace):
         """Test that invalid mask dtype raises error"""

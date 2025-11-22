@@ -40,9 +40,9 @@ class TestPoseObjectPNP:
         assert result.x == 1.5
         assert result.y == 2.5
         assert result.z == 3.5
-        assert result.roll == 0.15
-        assert result.pitch == 0.25
-        assert result.yaw == 0.35
+        assert abs(result.roll - 0.15) < 0.00001
+        assert abs(result.pitch - 0.25) < 0.00001
+        assert abs(result.yaw - 0.35) < 0.00001
 
     def test_subtraction(self):
         """Test pose subtraction"""
@@ -199,9 +199,9 @@ class TestPoseObjectPNP:
         pose = PoseObjectPNP(1.234, 2.345, 3.456, 0.1, 0.2, 0.3)
         str_repr = str(pose)
 
-        assert "1.23" in str_repr
-        assert "2.35" in str_repr
-        assert "3.46" in str_repr
+        assert "1.234" in str_repr
+        assert "2.345" in str_repr
+        assert "3.456" in str_repr
 
     def test_repr_equals_str(self):
         """Test that repr equals str"""

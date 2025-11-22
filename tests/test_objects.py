@@ -61,8 +61,8 @@ class TestObjects:
         """Test getting object by label and coordinate"""
         objects = Objects(sample_objects)
 
-        # Get object close to first object's position
-        obj = objects.get_detected_object([0.2, 0.0], label="pencil")
+        # Get object close to first object's position [0.16, -0.07]
+        obj = objects.get_detected_object([0.15, -0.06], label="pencil")
 
         assert obj is not None
         assert obj.label() == "pencil"
@@ -255,7 +255,8 @@ class TestObjects:
         objects = Objects(sample_objects)
 
         # Test get_detected_object with serializable=True
-        obj_dict = objects.get_detected_object([0.2, 0.0], label="pencil", serializable=True)
+        # the pencil is at [0.16, -0.07]
+        obj_dict = objects.get_detected_object([0.17, -0.06], label="pencil", serializable=True)
         assert isinstance(obj_dict, dict)
 
         # Test get_largest_detected_object with serializable=True
