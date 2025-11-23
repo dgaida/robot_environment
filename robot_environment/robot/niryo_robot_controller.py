@@ -5,7 +5,7 @@
 from ..common.logger import log_start_end_cls, pyniryo_v
 
 from .robot_controller import RobotController
-from robot_workspaces import PoseObjectPNP
+from robot_workspace import PoseObjectPNP
 
 import threading
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
@@ -22,8 +22,8 @@ from pyniryo.api.exceptions import TcpCommandException  # RobotCommandException
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from robot_workspaces import PoseObjectPNP
-    from robot_workspaces import Object
+    from robot_workspace import PoseObjectPNP
+    from robot_workspace import Object
     from .robot import Robot
 
 

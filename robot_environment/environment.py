@@ -10,8 +10,8 @@ import numpy as np
 import time
 import cv2
 
-from robot_workspaces import Workspaces
-from robot_workspaces import NiryoWorkspaces
+from robot_workspace import Workspaces
+from robot_workspace import NiryoWorkspaces
 from .camera.framegrabber import FrameGrabber
 from .camera.niryo_framegrabber import NiryoFrameGrabber
 from .camera.widowx_framegrabber import WidowXFrameGrabber
@@ -20,8 +20,8 @@ from .robot.niryo_robot_controller import NiryoRobotController
 from .robot.widowx_robot_controller import WidowXRobotController
 
 from text2speech import Text2Speech
-from robot_workspaces import Object
-from robot_workspaces import Objects
+from robot_workspace import Object
+from robot_workspace import Objects
 from redis_robot_comm import RedisMessageBroker
 
 from vision_detect_segment import VisualCortex
@@ -30,12 +30,12 @@ from vision_detect_segment import get_default_config
 from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
-    from robot_workspaces import Workspace
-    from robot_workspacess import Workspaces
+    from robot_workspace import Workspace
+    from robot_workspace import Workspaces
     from .camera.framegrabber import FrameGrabber
     from .robot.robot import Robot
     from .robot.robot_controller import RobotController
-    from robot_workspaces import PoseObjectPNP
+    from robot_workspace import PoseObjectPNP
 
 
 class Environment:
@@ -95,10 +95,10 @@ class Environment:
 
         self._obj_position_memory = Objects()
 
-        config = get_default_config("owlv2")
+        det_mdl = "owlv2"  # "yoloe-11l"  # owlv2
+        config = get_default_config(det_mdl)
 
-        # owlv2
-        self._visual_cortex = VisualCortex(objdetect_model_id="yoloe-11s", device="auto", verbose=verbose, config=config)
+        self._visual_cortex = VisualCortex(objdetect_model_id=det_mdl, device="auto", verbose=verbose, config=config)
 
         if start_camera_thread:
             if verbose:
