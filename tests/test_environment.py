@@ -359,11 +359,12 @@ class TestEnvironmentCameraUpdates:
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
         # Create mock object
-        Mock()  # mock_workspace =
         mock_obj = Mock(spec=Object)
         mock_obj.label.return_value = "pencil"
         mock_obj.x_com.return_value = 0.25
         mock_obj.y_com.return_value = 0.05
+        # Make xy_com() return a tuple
+        mock_obj.xy_com.return_value = (0.25, 0.05)
 
         detected = Objects([mock_obj])
 
@@ -380,6 +381,7 @@ class TestEnvironmentCameraUpdates:
         mock_obj.label.return_value = "pencil"
         mock_obj.x_com.return_value = 0.25
         mock_obj.y_com.return_value = 0.05
+        mock_obj.xy_com.return_value = (0.25, 0.05)
 
         detected = Objects([mock_obj])
 
@@ -416,7 +418,9 @@ class TestEnvironmentLargestFreeSpace:
         mock_ws = Mock()
         mock_ws.xy_ul_wc.return_value = PoseObjectPNP(0.4, 0.15, 0.0)
         mock_ws.xy_lr_wc.return_value = PoseObjectPNP(0.1, -0.15, 0.0)
-        env._workspaces.get_workspace.return_value = mock_ws
+
+        # Access the workspaces properly through the mock
+        mock_dependencies["workspaces"].return_value.get_workspace.return_value = mock_ws
 
         # Mock detected objects
         env._obj_position_memory = Objects()
@@ -438,7 +442,9 @@ class TestEnvironmentLargestFreeSpace:
         mock_ws = Mock()
         mock_ws.xy_ul_wc.return_value = PoseObjectPNP(0.4, 0.15, 0.0)
         mock_ws.xy_lr_wc.return_value = PoseObjectPNP(0.1, -0.15, 0.0)
-        env._workspaces.get_workspace.return_value = mock_ws
+
+        # Access the workspaces properly through the mock
+        mock_dependencies["workspaces"].return_value.get_workspace.return_value = mock_ws
 
         # Add mock object
         mock_obj = Mock(spec=Object)

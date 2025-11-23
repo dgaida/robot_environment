@@ -18,8 +18,12 @@ def mock_environment():
 
     # Create mock robot controller
     robot_controller = Mock(spec=NiryoRobotController)
-    robot_controller.lock.return_value.__enter__ = Mock()
-    robot_controller.lock.return_value.__exit__ = Mock()
+
+    # FIX: Properly mock the lock context manager
+    mock_lock = Mock()
+    mock_lock.__enter__ = Mock(return_value=None)
+    mock_lock.__exit__ = Mock(return_value=None)
+    robot_controller.lock.return_value = mock_lock
 
     # Mock the underlying robot
     mock_robot = Mock()
@@ -152,6 +156,10 @@ class TestNiryoFrameGrabber:
         # Mock robot to raise UnicodeDecodeError
         robot_ctrl = mock_environment.get_robot_controller()
         robot_ctrl.robot_ctrl().get_img_compressed.side_effect = UnicodeDecodeError("utf-8", b"\x00\x00", 0, 1, "invalid")
+
+        # Need to also mock lock context manager
+        robot_ctrl.lock.return_value.__enter__ = Mock(return_value=None)
+        robot_ctrl.lock.return_value.__exit__ = Mock(return_value=None)
 
         frame = framegrabber.get_current_frame()
 
