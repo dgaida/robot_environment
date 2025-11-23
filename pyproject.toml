@@ -43,6 +43,7 @@ dependencies = [
     "numpy>=1.20.0",
     "opencv-python>=4.5.0",
     "torch>=2.0.0",
+    "robot_workspace @ git+https://github.com/dgaida/robot_workspace.git"
 ]
 
 [project.optional-dependencies]

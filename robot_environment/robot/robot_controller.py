@@ -9,8 +9,8 @@ import threading
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..objects.object import Object
-    from ..objects.pose_object import PoseObjectPNP
+    from robot_workspace import Object
+    from robot_workspace import PoseObjectPNP
     from .robot import Robot
 
 

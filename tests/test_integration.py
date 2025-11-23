@@ -5,11 +5,11 @@ Integration tests for robot_environment package
 import pytest
 import numpy as np
 from unittest.mock import Mock
-from robot_environment.objects.object import Object
-from robot_environment.objects.objects import Objects
-from robot_environment.objects.pose_object import PoseObjectPNP
-from robot_environment.workspaces.niryo_workspace import NiryoWorkspace
-from robot_environment.robot.robot_api import Location
+from robot_workspace import Object
+from robot_workspace import Objects
+from robot_workspace import PoseObjectPNP
+from robot_workspace import NiryoWorkspace
+from robot_workspace import Location
 
 
 @pytest.fixture

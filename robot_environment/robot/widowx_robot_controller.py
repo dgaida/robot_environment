@@ -6,8 +6,8 @@ from .robot_controller import RobotController
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..objects.pose_object import PoseObjectPNP
-    from ..objects.object import Object
+    from robot_workspace import PoseObjectPNP
+    from robot_workspace import Object
     from .robot import Robot
 
 

@@ -9,16 +9,16 @@ from .robot_api import RobotAPI, Location
 from .niryo_robot_controller import NiryoRobotController
 
 # from redis_robot_comm import RedisMessageBroker
-from ..objects.pose_object import PoseObjectPNP
-from ..objects.object import Object
-from ..objects.objects import Objects
+from robot_workspaces import PoseObjectPNP
+from robot_workspaces import Object
+from robot_workspaces import Objects
 
 from typing import TYPE_CHECKING, List, Optional, Union
 
 if TYPE_CHECKING:
     from ..environment import Environment
     from .robot_controller import RobotController
-    from ..objects.object import Object
+    from robot_workspaces import Object
 
 import math
 import re

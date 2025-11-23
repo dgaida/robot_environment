@@ -7,7 +7,7 @@ including Niryo Ned2 and WidowX.
 
 # from .robot import Robot
 from .robot_controller import RobotController
-from .robot_api import RobotAPI, Location
+from .robot_api import RobotAPI
 
 try:
     from .niryo_robot_controller import NiryoRobotController
@@ -20,10 +20,9 @@ except ImportError:
     WidowXRobotController = None
 
 __all__ = [
-    "Robot",
+    # "Robot",
     "RobotController",
     "RobotAPI",
-    "Location",
     "NiryoRobotController",
     "WidowXRobotController",
 ]

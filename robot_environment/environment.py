@@ -10,8 +10,8 @@ import numpy as np
 import time
 import cv2
 
-from .workspaces.workspaces import Workspaces
-from .workspaces.niryo_workspaces import NiryoWorkspaces
+from robot_workspaces import Workspaces
+from robot_workspaces import NiryoWorkspaces
 from .camera.framegrabber import FrameGrabber
 from .camera.niryo_framegrabber import NiryoFrameGrabber
 from .camera.widowx_framegrabber import WidowXFrameGrabber
@@ -20,8 +20,8 @@ from .robot.niryo_robot_controller import NiryoRobotController
 from .robot.widowx_robot_controller import WidowXRobotController
 
 from text2speech import Text2Speech
-from .objects.object import Object
-from .objects.objects import Objects
+from robot_workspaces import Object
+from robot_workspaces import Objects
 from redis_robot_comm import RedisMessageBroker
 
 from vision_detect_segment import VisualCortex
@@ -30,12 +30,12 @@ from vision_detect_segment import get_default_config
 from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
-    from .workspaces.workspace import Workspace
-    from .workspaces.workspaces import Workspaces
+    from robot_workspaces import Workspace
+    from robot_workspacess import Workspaces
     from .camera.framegrabber import FrameGrabber
     from .robot.robot import Robot
     from .robot.robot_controller import RobotController
-    from .objects.pose_object import PoseObjectPNP
+    from robot_workspaces import PoseObjectPNP
 
 
 class Environment:

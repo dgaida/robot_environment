@@ -7,7 +7,7 @@ import numpy as np
 from unittest.mock import Mock, patch
 from robot_environment.camera.niryo_framegrabber import NiryoFrameGrabber
 from robot_environment.robot.niryo_robot_controller import NiryoRobotController
-from robot_environment.objects.pose_object import PoseObjectPNP
+from robot_workspace import PoseObjectPNP
 
 
 @pytest.fixture

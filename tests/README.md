@@ -9,10 +9,6 @@ tests/
 ├── __init__.py
 ├── conftest.py              # Pytest configuration and shared fixtures
 ├── README.md               # This file
-├── test_pose_object.py     # Unit tests for PoseObjectPNP class
-├── test_object.py          # Unit tests for Object class
-├── test_objects.py         # Unit tests for Objects collection
-├── test_workspace.py       # Unit tests for Workspace classes
 ├── test_robot_api.py       # Unit tests for Robot API
 └── test_integration.py     # Integration tests
 ```

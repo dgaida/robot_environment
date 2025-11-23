@@ -6,9 +6,9 @@ import pytest
 import numpy as np
 from unittest.mock import Mock, patch
 from robot_environment.environment import Environment
-from robot_environment.objects.objects import Objects
-from robot_environment.objects.object import Object
-from robot_environment.objects.pose_object import PoseObjectPNP
+from robot_workspace import Objects
+from robot_workspace import Object
+from robot_workspace import PoseObjectPNP
 
 
 @pytest.fixture

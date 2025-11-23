@@ -10,7 +10,7 @@ import cv2
 from pyniryo import uncompress_image, undistort_image, extract_img_workspace
 
 from ..robot.niryo_robot_controller import NiryoRobotController
-from ..objects.pose_object import PoseObjectPNP
+from robot_workspace import PoseObjectPNP
 
 from redis_robot_comm import RedisImageStreamer
 

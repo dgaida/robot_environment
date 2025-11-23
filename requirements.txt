@@ -1,5 +1,6 @@
 pyniryo2
 pyniryo
+git+https://github.com/dgaida/robot_workspace.git
 git+https://github.com/dgaida/text2speech.git
 git+https://github.com/dgaida/redis_robot_comm.git
 git+https://github.com/dgaida/vision_detect_segment.git
