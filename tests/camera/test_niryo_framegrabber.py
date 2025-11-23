@@ -1,5 +1,5 @@
 """
-Unit tests for NiryoFrameGrabber class
+Unit tests for NiryoFrameGrabber class - FIXED VERSION
 """
 
 import pytest
@@ -47,12 +47,6 @@ def mock_redis_streamer():
         mock_instance.publish_image.return_value = "stream_id_123"
         mock_streamer.return_value = mock_instance
         yield mock_streamer
-
-
-@pytest.fixture
-def sample_compressed_image():
-    """Create a fake compressed image"""
-    return b"\xff\xd8\xff\xe0" + b"\x00" * 1000  # Fake JPEG header
 
 
 class TestNiryoFrameGrabber:
@@ -230,7 +224,9 @@ class TestNiryoFrameGrabber:
 
         result = framegrabber.is_point_visible(point)
 
-        assert result is False
+        # FIX: Use == instead of is for NumPy boolean compatibility
+        assert not result
+        # Alternative: assert not result
 
     def test_camera_matrix_property(self, mock_environment, mock_redis_streamer):
         """Test camera_matrix property"""

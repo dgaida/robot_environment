@@ -243,14 +243,19 @@ class TestRobot:
         assert success is True
 
     def test_push_object(self, mock_environment, mock_robot_controller):
-        """Test pushing an object"""
+        """Test pushing an object - FIXED"""
         robot = Robot(mock_environment, use_simulation=False, robot_id="niryo")
+
+        # FIX: Properly mock Object with all required numeric methods
+        from robot_workspace import PoseObjectPNP
 
         mock_obj = Mock(spec=Object)
         mock_obj.label.return_value = "cube"
         mock_obj.pose_com.return_value = PoseObjectPNP(0.25, 0.05, 0.01)
-        mock_obj.width_m.return_value = 0.05
-        mock_obj.height_m.return_value = 0.05
+        mock_obj.width_m.return_value = 0.05  # MUST return float
+        mock_obj.height_m.return_value = 0.05  # MUST return float
+        mock_obj.x_com.return_value = 0.25  # MUST return float
+        mock_obj.y_com.return_value = 0.05  # MUST return float
 
         with patch.object(robot, "get_detected_objects", return_value=Objects([mock_obj])):
             success = robot.push_object("cube", [0.25, 0.05], "right", 50.0)
@@ -267,6 +272,8 @@ class TestRobot:
         mock_obj.pose_com.return_value = PoseObjectPNP(0.25, 0.05, 0.01)
         mock_obj.width_m.return_value = 0.05
         mock_obj.height_m.return_value = 0.05
+        mock_obj.x_com.return_value = 0.25  # MUST return float
+        mock_obj.y_com.return_value = 0.05  # MUST return float
 
         directions = ["up", "down", "left", "right"]
 
@@ -437,14 +444,17 @@ class TestRobotGetNearestObject:
     """Test _get_nearest_object private method"""
 
     def test_get_nearest_object_found(self, mock_environment, mock_robot_controller):
-        """Test getting nearest object when it exists"""
+        """Test getting nearest object when it exists - FIXED"""
         robot = Robot(mock_environment, use_simulation=False, robot_id="niryo")
 
+        # FIX: Properly mock Object with numeric return values
         mock_obj = Mock(spec=Object)
         mock_obj.label.return_value = "pencil"
-        mock_obj.x_com.return_value = 0.25
-        mock_obj.y_com.return_value = 0.05
+        mock_obj.x_com.return_value = 0.25  # MUST return float
+        mock_obj.y_com.return_value = 0.05  # MUST return float
+        mock_obj.coordinate.return_value = [0.25, 0.05]
 
+        # FIX: Mock get_detected_objects to return Objects collection
         with patch.object(robot, "get_detected_objects", return_value=Objects([mock_obj])):
             obj = robot._get_nearest_object("pencil", [0.26, 0.06])
 

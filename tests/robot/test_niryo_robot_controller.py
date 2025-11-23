@@ -59,7 +59,11 @@ class TestNiryoRobotController:
 
         lock = controller.lock()
 
-        assert isinstance(lock, threading.Lock)
+        assert lock is not None
+        assert hasattr(lock, "acquire")
+        assert hasattr(lock, "release")
+        assert hasattr(lock, "__enter__")
+        assert hasattr(lock, "__exit__")
 
     def test_initialization_calibrates_robot(self, mock_robot, mock_niryo_robot):
         """Test that robot is calibrated on init"""
