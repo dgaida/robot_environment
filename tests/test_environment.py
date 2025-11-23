@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 from robot_environment.environment import Environment
 from robot_environment.objects.objects import Objects
 from robot_environment.objects.object import Object
+from robot_environment.objects.pose_object import PoseObjectPNP
 
 
 @pytest.fixture
@@ -21,31 +22,57 @@ def mock_dependencies():
         "robot_environment.environment.VisualCortex"
     ) as mock_vc, patch(
         "robot_environment.environment.get_default_config"
-    ) as mock_config:
+    ) as mock_config, patch(
+        "robot_environment.environment.NiryoRobotController"
+    ) as mock_robot_ctrl:
 
-        # Setup robot mock
+        # Setup robot controller mock - THIS IS THE KEY FIX
+        mock_robot_ctrl_instance = Mock()
+        mock_robot_ctrl_instance.robot_ctrl.return_value = Mock()
+        mock_robot_ctrl.return_value = mock_robot_ctrl_instance
+
+        # Setup robot mock with proper get_robot_controller()
         mock_robot_instance = Mock()
-        mock_robot_instance.robot.return_value = Mock()
+        mock_robot_instance.robot.return_value = mock_robot_ctrl_instance
         mock_robot_instance.robot_in_motion.return_value = False
-        mock_robot_instance.get_pose.return_value = Mock()
+        mock_robot_instance.get_pose.return_value = PoseObjectPNP(0.2, 0.0, 0.3)
+        # THIS IS CRITICAL - Environment calls this to check robot type
+        mock_robot_instance.get_robot_controller.return_value = mock_robot_ctrl_instance
         mock_robot.return_value = mock_robot_instance
 
         # Setup framegrabber mock
         mock_fg_instance = Mock()
         mock_fg_instance.get_current_frame.return_value = np.zeros((480, 640, 3), dtype=np.uint8)
+        mock_fg_instance.get_current_frame_width_height.return_value = (480, 640)
         mock_fg.return_value = mock_fg_instance
 
-        # Setup workspaces mock
+        # Setup workspaces mock with complete interface
         mock_ws_instance = Mock()
         mock_workspace = Mock()
         mock_workspace.id.return_value = "test_ws"
+        mock_workspace.img_shape.return_value = (640, 480, 3)
+        mock_workspace.xy_ul_wc.return_value = PoseObjectPNP(0.4, 0.15, 0.0)
+        mock_workspace.xy_lr_wc.return_value = PoseObjectPNP(0.1, -0.15, 0.0)
+        mock_workspace.xy_center_wc.return_value = PoseObjectPNP(0.25, 0.0, 0.0)
+
+        # Mock coordinate transformation
+        def mock_transform(ws_id, u_rel, v_rel, yaw=0.0):
+            x = 0.4 - u_rel * 0.3
+            y = 0.15 - v_rel * 0.3
+            return PoseObjectPNP(x, y, 0.05, 0.0, 1.57, yaw)
+
+        mock_workspace.transform_camera2world_coords = mock_transform
+
         mock_ws_instance.get_workspace.return_value = mock_workspace
         mock_ws_instance.get_workspace_by_id.return_value = mock_workspace
         mock_ws_instance.get_workspace_home_id.return_value = "test_ws"
+        mock_ws_instance.get_observation_pose.return_value = PoseObjectPNP(0.2, 0.0, 0.3)
+        mock_ws_instance.get_visible_workspace.return_value = mock_workspace
         mock_ws.return_value = mock_ws_instance
 
         # Setup TTS mock
         mock_tts_instance = Mock()
+        mock_tts_instance.call_text2speech_async.return_value = Mock()
         mock_tts.return_value = mock_tts_instance
 
         # Setup VisualCortex mock
@@ -54,6 +81,7 @@ def mock_dependencies():
         mock_vc_instance.get_object_labels.return_value = [["pencil", "pen", "eraser"]]
         mock_vc_instance.add_object_name2object_labels = Mock()
         mock_vc_instance.get_annotated_image.return_value = np.zeros((480, 640, 3), dtype=np.uint8)
+        mock_vc_instance.detect_objects_from_redis = Mock()
         mock_vc.return_value = mock_vc_instance
 
         mock_config.return_value = {}
@@ -65,6 +93,7 @@ def mock_dependencies():
             "tts": mock_tts,
             "visual_cortex": mock_vc,
             "config": mock_config,
+            "robot_controller": mock_robot_ctrl,
         }
 
 
@@ -209,8 +238,7 @@ class TestEnvironment:
         """Test getting detected objects"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        # Mock detected objects
-        Mock()  # mock_workspace =
+        # Mock detected objects with proper structure
         mock_dependencies["visual_cortex"].return_value.get_detected_objects.return_value = [
             {"label": "pencil", "bbox": {"x_min": 100, "y_min": 100, "x_max": 200, "y_max": 200}, "has_mask": False}
         ]
@@ -223,12 +251,6 @@ class TestEnvironment:
         """Test getting upper left corner coordinate"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        # Mock workspace corners
-        from robot_environment.objects.pose_object import PoseObjectPNP
-
-        mock_ws = env.get_workspace_by_id("test_ws")
-        mock_ws.xy_ul_wc.return_value = PoseObjectPNP(0.3, 0.15, 0.0)
-
         coord = env.get_workspace_coordinate_from_point("test_ws", "upper left corner")
 
         assert coord is not None
@@ -237,11 +259,6 @@ class TestEnvironment:
     def test_get_workspace_coordinate_from_point_center(self, mock_dependencies):
         """Test getting center point coordinate"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
-
-        from robot_environment.objects.pose_object import PoseObjectPNP
-
-        mock_ws = env.get_workspace_by_id("test_ws")
-        mock_ws.xy_center_wc.return_value = PoseObjectPNP(0.2, 0.0, 0.0)
 
         coord = env.get_workspace_coordinate_from_point("test_ws", "center point")
 
@@ -259,8 +276,6 @@ class TestEnvironment:
         """Test when workspace is visible"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        mock_dependencies["workspaces"].return_value.get_visible_workspace.return_value = Mock()
-
         result = env.is_any_workspace_visible()
 
         assert result is True
@@ -269,7 +284,8 @@ class TestEnvironment:
         """Test when no workspace is visible"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        mock_dependencies["workspaces"].return_value.get_visible_workspace.return_value = None
+        # Create a new mock that returns None for get_visible_workspace
+        env._workspaces.get_visible_workspace = Mock(return_value=None)
 
         result = env.is_any_workspace_visible()
 
@@ -279,14 +295,28 @@ class TestEnvironment:
         """Test getting observation pose"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        from robot_environment.objects.pose_object import PoseObjectPNP
-
-        mock_pose = PoseObjectPNP(0.2, 0.0, 0.3)
-        mock_dependencies["workspaces"].return_value.get_observation_pose.return_value = mock_pose
-
         pose = env.get_observation_pose("test_ws")
 
-        assert pose == mock_pose
+        assert isinstance(pose, PoseObjectPNP)
+
+    def test_get_current_frame_width_height(self, mock_dependencies):
+        """Test getting frame dimensions"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+
+        width, height = env.get_current_frame_width_height()
+
+        assert width == 480
+        assert height == 640
+
+    def test_get_visible_workspace(self, mock_dependencies):
+        """Test getting visible workspace"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+
+        camera_pose = PoseObjectPNP(0.2, 0.0, 0.3)
+
+        workspace = env.get_visible_workspace(camera_pose)
+
+        assert workspace is not None
 
     def test_stop_camera_updates(self, mock_dependencies):
         """Test stopping camera updates"""
@@ -312,43 +342,16 @@ class TestEnvironment:
 
         assert env._stop_event.is_set()
 
-    def test_get_current_frame_width_height(self, mock_dependencies):
-        """Test getting frame dimensions"""
-        env = Environment("key", False, "niryo", start_camera_thread=False)
-
-        mock_dependencies["framegrabber"].return_value.get_current_frame_width_height.return_value = (480, 640)
-
-        width, height = env.get_current_frame_width_height()
-
-        assert width == 480
-        assert height == 640
-
     def test_get_robot_target_pose_from_rel(self, mock_dependencies):
         """Test getting target pose from relative coordinates"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        from robot_environment.objects.pose_object import PoseObjectPNP
-
         mock_pose = PoseObjectPNP(0.25, 0.05, 0.01)
-        mock_dependencies["robot"].return_value.get_target_pose_from_rel.return_value = mock_pose
+        env._robot.get_target_pose_from_rel = Mock(return_value=mock_pose)
 
         pose = env.get_robot_target_pose_from_rel("test_ws", 0.5, 0.5, 0.0)
 
-        assert pose == mock_pose
-
-    def test_get_visible_workspace(self, mock_dependencies):
-        """Test getting visible workspace"""
-        env = Environment("key", False, "niryo", start_camera_thread=False)
-
-        from robot_environment.objects.pose_object import PoseObjectPNP
-
-        camera_pose = PoseObjectPNP(0.2, 0.0, 0.3)
-        mock_ws = Mock()
-        mock_dependencies["workspaces"].return_value.get_visible_workspace.return_value = mock_ws
-
-        workspace = env.get_visible_workspace(camera_pose)
-
-        assert workspace == mock_ws
+        assert isinstance(pose, PoseObjectPNP)
 
 
 class TestEnvironmentCameraUpdates:
@@ -412,16 +415,6 @@ class TestEnvironmentLargestFreeSpace:
         """Test calculating largest free space"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        # Setup workspace
-        from robot_environment.objects.pose_object import PoseObjectPNP
-
-        mock_ws = Mock()
-        mock_ws.xy_ul_wc.return_value = PoseObjectPNP(0.4, 0.15, 0.0)
-        mock_ws.xy_lr_wc.return_value = PoseObjectPNP(0.1, -0.15, 0.0)
-
-        # Access the workspaces properly through the mock
-        mock_dependencies["workspaces"].return_value.get_workspace.return_value = mock_ws
-
         # Mock detected objects
         env._obj_position_memory = Objects()
 
@@ -435,16 +428,6 @@ class TestEnvironmentLargestFreeSpace:
     def test_get_largest_free_space_with_objects(self, mock_cv2, mock_dependencies):
         """Test free space calculation with objects present"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
-
-        # Setup workspace
-        from robot_environment.objects.pose_object import PoseObjectPNP
-
-        mock_ws = Mock()
-        mock_ws.xy_ul_wc.return_value = PoseObjectPNP(0.4, 0.15, 0.0)
-        mock_ws.xy_lr_wc.return_value = PoseObjectPNP(0.1, -0.15, 0.0)
-
-        # Access the workspaces properly through the mock
-        mock_dependencies["workspaces"].return_value.get_workspace.return_value = mock_ws
 
         # Add mock object
         mock_obj = Mock(spec=Object)

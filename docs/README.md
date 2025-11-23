@@ -534,6 +534,36 @@ self._robot_ctrl.place_from_pose(place_pose)
      - `y`: Right (when facing robot)
      - `z`: Up
 
+Camera Coordinate System:
+
+```
+  (u_min, v_min)
+         ────────────
+        │            │
+  v_rel │            │
+        │            │
+        └──────────── (u_max, v_max)
+            → u_rel
+
+```
+
+World Coordinate System:
+
+```
+        Y (left)
+        ↑
+        │
+0.087 ──┼──────────── Upper workspace boundary
+        │
+    0 ──┼────────────  Center line (Y=0)
+        │
+-0.087 ─┼──────────── Lower workspace boundary
+        │
+        └────────────→ X (forward)
+      0.163        0.337
+     (closer)     (farther)
+```
+
 ### Transformation Chain
 
 ```
