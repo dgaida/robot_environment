@@ -1,10 +1,10 @@
 """
-Unit tests for Environment class
+Unit tests for Environment class - FIXED VERSION
 """
 
 import pytest
 import numpy as np
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, create_autospec
 from robot_environment.environment import Environment
 from robot_workspace import Objects
 from robot_workspace import Object
@@ -13,7 +13,10 @@ from robot_workspace import PoseObjectPNP
 
 @pytest.fixture
 def mock_dependencies():
-    """Mock all Environment dependencies"""
+    """Mock all Environment dependencies - FIXED to handle isinstance() checks"""
+    # Import real classes BEFORE patching so isinstance() works
+    from robot_environment.robot.niryo_robot_controller import NiryoRobotController
+
     with patch("robot_environment.environment.Robot") as mock_robot, patch(
         "robot_environment.environment.NiryoFrameGrabber"
     ) as mock_fg, patch("robot_environment.environment.NiryoWorkspaces") as mock_ws, patch(
@@ -22,21 +25,20 @@ def mock_dependencies():
         "robot_environment.environment.VisualCortex"
     ) as mock_vc, patch(
         "robot_environment.environment.get_default_config"
-    ) as mock_config, patch(
-        "robot_environment.environment.NiryoRobotController"
-    ) as mock_robot_ctrl:
+    ) as mock_config:
 
-        # Setup robot controller mock - THIS IS THE KEY FIX
-        mock_robot_ctrl_instance = Mock()
+        # Create a proper mock using spec=NiryoRobotController
+        # This allows isinstance() to work correctly
+        mock_robot_ctrl_instance = create_autospec(NiryoRobotController, instance=True)
         mock_robot_ctrl_instance.robot_ctrl.return_value = Mock()
-        mock_robot_ctrl.return_value = mock_robot_ctrl_instance
 
-        # Setup robot mock with proper get_robot_controller()
+        # Setup robot mock
         mock_robot_instance = Mock()
         mock_robot_instance.robot.return_value = mock_robot_ctrl_instance
         mock_robot_instance.robot_in_motion.return_value = False
         mock_robot_instance.get_pose.return_value = PoseObjectPNP(0.2, 0.0, 0.3)
-        # THIS IS CRITICAL - Environment calls this to check robot type
+
+        # CRITICAL: Return a spec'd mock that will pass isinstance(obj, NiryoRobotController)
         mock_robot_instance.get_robot_controller.return_value = mock_robot_ctrl_instance
         mock_robot.return_value = mock_robot_instance
 
@@ -93,7 +95,6 @@ def mock_dependencies():
             "tts": mock_tts,
             "visual_cortex": mock_vc,
             "config": mock_config,
-            "robot_controller": mock_robot_ctrl,
         }
 
 
@@ -284,7 +285,7 @@ class TestEnvironment:
         """Test when no workspace is visible"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        # Create a new mock that returns None for get_visible_workspace
+        # Mock to return None for get_visible_workspace
         env._workspaces.get_visible_workspace = Mock(return_value=None)
 
         result = env.is_any_workspace_visible()
@@ -366,7 +367,6 @@ class TestEnvironmentCameraUpdates:
         mock_obj.label.return_value = "pencil"
         mock_obj.x_com.return_value = 0.25
         mock_obj.y_com.return_value = 0.05
-        # Make xy_com() return a tuple
         mock_obj.xy_com.return_value = (0.25, 0.05)
 
         detected = Objects([mock_obj])
@@ -379,7 +379,6 @@ class TestEnvironmentCameraUpdates:
         """Test that duplicate objects are not added"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        Mock()  # mock_workspace =
         mock_obj = Mock(spec=Object)
         mock_obj.label.return_value = "pencil"
         mock_obj.x_com.return_value = 0.25
