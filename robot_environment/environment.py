@@ -167,29 +167,40 @@ class Environment:
         Args:
             visualize (bool): If True, displays the updated camera feed in a window.
         """
-
         self.robot_move2observation_pose(self._workspaces.get_workspace_home_id())
 
         while not self._stop_event.is_set():
-            self.get_current_frame()  # img =
+            t0 = time.time()
 
-            time.sleep(0.5)
+            self.get_current_frame()  # img =
+            t1 = time.time()
+            print(f"Frame capture: {(t1 - t0) * 1000:.1f}ms")
+
+            time.sleep(0.1)
 
             self._visual_cortex.detect_objects_from_redis()
+            t2 = time.time()
+            print(f"Detection: {(t2 - t1) * 1000:.1f}ms")
 
-            time.sleep(0.5)
+            time.sleep(0.1)
 
             detected_objects = self.get_detected_objects()
+            t3 = time.time()
+            print(f"Get objects: {(t3 - t2) * 1000:.1f}ms")
 
             self._check_new_detections(detected_objects)
 
+            # Get annotated image (in BGR)
             annotated_image = self._visual_cortex.get_annotated_image()
+            t4 = time.time()
+            print(f"Annotation: {(t4 - t3) * 1000:.1f}ms")
 
             # Display the image if visualize is True
-            if visualize:
+            if visualize and annotated_image is not None:
                 # TODO: nicht der richtige Ort hier, nur temporär
-                annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
+                # annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
 
+                # cv2.imshow expects BGR - no conversion needed!
                 cv2.imshow("Camera View", annotated_image)
                 # Break the loop if ESC key is pressed
                 if cv2.waitKey(1) & 0xFF == 27:  # 27 is the ASCII code for the ESC key
@@ -197,13 +208,16 @@ class Environment:
                         print("Exiting camera update loop.")
                     break
 
+            t5 = time.time()
+            print(f"Total loop: {(t5 - t0) * 1000:.1f}ms\n")
+
             yield annotated_image  # img
 
             if self.get_robot_in_motion():
                 # TODO: change back to 0.5 and 0.25
-                time.sleep(0.5)  # Wait before the next camera update 0.25
-            else:
                 time.sleep(0.25)  # Wait before the next camera update 0.25
+            else:
+                time.sleep(0.05)  # Wait before the next camera update 0.25
 
         # Close the OpenCV window when exiting
         if visualize:

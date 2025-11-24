@@ -70,7 +70,7 @@ class NiryoFrameGrabber(FrameGrabber):
     # @log_start_end_cls()
     def get_current_frame(self) -> np.ndarray:
         """
-        Captures an image of the robot's workspace, ensuring proper undistortion in RGB.
+        Captures an image of the robot's workspace, ensuring proper undistortion in BGR.
 
         Returns:
             numpy.ndarray: Raw image captured from the robot's camera.
@@ -109,7 +109,8 @@ class NiryoFrameGrabber(FrameGrabber):
         else:
             current_frame = img
 
-        self._current_frame = cv2.cvtColor(current_frame, cv2.COLOR_BGR2RGB)
+        # self._current_frame = cv2.cvtColor(current_frame, cv2.COLOR_BGR2RGB)
+        self._current_frame = current_frame
 
         # TODO: benötige ich die Methode? für was? falls ja, wo muss die aufgerufen werden? funktioniert hat die noch
         #  nicht. sollte in Methode get_visible_workspace() auf den Mittelpunkt des workspaces angewandt werden
