@@ -370,39 +370,39 @@ class Robot(RobotAPI):
 
         return success
 
-    @log_start_end_cls()
-    def execute_python_code_safe(self, python_code: str) -> tuple[None, bool]:
-        """
-        Safely execute Python code using structured commands.
-
-        Args:
-            python_code (str): The commands to execute.
-
-        Returns:
-            tuple[None, bool]: (None, success)
-        """
-        self._robot_in_motion = True
-        message = f"Executing python code:\n{python_code}"
-        self.environment().append_assistant_message2chat_history(message)
-
-        if self.verbose():
-            print(message)
-
-        success = True
-
-        # Process each line as a command
-        for line in python_code.splitlines():
-            target_object, method, pos_args, kw_args = self._parse_command(line)
-            if target_object and method:
-                success = success and self._execute_command(target_object, method, pos_args, kw_args)
-            else:
-                self.environment().append_assistant_message2chat_history(f"Invalid command: {line}")
-                success = False
-                continue
-
-        self._robot_in_motion = False
-
-        return None, success
+    # @log_start_end_cls()
+    # def execute_python_code_safe(self, python_code: str) -> tuple[None, bool]:
+    #     """
+    #     Safely execute Python code using structured commands.
+    #
+    #     Args:
+    #         python_code (str): The commands to execute.
+    #
+    #     Returns:
+    #         tuple[None, bool]: (None, success)
+    #     """
+    #     self._robot_in_motion = True
+    #     message = f"Executing python code:\n{python_code}"
+    #     self.environment().append_assistant_message2chat_history(message)
+    #
+    #     if self.verbose():
+    #         print(message)
+    #
+    #     success = True
+    #
+    #     # Process each line as a command
+    #     for line in python_code.splitlines():
+    #         target_object, method, pos_args, kw_args = self._parse_command(line)
+    #         if target_object and method:
+    #             success = success and self._execute_command(target_object, method, pos_args, kw_args)
+    #         else:
+    #             self.environment().append_assistant_message2chat_history(f"Invalid command: {line}")
+    #             success = False
+    #             continue
+    #
+    #     self._robot_in_motion = False
+    #
+    #     return None, success
 
     @staticmethod
     def _parse_command(line: str) -> tuple[str, str, list, dict]:
@@ -453,55 +453,55 @@ class Robot(RobotAPI):
             print(f"Error parsing command: {e}")
             return None, None, [], {}
 
-    @log_start_end_cls()
-    def _execute_command(self, target_object: str, method: str, positional_args: list, keyword_args: dict) -> bool:
-        """
-        Execute a parsed command.
-
-        Args:
-            target_object (str): The object to invoke the method on ('robot' or 'agent').
-            method (str): The method name to call.
-            positional_args (list): Positional arguments for the method.
-            keyword_args (dict): Keyword arguments for the method.
-
-        Returns:
-            bool: True if the command was executed successfully, False otherwise.
-        """
-        if self.verbose():
-            print(target_object, method)
-            print(positional_args, keyword_args)
-
-        try:
-            # Route commands to the appropriate target object
-            if target_object == "robot":
-                # with self.environment().lock():
-                if method == "pick_place_object":
-                    return self.pick_place_object(*positional_args, **keyword_args)
-                elif method == "pick_object":
-                    return self.pick_object(*positional_args, **keyword_args)
-                elif method == "place_object":
-                    return self.place_object(*positional_args, **keyword_args)
-                elif method == "push_object":
-                    return self.push_object(*positional_args, **keyword_args)
-                else:
-                    raise ValueError(f"Unknown method for robot: {method}")
-
-            elif target_object == "agent":
-                if method == "get_object_labels_and_print2chat":
-                    self.environment().agent().get_object_labels_and_print2chat()
-                    return True
-                elif method == "add_object_name2object_labels":
-                    self.environment().agent().add_object_name2object_labels(*positional_args, **keyword_args)
-                    return True
-                else:
-                    raise ValueError(f"Unknown method for agent: {method}")
-
-            else:
-                raise ValueError(f"Unknown target object: {target_object}")
-
-        except Exception as e:
-            self.environment().append_assistant_message2chat_history(f"Error executing command: {e}")
-            return False
+    # @log_start_end_cls()
+    # def _execute_command(self, target_object: str, method: str, positional_args: list, keyword_args: dict) -> bool:
+    #     """
+    #     Execute a parsed command.
+    #
+    #     Args:
+    #         target_object (str): The object to invoke the method on ('robot' or 'agent').
+    #         method (str): The method name to call.
+    #         positional_args (list): Positional arguments for the method.
+    #         keyword_args (dict): Keyword arguments for the method.
+    #
+    #     Returns:
+    #         bool: True if the command was executed successfully, False otherwise.
+    #     """
+    #     if self.verbose():
+    #         print(target_object, method)
+    #         print(positional_args, keyword_args)
+    #
+    #     try:
+    #         # Route commands to the appropriate target object
+    #         if target_object == "robot":
+    #             # with self.environment().lock():
+    #             if method == "pick_place_object":
+    #                 return self.pick_place_object(*positional_args, **keyword_args)
+    #             elif method == "pick_object":
+    #                 return self.pick_object(*positional_args, **keyword_args)
+    #             elif method == "place_object":
+    #                 return self.place_object(*positional_args, **keyword_args)
+    #             elif method == "push_object":
+    #                 return self.push_object(*positional_args, **keyword_args)
+    #             else:
+    #                 raise ValueError(f"Unknown method for robot: {method}")
+    #
+    #         elif target_object == "agent":
+    #             if method == "get_object_labels_and_print2chat":
+    #                 self.environment().agent().get_object_labels_and_print2chat()
+    #                 return True
+    #             elif method == "add_object_name2object_labels":
+    #                 self.environment().agent().add_object_name2object_labels(*positional_args, **keyword_args)
+    #                 return True
+    #             else:
+    #                 raise ValueError(f"Unknown method for agent: {method}")
+    #
+    #         else:
+    #             raise ValueError(f"Unknown target object: {target_object}")
+    #
+    #     except Exception as e:
+    #         self.environment().append_assistant_message2chat_history(f"Error executing command: {e}")
+    #         return False
 
     # @log_start_end_cls()
     # def execute_python_code_not_safe(self, python_code: str) -> tuple[dict, bool]:

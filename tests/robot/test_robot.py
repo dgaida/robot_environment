@@ -395,50 +395,6 @@ class TestRobotCommandParsing:
         assert target is None
         assert method is None
 
-    def test_execute_command_pick_place(self, mock_environment, mock_robot_controller):
-        """Test executing pick_place command"""
-        robot = Robot(mock_environment, use_simulation=False, robot_id="niryo")
-
-        mock_obj = Mock(spec=Object)
-        mock_obj.label.return_value = "pencil"
-        mock_obj.coordinate.return_value = [0.15, -0.05]
-        mock_obj.width_m.return_value = 0.02
-        mock_obj.height_m.return_value = 0.15
-        mock_obj.pose_com.return_value = PoseObjectPNP(0.15, -0.05, 0.01)
-
-        with patch.object(robot, "get_detected_objects", return_value=Objects([mock_obj])):
-            success = robot._execute_command(
-                "robot",
-                "pick_place_object",
-                [],
-                {
-                    "object_name": "pencil",
-                    "pick_coordinate": [0.15, -0.05],
-                    "place_coordinate": [0.3, 0.1],
-                    "location": Location.NONE,
-                },
-            )
-
-        assert success is True
-
-    def test_execute_command_unknown_method(self, mock_environment, mock_robot_controller):
-        """Test executing unknown method"""
-        robot = Robot(mock_environment, use_simulation=False, robot_id="niryo")
-
-        success = robot._execute_command("robot", "unknown_method", [], {})
-
-        assert success is False
-
-    def test_execute_python_code_safe(self, mock_environment, mock_robot_controller):
-        """Test safe Python code execution"""
-        robot = Robot(mock_environment, use_simulation=False, robot_id="niryo")
-
-        code = 'robot.move2observation_pose("test_ws")'
-
-        result, success = robot.execute_python_code_safe(code)
-
-        assert success is True
-
 
 class TestRobotGetNearestObject:
     """Test _get_nearest_object private method"""
@@ -495,8 +451,19 @@ class TestRobotStringConversions:
         mock_picked.height_m.return_value = 0.15
         robot._object_last_picked = mock_picked
 
+        # Mock reference object at place location
+        mock_ref_obj = Mock(spec=Object)
+        mock_ref_obj.width_m.return_value = 0.05
+        mock_ref_obj.height_m.return_value = 0.05
+        mock_ref_obj.pose_center.return_value = PoseObjectPNP(0.3, 0.1, 0.01)
+
+        # Create Objects collection with proper mocking
+        mock_objects = Objects([mock_ref_obj])
+        mock_objects.get_nearest_detected_object = Mock(return_value=(mock_ref_obj, 0.01))
+
         # Test with string location
-        success = robot.place_object([0.3, 0.1], location="right next to")
+        with patch.object(robot, "get_detected_objects", return_value=mock_objects):
+            success = robot.place_object([0.3, 0.1], location="right next to")
 
         # Should still work (converted to enum internally)
         assert success is True
