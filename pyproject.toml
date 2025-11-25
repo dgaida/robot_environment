@@ -43,26 +43,14 @@ dependencies = [
     "numpy>=1.20.0",
     "opencv-python>=4.5.0",
     "torch>=2.0.0",
+    "pyniryo>=1.1.0",
     "robot_workspace @ git+https://github.com/dgaida/robot_workspace.git"
-]
-
-[project.optional-dependencies]
-# Core vision and communication
-vision = [
     "redis_robot_comm @ git+https://github.com/dgaida/redis_robot_comm.git",
     "vision_detect_segment @ git+https://github.com/dgaida/vision_detect_segment.git",
-]
-
-# Text-to-speech capabilities
-tts = [
     "text2speech @ git+https://github.com/dgaida/text2speech.git",
 ]
 
-# Niryo robot support
-niryo = [
-    "pyniryo>=1.1.0",
-]
-
+[project.optional-dependencies]
 # WidowX robot support
 widowx = [
     "interbotix-xs-modules>=0.1.0",
@@ -82,7 +70,7 @@ dev = [
 
 # Complete installation with all features
 all = [
-    "robot-environment[vision,tts,niryo,widowx,dev]",
+    "robot-environment[widowx,dev]",
 ]
 
 [project.urls]
