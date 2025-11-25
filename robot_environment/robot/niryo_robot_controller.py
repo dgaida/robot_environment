@@ -252,16 +252,19 @@ class NiryoRobotController(RobotController):
                     obj_coords = self._robot_ctrl.vision.get_target_pose_from_rel(workspace_id, 0.0, x_rel, y_rel, yaw)
                 else:
                     obj_coords = self._robot_ctrl.get_target_pose_from_rel(workspace_id, 0.0, x_rel, y_rel, yaw)
+
+                obj_coords = PoseObjectPNP.convert_niryo_pose_object2pose_object(obj_coords)
+
             except (NiryoRobotException, UnicodeDecodeError, SyntaxError, TcpCommandException) as e:
                 print(f"Thread {threading.current_thread().name} Error: {e}")
-                obj_coords = PoseObject(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+                # Return zero pose on ANY error (already as PoseObjectPNP)
+                obj_coords = PoseObjectPNP(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
             finally:
                 if self.verbose():
                     print(f"Thread {threading.current_thread().name} releasing lock")
 
         if self.verbose():
             print(f"Thread {threading.current_thread().name} exiting: {obj_coords}")
-        obj_coords = PoseObjectPNP.convert_niryo_pose_object2pose_object(obj_coords)
 
         return obj_coords
 
@@ -310,23 +313,25 @@ class NiryoRobotController(RobotController):
             workspace_id: id of the workspace
         """
         observation_pose = self._robot.environment().get_observation_pose(workspace_id)
+
+        # IMPORTANT: Check for None BEFORE attempting conversion
+        if observation_pose is None:
+            if self.verbose():
+                print("observation_pose is None for workspace:", workspace_id)
+            return
+
+        # Only convert if we have a valid pose
         observation_pose = PoseObjectPNP.convert_pose_object2niryo_pose_object(observation_pose)
 
-        if observation_pose is not None:
-            try:
-                with self._lock:
-                    self._move_pose(observation_pose)
-            except UnicodeDecodeError as e:
-                print("move2observation_pose:", e)
-                print("move2observation_pose:", observation_pose)
-        else:
-            print("observation_pose is:", observation_pose)
+        try:
+            with self._lock:
+                self._move_pose(observation_pose)
+        except UnicodeDecodeError as e:
+            print("move2observation_pose:", e)
+            print("move2observation_pose:", observation_pose)
 
         if self.verbose():
             print("move_pose finished", observation_pose)
-
-        if self.verbose():
-            # with self._lock:
             print(self.get_pose(), observation_pose)
 
     # *** PUBLIC STATIC/CLASS GET methods ***

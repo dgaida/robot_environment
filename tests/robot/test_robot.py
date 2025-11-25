@@ -298,6 +298,11 @@ class TestRobot:
 
         # Mock place reference object
         mock_place_obj = Mock(spec=Object)
+        mock_place_obj.label.return_value = "box"  # Give it a label
+        # FIX: Add x_com() and y_com() methods that return floats
+        mock_place_obj.x_com.return_value = 0.3
+        mock_place_obj.y_com.return_value = 0.1
+        mock_place_obj.coordinate.return_value = [0.3, 0.1]
         mock_place_obj.width_m.return_value = 0.05
         mock_place_obj.height_m.return_value = 0.05
         mock_place_obj.pose_center.return_value = PoseObjectPNP(0.3, 0.1, 0.01)
