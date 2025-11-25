@@ -44,7 +44,7 @@ dependencies = [
     "opencv-python>=4.5.0",
     "torch>=2.0.0",
     "pyniryo>=1.1.0",
-    "robot_workspace @ git+https://github.com/dgaida/robot_workspace.git"
+    "robot_workspace @ git+https://github.com/dgaida/robot_workspace.git",
     "redis_robot_comm @ git+https://github.com/dgaida/redis_robot_comm.git",
     "vision_detect_segment @ git+https://github.com/dgaida/vision_detect_segment.git",
     "text2speech @ git+https://github.com/dgaida/text2speech.git",
