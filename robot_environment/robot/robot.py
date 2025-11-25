@@ -661,7 +661,7 @@ class Robot(RobotAPI):
 
         return latest_objects
 
-    def _get_nearest_object(self, label: str | None, target_coords: List) -> Optional["Object"]:
+    def _get_nearest_object(self, label: Union[str, None], target_coords: List) -> Optional["Object"]:
         """
         Find the nearest object with the specified label.
 
