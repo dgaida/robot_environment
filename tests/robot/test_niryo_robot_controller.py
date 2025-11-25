@@ -234,7 +234,9 @@ class TestNiryoRobotController:
 
         # FIX #3: Make the mock raise exception BEFORE the try block is entered
         # The exception must be raised when the method is called
-        mock_niryo_robot.return_value.get_target_pose_from_rel.side_effect = Exception("Connection error")
+        from pyniryo.api.exceptions import NiryoRobotException
+
+        mock_niryo_robot.return_value.get_target_pose_from_rel.side_effect = NiryoRobotException("Connection error")
 
         # Now when we call it, the exception should be caught and return zero pose
         pose = controller.get_target_pose_from_rel("test_ws", 0.5, 0.5, 0.0)
