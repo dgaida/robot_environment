@@ -37,6 +37,21 @@ def mock_robot_controller():
         yield mock
 
 
+# ================================================================================
+# Helper function to create properly mocked reference objects
+# ================================================================================
+def create_mock_ref_object(x=0.3, y=0.1, width=0.05, height=0.05):
+    """Helper to create a properly mocked reference object"""
+    mock_ref_obj = Mock(spec=Object)
+    mock_ref_obj.x_com.return_value = x
+    mock_ref_obj.y_com.return_value = y
+    mock_ref_obj.coordinate.return_value = [x, y]
+    mock_ref_obj.width_m.return_value = width
+    mock_ref_obj.height_m.return_value = height
+    mock_ref_obj.pose_center.return_value = PoseObjectPNP(x, y, 0.01)
+    return mock_ref_obj
+
+
 class TestRobot:
     """Test suite for Robot class"""
 
@@ -133,6 +148,9 @@ class TestRobot:
 
         # Mock reference object
         mock_ref_obj = Mock(spec=Object)
+        mock_ref_obj.x_com.return_value = 0.3
+        mock_ref_obj.y_com.return_value = 0.1
+        mock_ref_obj.coordinate.return_value = [0.3, 0.1]
         mock_ref_obj.width_m.return_value = 0.05
         mock_ref_obj.height_m.return_value = 0.05
         mock_ref_obj.pose_center.return_value = PoseObjectPNP(0.3, 0.1, 0.01)
@@ -153,6 +171,9 @@ class TestRobot:
         robot._object_last_picked = mock_picked
 
         mock_ref_obj = Mock(spec=Object)
+        mock_ref_obj.x_com.return_value = 0.3
+        mock_ref_obj.y_com.return_value = 0.1
+        mock_ref_obj.coordinate.return_value = [0.3, 0.1]
         mock_ref_obj.width_m.return_value = 0.05
         mock_ref_obj.height_m.return_value = 0.05
         mock_ref_obj.pose_center.return_value = PoseObjectPNP(0.3, 0.1, 0.01)
@@ -172,10 +193,7 @@ class TestRobot:
         mock_picked.height_m.return_value = 0.15
         robot._object_last_picked = mock_picked
 
-        mock_ref_obj = Mock(spec=Object)
-        mock_ref_obj.width_m.return_value = 0.05
-        mock_ref_obj.height_m.return_value = 0.05
-        mock_ref_obj.pose_center.return_value = PoseObjectPNP(0.3, 0.1, 0.01)
+        mock_ref_obj = create_mock_ref_object()
 
         with patch.object(robot, "get_detected_objects", return_value=Objects([mock_ref_obj])):
             success = robot.place_object([0.3, 0.1], location=Location.ABOVE)
@@ -192,10 +210,7 @@ class TestRobot:
         mock_picked.height_m.return_value = 0.15
         robot._object_last_picked = mock_picked
 
-        mock_ref_obj = Mock(spec=Object)
-        mock_ref_obj.width_m.return_value = 0.05
-        mock_ref_obj.height_m.return_value = 0.05
-        mock_ref_obj.pose_center.return_value = PoseObjectPNP(0.3, 0.1, 0.01)
+        mock_ref_obj = create_mock_ref_object()
 
         with patch.object(robot, "get_detected_objects", return_value=Objects([mock_ref_obj])):
             success = robot.place_object([0.3, 0.1], location=Location.BELOW)
@@ -212,10 +227,7 @@ class TestRobot:
         mock_picked.height_m.return_value = 0.15
         robot._object_last_picked = mock_picked
 
-        mock_ref_obj = Mock(spec=Object)
-        mock_ref_obj.width_m.return_value = 0.05
-        mock_ref_obj.height_m.return_value = 0.05
-        mock_ref_obj.pose_center.return_value = PoseObjectPNP(0.3, 0.1, 0.01)
+        mock_ref_obj = create_mock_ref_object()
 
         with patch.object(robot, "get_detected_objects", return_value=Objects([mock_ref_obj])):
             success = robot.place_object([0.3, 0.1], location=Location.ON_TOP_OF)
@@ -232,10 +244,7 @@ class TestRobot:
         mock_picked.height_m.return_value = 0.15
         robot._object_last_picked = mock_picked
 
-        mock_ref_obj = Mock(spec=Object)
-        mock_ref_obj.width_m.return_value = 0.05
-        mock_ref_obj.height_m.return_value = 0.05
-        mock_ref_obj.pose_center.return_value = PoseObjectPNP(0.3, 0.1, 0.01)
+        mock_ref_obj = create_mock_ref_object()
 
         with patch.object(robot, "get_detected_objects", return_value=Objects([mock_ref_obj])):
             success = robot.place_object([0.3, 0.1], location=Location.INSIDE)
