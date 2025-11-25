@@ -2,7 +2,7 @@
 # TODO: is_point_visible prüfen
 # Documentation and type definitions are almost final (chatgpt might be able to improve it).
 
-from ..common.logger import log_start_end_cls, pyniryo_v
+from ..common.logger import log_start_end_cls
 
 import cv2
 
@@ -51,14 +51,9 @@ class NiryoFrameGrabber(FrameGrabber):
             raise TypeError("robot must be an instance of NiryoRobotController.")
 
         # get NiryoRobot from NiryoRobotController
-        self._robot = robot.robot_ctrl()
+        self._robot = robot  # .robot_ctrl()
 
-        # all calls of methods of the _robot (NiryoRobot) object are locked, because they are not safe thread
-        with robot.lock():
-            if pyniryo_v == "pyniryo2":
-                self._mtx, self._dist = self._robot.vision.get_camera_intrinsics()
-            else:
-                self._mtx, self._dist = self._robot.get_camera_intrinsics()
+        self._mtx, self._dist = self._robot.get_camera_intrinsics()
 
         self.streamer = RedisImageStreamer(stream_name=stream_name)
         self.frame_counter = 0
@@ -76,11 +71,7 @@ class NiryoFrameGrabber(FrameGrabber):
             numpy.ndarray: Raw image captured from the robot's camera.
         """
         try:
-            with self.environment().get_robot_controller().lock():
-                if pyniryo_v == "pyniryo2":
-                    img_compressed = self._robot.vision.get_img_compressed()
-                else:
-                    img_compressed = self._robot.get_img_compressed()
+            img_compressed = self._robot.get_img_compressed()
         except UnicodeDecodeError as e:
             print("get_current_frame:", e)
             return self._current_frame
@@ -91,7 +82,7 @@ class NiryoFrameGrabber(FrameGrabber):
         img_work = extract_img_workspace(img, workspace_ratio=1)
 
         if img_work is not None:
-            gripper_pose = self.environment().get_robot_pose()
+            gripper_pose = self._robot.get_pose()
 
             # TODO: try to get transformation between camera and gripper
             camera_pose = gripper_pose
@@ -274,7 +265,7 @@ class NiryoFrameGrabber(FrameGrabber):
 
     # *** PRIVATE variables ***
 
-    # NiryoRobot object
+    # NiryoRobotController object
     _robot = None
 
     # camera intrinsic transformation matrix
