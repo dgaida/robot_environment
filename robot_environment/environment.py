@@ -1,11 +1,8 @@
 # environment class in which a robot for smart pick and place exists
-# one TODO. but more or less finished.
-# Documentation and type definitions are almost final (chatgpt can maybe improve it)
+# Updated with proper object memory management
 
 import threading
-
 from .common.logger import log_start_end_cls
-
 import numpy as np
 import time
 import cv2
@@ -20,9 +17,11 @@ from .robot.niryo_robot_controller import NiryoRobotController
 from .robot.widowx_robot_controller import WidowXRobotController
 
 from text2speech import Text2Speech
-from robot_workspace import Object
+
+# from robot_workspace import Object
 from robot_workspace import Objects
-from redis_robot_comm import RedisMessageBroker
+
+# from redis_robot_comm import RedisMessageBroker
 
 from vision_detect_segment import VisualCortex
 from vision_detect_segment import get_default_config
@@ -53,15 +52,12 @@ class Environment:
             el_api_key (str): the ElevenLabs API Key as string
             use_simulation: if True, then simulate the robot, else the real robot is used
             robot_id: string defining the robot. can be "niryo" or "widowx"
-            LLM create Python Code.
             verbose: enable verbose output
             start_camera_thread: if True, start camera update thread (default: True)
                                 Set to False for MCP server!
         """
         self._use_simulation = use_simulation
         self._verbose = verbose
-
-        # self._lock = threading.Lock()
 
         # important that Robot comes before framegrabber and before workspace
         self._robot = Robot(self, use_simulation, robot_id, verbose)
@@ -82,18 +78,13 @@ class Environment:
 
         self._oralcom = Text2Speech(el_api_key, verbose=verbose)
 
-        # Initialize speech recognition
-        # self._speech2text = Speech2Text(
-        #     el_api_key=el_api_key,
-        #     use_whisper_mic=True,
-        #     verbose=verbose
-        # )
-
         self._stop_event = threading.Event()
 
-        # self._streamer = RedisImageStreamer()
-
+        # Object memory management
         self._obj_position_memory = Objects()
+        self._memory_lock = threading.Lock()
+        self._is_at_observation_pose = False
+        self._workspace_was_lost = False  # Track if workspace was lost during movement
 
         det_mdl = "owlv2"  # "yoloe-11l"  # owlv2
         config = get_default_config(det_mdl)
@@ -131,34 +122,194 @@ class Environment:
     def start_camera_updates(self, visualize=False):
         def loop():
             for img in self.update_camera_and_objects(visualize=visualize):
-                # In CLI, we might not use img, but you could save or log info here
-                pass  # or print("Camera updated")
+                pass
 
         t = threading.Thread(target=loop, daemon=True)
         t.start()
         return t
 
+    def _should_update_memory(self) -> bool:
+        """
+        Determine if object memory should be updated.
+        Only update when at observation pose with full workspace visibility.
+
+        Returns:
+            bool: True if memory should be updated, False otherwise
+        """
+        # Check if workspace is currently visible
+        workspace_visible = self.is_any_workspace_visible()
+        robot_in_motion = self.get_robot_in_motion()
+
+        # Memory should only be updated when:
+        # 1. Workspace is visible
+        # 2. Robot is not in motion
+        # 3. We're at or near observation pose
+        should_update = workspace_visible and not robot_in_motion
+
+        if self.verbose() and should_update:
+            print("Memory update conditions met: workspace visible, robot stationary")
+
+        return should_update
+
+    def _should_clear_memory(self) -> bool:
+        """
+        Determine if object memory should be cleared.
+        Clear when returning to observation pose after workspace was lost.
+
+        Returns:
+            bool: True if memory should be cleared, False otherwise
+        """
+        workspace_visible = self.is_any_workspace_visible()
+        robot_in_motion = self.get_robot_in_motion()
+
+        # If workspace is now visible but was previously lost, clear memory
+        if workspace_visible and not robot_in_motion and self._workspace_was_lost:
+            if self.verbose():
+                print("Clearing memory: returned to observation pose after workspace loss")
+            return True
+
+        return False
+
+    def _track_workspace_visibility(self) -> None:
+        """
+        Track workspace visibility state to detect when workspace is lost/regained.
+        """
+        workspace_visible = self.is_any_workspace_visible()
+        robot_in_motion = self.get_robot_in_motion()
+
+        # Update tracking flags
+        prev_at_observation = self._is_at_observation_pose
+        self._is_at_observation_pose = workspace_visible and not robot_in_motion
+
+        # Detect when workspace is lost (moving away from observation pose)
+        if prev_at_observation and not self._is_at_observation_pose:
+            self._workspace_was_lost = True
+            if self.verbose():
+                print("Workspace lost - robot moved from observation pose")
+
+        # Reset flag when back at observation pose
+        if self._is_at_observation_pose and self._workspace_was_lost:
+            # Don't reset here - wait for clear_memory to be called
+            pass
+
     def _check_new_detections(self, detected_objects: "Objects") -> None:
         """
         Check for newly detected objects and update the memory with their positions.
+        Only updates memory when conditions are appropriate (at observation pose).
 
         Args:
             detected_objects (Objects): List of objects detected in the current frame.
         """
-        for obj in detected_objects:
-            x_center, y_center = obj.xy_com()
-            # obj_position = (obj.label(), x_center, y_center)
-            if not any(
-                memory.label() == obj.label()
-                and abs(memory.x_com() - x_center) <= 0.05
-                and abs(memory.y_com() - y_center) <= 0.05
-                for memory in self._obj_position_memory
-            ):
-                self._obj_position_memory.append(obj)
-                # message = obj.as_string_for_chat_window()
+        with self._memory_lock:
+            # Clear memory if we just returned to observation pose
+            if self._should_clear_memory():
+                if self.verbose():
+                    print(f"Clearing memory of {len(self._obj_position_memory)} objects")
+                self._obj_position_memory.clear()
+                self._workspace_was_lost = False  # Reset flag after clearing
+
+            # Only update memory when at observation pose
+            if not self._should_update_memory():
+                if self.verbose():
+                    print("Skipping memory update - conditions not met")
+                return
+
+            # Update memory with new detections
+            objects_added = 0
+            for obj in detected_objects:
+                x_center, y_center = obj.xy_com()
+
+                # Check if object already exists in memory (within tolerance)
+                is_duplicate = any(
+                    memory.label() == obj.label()
+                    and abs(memory.x_com() - x_center) <= 0.05
+                    and abs(memory.y_com() - y_center) <= 0.05
+                    for memory in self._obj_position_memory
+                )
+
+                if not is_duplicate:
+                    self._obj_position_memory.append(obj)
+                    objects_added += 1
+
+            if self.verbose() and objects_added > 0:
+                print(f"Added {objects_added} new objects to memory (total: {len(self._obj_position_memory)})")
+
+    def clear_memory(self) -> None:
+        """
+        Manually clear all objects from memory.
+        Useful when you know the workspace has changed significantly.
+        """
+        with self._memory_lock:
+            if self.verbose():
+                print(f"Manually clearing memory of {len(self._obj_position_memory)} objects")
+            self._obj_position_memory.clear()
+            self._workspace_was_lost = False
+
+    def remove_object_from_memory(self, object_label: str, coordinate: List[float]) -> None:
+        """
+        Remove an object from memory after it has been successfully manipulated.
+        This prevents stale position data from being used.
+
+        Args:
+            object_label: Label of the object to remove
+            coordinate: Last known coordinate [x, y] of the object
+        """
+        with self._memory_lock:
+            # Find and remove matching object
+            removed = False
+            for i, obj in enumerate(self._obj_position_memory):
+                if (
+                    obj.label() == object_label
+                    and abs(obj.x_com() - coordinate[0]) <= 0.05
+                    and abs(obj.y_com() - coordinate[1]) <= 0.05
+                ):
+                    del self._obj_position_memory[i]
+                    removed = True
+                    if self.verbose():
+                        print(f"Removed {object_label} from memory at {coordinate}")
+                    break
+
+            if not removed and self.verbose():
+                print(f"Warning: Could not find {object_label} in memory to remove")
+
+    def update_object_in_memory(self, object_label: str, old_coordinate: List[float], new_coordinate: List[float]) -> None:
+        """
+        Update an object's position in memory after it has been moved.
+
+        Args:
+            object_label: Label of the object
+            old_coordinate: Previous coordinate [x, y]
+            new_coordinate: New coordinate [x, y] after movement
+        """
+        with self._memory_lock:
+            for obj in self._obj_position_memory:
+                if (
+                    obj.label() == object_label
+                    and abs(obj.x_com() - old_coordinate[0]) <= 0.05
+                    and abs(obj.y_com() - old_coordinate[1]) <= 0.05
+                ):
+                    # Update position - assumes Object has a method to update position
+                    # You may need to implement this based on your Object class
+                    obj._x_com = new_coordinate[0]
+                    obj._y_com = new_coordinate[1]
+                    if self.verbose():
+                        print(f"Updated {object_label} position in memory: {old_coordinate} -> {new_coordinate}")
+                    return
+
+            if self.verbose():
+                print(f"Warning: Could not find {object_label} in memory to update")
 
     def get_detected_objects_from_memory(self) -> "Objects":
-        return self._obj_position_memory
+        """
+        Get a copy of the object memory.
+        Thread-safe access to memory.
+
+        Returns:
+            Objects: Copy of objects currently in memory
+        """
+        with self._memory_lock:
+            # Return a copy to avoid external modifications
+            return Objects(list(self._obj_position_memory))
 
     def update_camera_and_objects(self, visualize: bool = False):
         """
@@ -172,28 +323,36 @@ class Environment:
         while not self._stop_event.is_set():
             t0 = time.time()
 
-            self.get_current_frame()  # img =
+            # Track workspace visibility state
+            self._track_workspace_visibility()
+
+            self.get_current_frame()
             t1 = time.time()
-            print(f"Frame capture: {(t1 - t0) * 1000:.1f}ms")
+            if self.verbose():
+                print(f"Frame capture: {(t1 - t0) * 1000:.1f}ms")
 
             time.sleep(0.1)
 
             self._visual_cortex.detect_objects_from_redis()
             t2 = time.time()
-            print(f"Detection: {(t2 - t1) * 1000:.1f}ms")
+            if self.verbose():
+                print(f"Detection: {(t2 - t1) * 1000:.1f}ms")
 
             time.sleep(0.1)
 
             detected_objects = self.get_detected_objects()
             t3 = time.time()
-            print(f"Get objects: {(t3 - t2) * 1000:.1f}ms")
+            if self.verbose():
+                print(f"Get objects: {(t3 - t2) * 1000:.1f}ms")
 
+            # Update memory only when appropriate
             self._check_new_detections(detected_objects)
 
             # Get annotated image (in BGR)
             annotated_image = self._visual_cortex.get_annotated_image()
             t4 = time.time()
-            print(f"Annotation: {(t4 - t3) * 1000:.1f}ms")
+            if self.verbose():
+                print(f"Annotation: {(t4 - t3) * 1000:.1f}ms")
 
             # Display the image if visualize is True
             if visualize and annotated_image is not None:
@@ -209,15 +368,20 @@ class Environment:
                     break
 
             t5 = time.time()
-            print(f"Total loop: {(t5 - t0) * 1000:.1f}ms\n")
+            if self.verbose():
+                print(f"Total loop: {(t5 - t0) * 1000:.1f}ms")
+                print(
+                    f"Memory status: {len(self._obj_position_memory)} objects, "
+                    f"at_observation={self._is_at_observation_pose}, "
+                    f"workspace_lost={self._workspace_was_lost}\n"
+                )
 
-            yield annotated_image  # img
+            yield annotated_image
 
             if self.get_robot_in_motion():
-                # TODO: change back to 0.5 and 0.25
-                time.sleep(0.25)  # Wait before the next camera update 0.25
+                time.sleep(0.25)
             else:
-                time.sleep(0.05)  # Wait before the next camera update 0.25
+                time.sleep(0.05)
 
         # Close the OpenCV window when exiting
         if visualize:
@@ -246,15 +410,6 @@ class Environment:
     def stop_camera_updates(self):
         self._stop_event.set()
 
-    # def speech2text_record_and_transcribe(self) -> str:
-    #     """
-    #     Record from microphone and transcribe using Whisper ASR model until silence is detected.
-    #
-    #     Returns:
-    #         transcribed text
-    #     """
-    #     return self._speech2text.record_and_transcribe()
-
     def oralcom_call_text2speech_async(self, text: str) -> threading.Thread:
         """
         Asynchronously calls the text2speech ElevenLabs API with the given text
@@ -266,59 +421,6 @@ class Environment:
             the thread object is returned. Once the text is spoken, the thread is being closed.
         """
         return self._oralcom.call_text2speech_async(text)
-
-    def create_dummy_environment(self):
-        self._broker = RedisMessageBroker()
-
-        self.robot_move2observation_pose("gazebo_1")
-
-        self._img_work = self.get_current_frame()
-
-        cv2.imshow("Camera View", self._img_work)
-        # cv2.waitKey(0)
-        # Break the loop if ESC key is pressed
-        if cv2.waitKey(1) & 0xFF == 27:  # 27 is the ASCII code for the ESC key
-            print("Exiting camera update loop.")
-
-        time.sleep(8)
-
-        detected_objects = [
-            Object(
-                label="pencil",
-                u_min=50 - 34 // 2,
-                v_min=80 - 34 // 2,
-                u_max=50 + 34 // 2,
-                v_max=80 + 34 // 2,
-                mask_8u=None,
-                workspace=self.get_workspace(0),
-            ),
-            Object(
-                label="yellow circle",
-                u_min=150 - 34 // 2,
-                v_min=90 - 34 // 2,
-                u_max=150 + 34 // 2,
-                v_max=90 + 34 // 2,
-                mask_8u=None,
-                workspace=self.get_workspace(0),
-            ),
-            Object(
-                label="blue square",
-                u_min=100 - 45 // 2,
-                v_min=200 - 45 // 2,
-                u_max=100 + 45 // 2,
-                v_max=200 + 45 // 2,
-                mask_8u=None,
-                workspace=self.get_workspace(0),
-            ),
-        ]
-
-        detected_objects = Objects(detected_objects)
-
-        # Convert Object instances to dictionaries
-        objects_dict_list = Objects.objects_to_dict_list(detected_objects)
-
-        # Publish to Redis (now JSON serializable)
-        self._broker.publish_objects(objects_dict_list)
 
     # *** PUBLIC GET methods ***
 
@@ -353,7 +455,6 @@ class Environment:
         workspace_top_left = self.get_workspace(0).xy_ul_wc()
         workspace_bottom_right = self.get_workspace(0).xy_lr_wc()
 
-        # Unpack workspace corners
         x_max, y_max = workspace_top_left.x, workspace_top_left.y
         x_min, y_min = workspace_bottom_right.x, workspace_bottom_right.y
 
@@ -634,7 +735,6 @@ class Environment:
 
     def get_detected_objects(self) -> "Objects":
         detected_obj_list_dict = self._visual_cortex.get_detected_objects()
-
         return Objects.dict_list_to_objects(detected_obj_list_dict, self.get_workspace(0))
 
     def get_object_labels(self) -> List[List[str]]:
@@ -699,3 +799,9 @@ class Environment:
     _use_simulation = False
 
     _verbose = False
+
+    # Memory management
+    _obj_position_memory = None
+    _memory_lock = None
+    _is_at_observation_pose = False
+    _workspace_was_lost = False

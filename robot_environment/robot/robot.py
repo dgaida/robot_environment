@@ -163,7 +163,16 @@ class Robot(RobotAPI):
         success = self.pick_object(object_name, pick_coordinate)
 
         if success:
-            return self.place_object(place_coordinate, location)
+            place_success = self.place_object(place_coordinate, location)
+
+            # After successful pick and place, remove old position from memory
+            # and optionally add new position (if we want to track moved objects)
+            if place_success:
+                self.environment().remove_object_from_memory(object_name, pick_coordinate)
+                # Optionally update with new position:
+                self.environment().update_object_in_memory(object_name, pick_coordinate, place_coordinate)
+
+            return place_success
         else:
             return False
 
@@ -228,11 +237,13 @@ class Robot(RobotAPI):
         location = Location.convert_str2location(location)
 
         if self._object_last_picked:
+            old_coordinate = [self._object_last_picked.x_com(), self._object_last_picked.y_com()]
             message = (
                 f"Going to place {self._object_last_picked.label()} {location} coordinate ["
                 f"{place_coordinate[0]:.2f}, {place_coordinate[1]:.2f}]."
             )
         else:
+            old_coordinate = None
             message = f"Going to place it {location} coordinate [{place_coordinate[0]:.2f}, {place_coordinate[1]:.2f}]."
         print(message)
 
@@ -293,8 +304,13 @@ class Robot(RobotAPI):
             success = self._robot.robot_place_object(place_pose)
 
             # update position of placed object to the new position
-            if self._object_last_picked:
-                self._object_last_picked.set_position(place_pose)
+            # Update memory after successful placement
+            if success and self._object_last_picked and old_coordinate:
+                # final_coordinate = [place_pose.x, place_pose.y]
+                # Remove from old position in memory
+                self.environment().remove_object_from_memory(self._object_last_picked.label(), old_coordinate)
+                # Note: We DON'T add the new position to memory here
+                # Memory will be refreshed when robot returns to observation pose
             # TODO: have to get access to objects in environment because _object_last_picked is deleted in 3 lines
             # TODO: das Problem an meiner Implementierung ist, dass sobald das LLM aufgerufen wird, wird es
             # mit einer statischen Liste von Objekten mit deren Positionen aufgerufen. wenn während der Ausführung des
