@@ -1,5 +1,9 @@
 # API Reference
 
+## UML Class Diagram
+
+![UML Class Diagram](robot_env_uml.png)
+
 ## Environment Class
 
 - `get_current_frame()` - Capture current camera image
