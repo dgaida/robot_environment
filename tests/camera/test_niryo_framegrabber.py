@@ -1,5 +1,6 @@
 """
 Unit tests for NiryoFrameGrabber class - FIXED VERSION
+Fixed to work with updated __init__() that uses self._robot = robot instead of robot.robot_ctrl()
 """
 
 import pytest
@@ -12,7 +13,7 @@ from robot_workspace import PoseObjectPNP
 
 @pytest.fixture
 def mock_environment():
-    """Create mock environment with NiryoRobotController"""
+    """Create mock environment with NiryoRobotController - FIXED"""
     env = Mock()
     env.verbose.return_value = False
 
@@ -25,18 +26,19 @@ def mock_environment():
     mock_lock.__exit__ = Mock(return_value=None)
     robot_controller.lock.return_value = mock_lock
 
-    # Mock the underlying robot
-    mock_robot = Mock()
-    mock_robot.get_camera_intrinsics.return_value = (
+    # FIX: Mock get_camera_intrinsics directly on the robot controller
+    # (not on an underlying robot object)
+    robot_controller.get_camera_intrinsics.return_value = (
         np.array([[500, 0, 320], [0, 500, 240], [0, 0, 1]]),  # Camera matrix
         np.array([0.1, 0.01, 0, 0, 0]),  # Distortion coefficients
     )
-    mock_robot.get_img_compressed.return_value = b"fake_compressed_image"
 
-    # FIX #2: Return real PoseObjectPNP instead of Mock
-    mock_robot.get_pose.return_value = PoseObjectPNP(0.2, 0.0, 0.3, 0.0, 1.57, 0.0)
+    # FIX: Mock get_img_compressed directly on the robot controller
+    robot_controller.get_img_compressed.return_value = b"fake_compressed_image"
 
-    robot_controller.robot_ctrl.return_value = mock_robot
+    # FIX: Mock get_pose directly on the robot controller
+    robot_controller.get_pose.return_value = PoseObjectPNP(0.2, 0.0, 0.3, 0.0, 1.57, 0.0)
+
     env.get_robot_controller.return_value = robot_controller
 
     return env
@@ -123,7 +125,7 @@ class TestNiryoFrameGrabber:
     def test_get_current_frame_no_workspace(
         self, mock_extract, mock_undistort, mock_uncompress, mock_environment, mock_redis_streamer
     ):
-        """Test frame capture when no workspace is extracted - FIXED"""
+        """Test frame capture when no workspace is extracted"""
         framegrabber = NiryoFrameGrabber(mock_environment)
 
         undistorted_img = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -138,9 +140,7 @@ class TestNiryoFrameGrabber:
         frame = framegrabber.get_current_frame()
 
         assert frame is not None
-        # FIX #1: When no workspace extracted, should return undistorted image directly
-        # The code sets current_frame = img (the undistorted image), NOT converting to RGB
-        # So cvtColor should NOT be called in this path
+        # When no workspace extracted, should return undistorted image directly
         assert np.array_equal(frame, undistorted_img)
 
     @patch("robot_environment.camera.niryo_framegrabber.uncompress_image")
@@ -151,13 +151,9 @@ class TestNiryoFrameGrabber:
         # Setup initial frame
         framegrabber._current_frame = np.zeros((480, 640, 3), dtype=np.uint8)
 
-        # Mock robot to raise UnicodeDecodeError
+        # Mock robot controller to raise UnicodeDecodeError
         robot_ctrl = mock_environment.get_robot_controller()
-        robot_ctrl.robot_ctrl().get_img_compressed.side_effect = UnicodeDecodeError("utf-8", b"\x00\x00", 0, 1, "invalid")
-
-        # Need to also mock lock context manager
-        robot_ctrl.lock.return_value.__enter__ = Mock(return_value=None)
-        robot_ctrl.lock.return_value.__exit__ = Mock(return_value=None)
+        robot_ctrl.get_img_compressed.side_effect = UnicodeDecodeError("utf-8", b"\x00\x00", 0, 1, "invalid")
 
         frame = framegrabber.get_current_frame()
 
@@ -199,30 +195,16 @@ class TestNiryoFrameGrabber:
         assert framegrabber.frame_counter == 2
 
     def test_is_point_visible_basic(self, mock_environment, mock_redis_streamer):
-        """Test basic point visibility check - FIXED"""
+        """Test basic point visibility check"""
         framegrabber = NiryoFrameGrabber(mock_environment)
 
-        # FIX #2: Mock should already return real PoseObjectPNP from fixture
+        # Point in front of camera
         point = np.array([0.25, 0.0, 0.01])
 
         # This is a complex calculation, just test it doesn't crash
         result = framegrabber.is_point_visible(point)
 
         assert isinstance(result, bool)
-
-    # def test_is_point_visible_behind_camera(self, mock_environment, mock_redis_streamer):
-    #     """Test that point behind camera is not visible - FIXED"""
-    #     framegrabber = NiryoFrameGrabber(mock_environment)
-    #
-    #     # FIX #2: get_pose already returns real PoseObjectPNP from fixture
-    #     # No need to mock again
-    #
-    #     # Point far behind camera
-    #     point = np.array([-10.0, 0.0, 0.0])
-    #
-    #     result = framegrabber.is_point_visible(point)
-    #
-    #     assert not result
 
     def test_camera_matrix_property(self, mock_environment, mock_redis_streamer):
         """Test camera_matrix property"""
