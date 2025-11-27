@@ -86,6 +86,9 @@ class Environment:
         self._is_at_observation_pose = False
         self._workspace_was_lost = False  # Track if workspace was lost during movement
 
+        self._manual_memory_updates = {}  # Track manually updated objects: {label: timestamp}
+        self._manual_update_timeout = 5.0  # seconds to keep manual updates
+
         det_mdl = "owlv2"  # "yoloe-11l"  # owlv2
         config = get_default_config(det_mdl)
 
@@ -196,17 +199,21 @@ class Environment:
         """
         Check for newly detected objects and update the memory with their positions.
         Only updates memory when conditions are appropriate (at observation pose).
+        Respects manual updates from pick/place operations.
 
         Args:
             detected_objects (Objects): List of objects detected in the current frame.
         """
+        import time
+
         with self._memory_lock:
             # Clear memory if we just returned to observation pose
             if self._should_clear_memory():
                 if self.verbose():
                     print(f"Clearing memory of {len(self._obj_position_memory)} objects")
                 self._obj_position_memory.clear()
-                self._workspace_was_lost = False  # Reset flag after clearing
+                self._manual_memory_updates.clear()  # Also clear manual update tracking
+                self._workspace_was_lost = False
 
             # Only update memory when at observation pose
             if not self._should_update_memory():
@@ -214,25 +221,77 @@ class Environment:
                     print("Skipping memory update - conditions not met")
                 return
 
+            current_time = time.time()
+
+            # Clean up expired manual updates
+            expired_labels = [
+                label
+                for label, timestamp in self._manual_memory_updates.items()
+                if current_time - timestamp > self._manual_update_timeout
+            ]
+            for label in expired_labels:
+                del self._manual_memory_updates[label]
+                if self.verbose():
+                    print(f"Manual update timeout expired for {label}")
+
             # Update memory with new detections
             objects_added = 0
+            objects_updated = 0
+
             for obj in detected_objects:
                 x_center, y_center = obj.xy_com()
+                label = obj.label()
+
+                # Check if this object has a recent manual update
+                if label in self._manual_memory_updates:
+                    # Find the manually updated object in memory
+                    found_manual = False
+                    for memory_obj in self._obj_position_memory:
+                        if memory_obj.label() == label:
+                            # Check if detected position is close to manual update
+                            manual_dist = ((memory_obj.x_com() - x_center) ** 2 + (memory_obj.y_com() - y_center) ** 2) ** 0.5
+
+                            if manual_dist > 0.05:  # 5cm threshold
+                                # Detected position differs significantly from manual update
+                                # Trust the manual update (object was just placed there)
+                                if self.verbose():
+                                    print(f"Keeping manual update for {label} despite detection at different position")
+                                found_manual = True
+                                break
+                            else:
+                                # Detection confirms manual update, refresh it
+                                memory_obj._x_com = x_center
+                                memory_obj._y_com = y_center
+                                objects_updated += 1
+                                found_manual = True
+                                if self.verbose():
+                                    print(f"Detection confirms manual update for {label}")
+                                break
+
+                    if found_manual:
+                        continue
 
                 # Check if object already exists in memory (within tolerance)
-                is_duplicate = any(
-                    memory.label() == obj.label()
-                    and abs(memory.x_com() - x_center) <= 0.05
-                    and abs(memory.y_com() - y_center) <= 0.05
-                    for memory in self._obj_position_memory
-                )
+                is_duplicate = False
+                for memory_obj in self._obj_position_memory:
+                    if (
+                        memory_obj.label() == label
+                        and abs(memory_obj.x_com() - x_center) <= 0.05
+                        and abs(memory_obj.y_com() - y_center) <= 0.05
+                    ):
+                        is_duplicate = True
+                        break
 
                 if not is_duplicate:
                     self._obj_position_memory.append(obj)
                     objects_added += 1
 
-            if self.verbose() and objects_added > 0:
-                print(f"Added {objects_added} new objects to memory (total: {len(self._obj_position_memory)})")
+            if self.verbose() and (objects_added > 0 or objects_updated > 0):
+                print(
+                    f"Memory update: added {objects_added}, updated {objects_updated} "
+                    f"(total: {len(self._obj_position_memory)})"
+                )
+                print(f"Active manual updates: {list(self._manual_memory_updates.keys())}")
 
     def clear_memory(self) -> None:
         """
@@ -255,7 +314,6 @@ class Environment:
             coordinate: Last known coordinate [x, y] of the object
         """
         with self._memory_lock:
-            # Find and remove matching object
             removed = False
             for i, obj in enumerate(self._obj_position_memory):
                 if (
@@ -264,6 +322,11 @@ class Environment:
                     and abs(obj.y_com() - coordinate[1]) <= 0.05
                 ):
                     del self._obj_position_memory[i]
+
+                    # Clear manual update tracking for this object
+                    if object_label in self._manual_memory_updates:
+                        del self._manual_memory_updates[object_label]
+
                     removed = True
                     if self.verbose():
                         print(f"Removed {object_label} from memory at {coordinate}")
@@ -271,6 +334,7 @@ class Environment:
 
             if not removed and self.verbose():
                 print(f"Warning: Could not find {object_label} in memory to remove")
+                print(f"Memory contents: {[(obj.label(), [obj.x_com(), obj.y_com()]) for obj in self._obj_position_memory]}")
 
     def update_object_in_memory(self, object_label: str, old_coordinate: List[float], new_coordinate: List[float]) -> None:
         """
@@ -281,23 +345,34 @@ class Environment:
             old_coordinate: Previous coordinate [x, y]
             new_coordinate: New coordinate [x, y] after movement
         """
+        import time
+
         with self._memory_lock:
+            updated = False
             for obj in self._obj_position_memory:
                 if (
                     obj.label() == object_label
                     and abs(obj.x_com() - old_coordinate[0]) <= 0.05
                     and abs(obj.y_com() - old_coordinate[1]) <= 0.05
                 ):
-                    # Update position - assumes Object has a method to update position
-                    # You may need to implement this based on your Object class
+                    # Update position
                     obj._x_com = new_coordinate[0]
                     obj._y_com = new_coordinate[1]
+
+                    # Mark this as a manual update with timestamp
+                    self._manual_memory_updates[object_label] = time.time()
+
+                    updated = True
                     if self.verbose():
                         print(f"Updated {object_label} position in memory: {old_coordinate} -> {new_coordinate}")
-                    return
+                    break
 
-            if self.verbose():
-                print(f"Warning: Could not find {object_label} in memory to update")
+            if not updated:
+                if self.verbose():
+                    print(f"Warning: Could not find {object_label} in memory to update")
+                    print(
+                        f"Memory contents: {[(obj.label(), [obj.x_com(), obj.y_com()]) for obj in self._obj_position_memory]}"
+                    )
 
     def get_detected_objects_from_memory(self) -> "Objects":
         """

@@ -377,7 +377,10 @@ class TestEnvironmentObjectDetection:
 
         obj = create_mock_object("pencil", 0.25, 0.05)
 
-        with patch.object(env, "_should_update_memory", return_value=False):
+        # Mock both _should_update_memory AND _should_clear_memory to avoid workspace access
+        with patch.object(env, "_should_update_memory", return_value=False), patch.object(
+            env, "_should_clear_memory", return_value=False
+        ):
             env._check_new_detections(Objects([obj]))
 
         assert len(env._obj_position_memory) == 0

@@ -313,15 +313,19 @@ class Robot(RobotAPI):
                 # nicht löschen, sondern objektposition wird aktualiseirt unten
                 # self.environment().remove_object_from_memory(self._object_last_picked.label(), old_coordinate)
                 # Note: We DON'T add the new position to memory here
-                # TODO: muss die neue Position hier doch in memory hinzufügen, damit ich es nach dem ablegen sofort
-                #  wieder greifen kann. mein Test im paper Nr. 6.
-                self.environment().update_object_in_memory(self._object_last_picked.label(), old_coordinate,
-                                                           new_coordinate=final_coordinate)
+                # muss die neue Position hier doch in memory hinzufügen, damit ich es nach dem ablegen sofort
+                # wieder greifen kann. mein Test im paper Nr. 6.
+                self.environment().update_object_in_memory(
+                    self._object_last_picked.label(), old_coordinate, new_coordinate=final_coordinate
+                )
                 # TODO: use logger to log new position
-                # 
-                # Memory will be refreshed when robot returns to observation pose
-            # TODO: have to get access to objects in environment because _object_last_picked is deleted in 3 lines
-            # TODO: das Problem an meiner Implementierung ist, dass sobald das LLM aufgerufen wird, wird es
+
+                # Give the memory system a moment to register the update
+                import time
+
+                time.sleep(0.1)  # 100ms should be enough
+            # have to get access to objects in environment because _object_last_picked is deleted in 3 lines
+            # das Problem an meiner Implementierung ist, dass sobald das LLM aufgerufen wird, wird es
             # mit einer statischen Liste von Objekten mit deren Positionen aufgerufen. wenn während der Ausführung des
             # LLms oder des roboters danach etwas an der Position der Objekte ändert, bekommt der roboter das nicht
             # mit, da die objekte quasi nur im visualcortex leben und keine realen objekte sind. eigentlich
