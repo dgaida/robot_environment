@@ -49,6 +49,7 @@ def mock_dependencies():
         mock_workspace.xy_ul_wc.return_value = PoseObjectPNP(0.4, 0.15, 0.0)
         mock_workspace.xy_lr_wc.return_value = PoseObjectPNP(0.1, -0.15, 0.0)
         mock_workspace.xy_center_wc.return_value = PoseObjectPNP(0.25, 0.0, 0.0)
+        mock_workspace.set_img_shape = Mock()
 
         # Mock coordinate transformation
         def mock_transform(ws_id, u_rel, v_rel, yaw=0.0):
@@ -63,6 +64,7 @@ def mock_dependencies():
         mock_ws_instance.get_workspace_home_id.return_value = "test_ws"
         mock_ws_instance.get_observation_pose.return_value = PoseObjectPNP(0.2, 0.0, 0.3)
         mock_ws_instance.get_visible_workspace.return_value = mock_workspace
+        mock_ws_instance.get_home_workspace.return_value = mock_workspace
         mock_ws.return_value = mock_ws_instance
 
         # Setup TTS
@@ -96,6 +98,7 @@ def mock_workspace():
     workspace = Mock(spec=Workspace)
     workspace.id.return_value = "test_workspace"
     workspace.img_shape.return_value = (640, 480, 3)
+    workspace.set_img_shape = Mock()
 
     # Mock transform method - FIXED coordinate system
     # For Niryo: width goes along y-axis, height along x-axis
@@ -122,7 +125,7 @@ def create_mock_object(label, x, y, width=0.05, height=0.05):
     obj.width_m.return_value = width
     obj.height_m.return_value = height
     obj.coordinate.return_value = [x, y]
-    obj._workspace = mock_workspace
+    # obj._workspace = mock_workspace
     return obj
 
 
@@ -341,7 +344,11 @@ class TestEnvironmentObjectDetection:
         obj1 = create_mock_object("pencil", 0.25, 0.05)
         obj2 = create_mock_object("pen", 0.30, 0.10)
 
-        with patch.object(env, "_should_update_memory", return_value=True):
+        with patch.object(env, "_should_update_memory", return_value=True), patch.object(
+            env, "_should_clear_memory", return_value=False
+        ), patch.object(env, "is_any_workspace_visible", return_value=True), patch.object(
+            env, "get_robot_in_motion", return_value=False
+        ):
             env._check_new_detections(Objects([obj1, obj2]))
 
         assert len(env._obj_position_memory) == 2
@@ -353,7 +360,11 @@ class TestEnvironmentObjectDetection:
         obj1 = create_mock_object("pencil", 0.25, 0.05)
         obj2 = create_mock_object("pencil", 0.251, 0.051)  # Very close
 
-        with patch.object(env, "_should_update_memory", return_value=True):
+        with patch.object(env, "_should_update_memory", return_value=True), patch.object(
+            env, "_should_clear_memory", return_value=False
+        ), patch.object(env, "is_any_workspace_visible", return_value=True), patch.object(
+            env, "get_robot_in_motion", return_value=False
+        ):
             env._check_new_detections(Objects([obj1]))
             env._check_new_detections(Objects([obj2]))
 
@@ -383,6 +394,8 @@ class TestEnvironmentObjectDetection:
 
         with patch.object(env, "_should_clear_memory", return_value=True), patch.object(
             env, "_should_update_memory", return_value=True
+        ), patch.object(env, "is_any_workspace_visible", return_value=True), patch.object(
+            env, "get_robot_in_motion", return_value=False
         ):
 
             env._check_new_detections(Objects([new_obj]))
