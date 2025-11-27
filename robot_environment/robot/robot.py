@@ -284,11 +284,13 @@ class Robot(RobotAPI):
             elif location == Location.LEFT_NEXT_TO:
                 place_pose.y += obj_where_to_place.width_m() / 2 + y_off
             elif location == Location.BELOW:
+                # print(obj_where_to_place.height_m(), self._object_last_picked.width_m(), x_off)
                 # TODO: nutze hier auch width, da width immer die größere größe ist und nicht eine koordinatenrichtugn hat
                 #  ich muss anstatt width und height eine größe haben dim_x und dim_y, die a x und y koordinate gebunden sind
                 #  ich habe das in object klasse repariert, width geht immer entlang y-achse jetzt. prüfen hier
-                place_pose.x -= obj_where_to_place.height_m() / 2 - x_off
+                place_pose.x -= obj_where_to_place.height_m() / 2 + x_off
                 # place_pose.x -= obj_where_to_place.width_m() / 2 - x_off
+                # print(place_pose)
             elif location == Location.ABOVE:
                 # TODO: nutze hier auch width, da width immer die größere größe ist und nicht eine koordinatenrichtugn hat
                 #  ich habe das in object klasse repariert, width geht immer entlang y-achse jetzt. prüfen hier
@@ -306,10 +308,17 @@ class Robot(RobotAPI):
             # update position of placed object to the new position
             # Update memory after successful placement
             if success and self._object_last_picked and old_coordinate:
-                # final_coordinate = [place_pose.x, place_pose.y]
+                final_coordinate = [place_pose.x, place_pose.y]
                 # Remove from old position in memory
-                self.environment().remove_object_from_memory(self._object_last_picked.label(), old_coordinate)
+                # nicht löschen, sondern objektposition wird aktualiseirt unten
+                # self.environment().remove_object_from_memory(self._object_last_picked.label(), old_coordinate)
                 # Note: We DON'T add the new position to memory here
+                # TODO: muss die neue Position hier doch in memory hinzufügen, damit ich es nach dem ablegen sofort
+                #  wieder greifen kann. mein Test im paper Nr. 6.
+                self.environment().update_object_in_memory(self._object_last_picked.label(), old_coordinate,
+                                                           new_coordinate=final_coordinate)
+                # TODO: use logger to log new position
+                # 
                 # Memory will be refreshed when robot returns to observation pose
             # TODO: have to get access to objects in environment because _object_last_picked is deleted in 3 lines
             # TODO: das Problem an meiner Implementierung ist, dass sobald das LLM aufgerufen wird, wird es
