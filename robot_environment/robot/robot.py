@@ -280,7 +280,7 @@ class Robot(RobotAPI):
             elif location == Location.INSIDE:
                 place_pose.z += 0.01
             elif location == Location.RIGHT_NEXT_TO:
-                place_pose.y -= obj_where_to_place.width_m() / 2 - y_off
+                place_pose.y -= obj_where_to_place.width_m() / 2 + y_off
             elif location == Location.LEFT_NEXT_TO:
                 place_pose.y += obj_where_to_place.width_m() / 2 + y_off
             elif location == Location.BELOW:

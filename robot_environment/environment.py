@@ -749,6 +749,13 @@ class Environment:
 
     # methods from Robot
 
+    def robot_move2home_observation_pose(self) -> None:
+        """
+        The robot is going to move to a pose where it can observe (the gripper hovers over) the home workspace.
+        """
+        workspace_id = self.get_workspace_home_id()
+        self.robot_move2observation_pose(workspace_id)
+
     def robot_move2observation_pose(self, workspace_id: str) -> None:
         """
         The robot is going to move to a pose where it can observe (the gripper hovers over) the workspace
