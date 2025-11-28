@@ -437,11 +437,13 @@ class TestEnvironmentCameraThread:
         # Mock to stop after one iteration
         env._stop_event.set()
 
-        iterations = 0
-        for _ in env.update_camera_and_objects(visualize=False):
-            iterations += 1
-            if iterations > 0:
-                break
+        # Mock robot_move2observation_pose to avoid workspace access
+        with patch.object(env, "robot_move2observation_pose"):
+            iterations = 0
+            for _ in env.update_camera_and_objects(visualize=False):
+                iterations += 1
+                if iterations > 0:
+                    break
 
         # Should have called get_current_frame
         env._framegrabber.get_current_frame.assert_called()
@@ -453,7 +455,7 @@ class TestEnvironmentCameraThread:
 
         env._stop_event.set()  # Stop after one iteration
 
-        with patch.object(env, "_track_workspace_visibility") as mock_track:
+        with patch.object(env, "_track_workspace_visibility") as mock_track, patch.object(env, "robot_move2observation_pose"):
             for _ in env.update_camera_and_objects(visualize=False):
                 break
 
