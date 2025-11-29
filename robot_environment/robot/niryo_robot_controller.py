@@ -121,6 +121,17 @@ class NiryoRobotController(RobotController):
 
     # *** PUBLIC methods ***
 
+    def calibrate(self) -> bool:
+        """
+        Calibrates the NiryoRobot.
+
+        Returns:
+            True, if calibration was successful, else False
+        """
+        self._calibrate_auto()
+
+        return True
+
     def reset_connection(self) -> None:
         """
         Reset the connection to the robot by safely disconnecting and reconnecting.
@@ -400,6 +411,13 @@ class NiryoRobotController(RobotController):
         """
         with self._lock:
             self._robot_ctrl = NiryoRobot(self._robot_ip_address)
+        self._calibrate_auto()
+
+    def _calibrate_auto(self) -> None:
+        """
+        Calibrates the NiryoRobot.
+        """
+        with self._lock:
             if pyniryo_v == "pyniryo2":
                 self._robot_ctrl.tool.update_tool()
                 self._robot_ctrl.arm.calibrate_auto()

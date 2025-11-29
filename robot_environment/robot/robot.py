@@ -104,6 +104,15 @@ class Robot(RobotAPI):
 
     # *** PUBLIC methods ***
 
+    def calibrate(self) -> bool:
+        """
+        Calibrates the Robot.
+
+        Returns:
+            True, if calibration was successful, else False
+        """
+        return self._robot.calibrate()
+
     @log_start_end_cls()
     def move2observation_pose(self, workspace_id: str) -> None:
         """

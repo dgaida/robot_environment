@@ -103,6 +103,17 @@ class WidowXRobotController(RobotController):
 
     # *** PUBLIC methods ***
 
+    def calibrate(self) -> bool:
+        """
+        Calibrates the WidowX robot.
+
+        Returns:
+            True, if calibration was successful, else False
+        """
+        # TODO: implement calibration
+
+        return True
+
     def reset_connection(self) -> None:
         """
         Reset the connection to the robot by safely disconnecting and reconnecting.

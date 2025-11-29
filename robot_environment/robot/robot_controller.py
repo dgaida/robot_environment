@@ -62,6 +62,16 @@ class RobotController(ABC):
 
     # *** PUBLIC methods ***
 
+    @abstractmethod
+    def calibrate(self) -> bool:
+        """
+        Calibrates the Robot.
+
+        Returns:
+            True, if calibration was successful, else False
+        """
+        pass
+
     # TODO: also possible to only pass PoseObject of the object. The advantage of passing Object might be
     #  that an object has more then one pick position. then robot can try and pick at a few positions.
     @abstractmethod
