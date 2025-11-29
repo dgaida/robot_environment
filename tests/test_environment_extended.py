@@ -54,9 +54,21 @@ def mock_dependencies():
         mock_workspace = Mock()
         mock_workspace.id.return_value = "test_ws"
         mock_workspace.img_shape.return_value = (640, 480, 3)
-        mock_workspace.xy_ul_wc.return_value = PoseObjectPNP(0.4, 0.15, 0.0)
-        mock_workspace.xy_lr_wc.return_value = PoseObjectPNP(0.1, -0.15, 0.0)
-        mock_workspace.xy_center_wc.return_value = PoseObjectPNP(0.25, 0.0, 0.0)
+
+        # Helper to create proper PoseObjectPNP-like mocks with xy_coordinate()
+        def create_mock_pose(x, y, z=0.0):
+            mock_pose = Mock()
+            mock_pose.xy_coordinate.return_value = [x, y]  # KEY FIX
+            mock_pose.x = x
+            mock_pose.y = y
+            mock_pose.z = z
+            return mock_pose
+
+        mock_workspace.xy_ul_wc.return_value = create_mock_pose(0.4, 0.15, 0.0)
+        mock_workspace.xy_ur_wc.return_value = create_mock_pose(0.4, -0.15, 0.0)
+        mock_workspace.xy_ll_wc.return_value = create_mock_pose(0.1, 0.15, 0.0)
+        mock_workspace.xy_lr_wc.return_value = create_mock_pose(0.1, -0.15, 0.0)
+        mock_workspace.xy_center_wc.return_value = create_mock_pose(0.25, 0.0, 0.0)
         mock_workspace.set_img_shape = Mock()
 
         mock_ws_instance.get_workspace = Mock(return_value=mock_workspace)
@@ -441,9 +453,6 @@ class TestEnvironmentCameraThread:
         """Test camera update loop iteration - FIXED"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        # Mock to stop after one iteration
-        env._stop_event.set()
-
         # FIXED: Ensure _workspaces is properly set
         assert env._workspaces is not None, "_workspaces should not be None"
 
@@ -452,10 +461,12 @@ class TestEnvironmentCameraThread:
             iterations = 0
             for _ in env.update_camera_and_objects(visualize=False):
                 iterations += 1
-                if iterations > 0:
+                if iterations >= 1:
+                    # Stop AFTER first iteration starts
+                    env._stop_event.set()
                     break
 
-        # Should have called get_current_frame
+        # Should have called get_current_frame during the iteration
         env._framegrabber.get_current_frame.assert_called()
 
     @patch("robot_environment.environment.cv2")
@@ -463,14 +474,16 @@ class TestEnvironmentCameraThread:
         """Test that update loop tracks workspace visibility - FIXED"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        env._stop_event.set()  # Stop after one iteration
-
         # FIXED: Ensure _workspaces is properly set
         assert env._workspaces is not None, "_workspaces should not be None"
 
         with patch.object(env, "_track_workspace_visibility") as mock_track, patch.object(env, "robot_move2observation_pose"):
+            iterations = 0
             for _ in env.update_camera_and_objects(visualize=False):
-                break
+                iterations += 1
+                if iterations >= 1:
+                    env._stop_event.set()
+                    break
 
             mock_track.assert_called()
 
