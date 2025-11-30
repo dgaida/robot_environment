@@ -26,7 +26,7 @@ from robot_workspace import Objects
 from vision_detect_segment import VisualCortex
 from vision_detect_segment import get_default_config
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Dict
 
 if TYPE_CHECKING:
     from robot_workspace import Workspace
@@ -88,6 +88,17 @@ class Environment:
 
         self._manual_memory_updates = {}  # Track manually updated objects: {label: timestamp}
         self._manual_update_timeout = 5.0  # seconds to keep manual updates
+
+        # Enhanced multi-workspace memory management
+        self._workspace_memories: Dict[str, Objects] = {}  # workspace_id -> Objects
+        self._current_workspace_id: Optional[str] = None
+        self._workspace_visibility_state: Dict[str, bool] = {}
+
+        # Initialize memory for each workspace
+        for workspace in self._workspaces:
+            workspace_id = workspace.id()
+            self._workspace_memories[workspace_id] = Objects()
+            self._workspace_visibility_state[workspace_id] = False
 
         det_mdl = "owlv2"  # "yoloe-11l"  # owlv2
         config = get_default_config(det_mdl)
@@ -712,6 +723,212 @@ class Environment:
             return False
         else:
             return True
+
+    def get_current_workspace_id(self) -> Optional[str]:
+        """Get the ID of the currently observed workspace."""
+        return self._current_workspace_id
+
+    def set_current_workspace(self, workspace_id: str) -> None:
+        """Set the current workspace being observed."""
+        if workspace_id in self._workspace_memories:
+            self._current_workspace_id = workspace_id
+            if self.verbose():
+                print(f"Current workspace set to: {workspace_id}")
+        else:
+            print(f"Warning: Workspace '{workspace_id}' not found")
+
+    def get_detected_objects_from_workspace(self, workspace_id: str) -> Objects:
+        """
+        Get objects from a specific workspace memory.
+
+        Args:
+            workspace_id: ID of the workspace
+
+        Returns:
+            Objects: Copy of objects in that workspace's memory
+        """
+        with self._memory_lock:
+            if workspace_id in self._workspace_memories:
+                return Objects(list(self._workspace_memories[workspace_id]))
+            return Objects()
+
+    def get_all_workspace_objects(self) -> Dict[str, Objects]:
+        """
+        Get objects from all workspaces.
+
+        Returns:
+            Dict mapping workspace_id to Objects collection
+        """
+        with self._memory_lock:
+            return {ws_id: Objects(list(objects)) for ws_id, objects in self._workspace_memories.items()}
+
+    def clear_workspace_memory(self, workspace_id: str) -> None:
+        """Clear memory for a specific workspace."""
+        with self._memory_lock:
+            if workspace_id in self._workspace_memories:
+                if self.verbose():
+                    print(f"Clearing memory for workspace: {workspace_id}")
+                self._workspace_memories[workspace_id].clear()
+
+    def remove_object_from_workspace(self, workspace_id: str, object_label: str, coordinate: list) -> None:
+        """Remove an object from a specific workspace's memory."""
+        with self._memory_lock:
+            if workspace_id not in self._workspace_memories:
+                return
+
+            workspace_objects = self._workspace_memories[workspace_id]
+            for i, obj in enumerate(workspace_objects):
+                if (
+                    obj.label() == object_label
+                    and abs(obj.x_com() - coordinate[0]) <= 0.05
+                    and abs(obj.y_com() - coordinate[1]) <= 0.05
+                ):
+                    del workspace_objects[i]
+                    if self.verbose():
+                        print(f"Removed {object_label} from workspace {workspace_id}")
+                    break
+
+    def update_object_in_workspace(
+        self, source_workspace_id: str, target_workspace_id: str, object_label: str, old_coordinate: list, new_coordinate: list
+    ) -> None:
+        """
+        Move an object from one workspace to another in memory.
+
+        Args:
+            source_workspace_id: ID of workspace where object currently is
+            target_workspace_id: ID of workspace where object will be placed
+            object_label: Label of the object
+            old_coordinate: Current coordinate in source workspace
+            new_coordinate: New coordinate in target workspace
+        """
+        import time
+
+        with self._memory_lock:
+            # Remove from source workspace
+            if source_workspace_id in self._workspace_memories:
+                source_objects = self._workspace_memories[source_workspace_id]
+                obj_to_move = None
+
+                for i, obj in enumerate(source_objects):
+                    if (
+                        obj.label() == object_label
+                        and abs(obj.x_com() - old_coordinate[0]) <= 0.05
+                        and abs(obj.y_com() - old_coordinate[1]) <= 0.05
+                    ):
+                        obj_to_move = obj
+                        del source_objects[i]
+                        break
+
+                # Add to target workspace with updated position
+                if obj_to_move and target_workspace_id in self._workspace_memories:
+                    # Update object's position
+                    obj_to_move._x_com = new_coordinate[0]
+                    obj_to_move._y_com = new_coordinate[1]
+
+                    # Update workspace reference
+                    target_workspace = self.get_workspace_by_id(target_workspace_id)
+                    if target_workspace:
+                        obj_to_move._workspace = target_workspace
+
+                    self._workspace_memories[target_workspace_id].append(obj_to_move)
+
+                    # Track manual update
+                    if not hasattr(self, "_manual_memory_updates"):
+                        self._manual_memory_updates = {}
+                    self._manual_memory_updates[object_label] = time.time()
+
+                    if self.verbose():
+                        print(f"Moved {object_label} from {source_workspace_id} " f"to {target_workspace_id}")
+
+    def _check_new_detections_multi_workspace(self, detected_objects: Objects) -> None:
+        """
+        Check for newly detected objects and update the appropriate workspace memory.
+        Enhanced version for multi-workspace support.
+        """
+        import time
+
+        with self._memory_lock:
+            current_ws_id = self._current_workspace_id
+            if current_ws_id is None:
+                return
+
+            # Clear workspace memory if returning to observation pose
+            if self._should_clear_memory():
+                if self.verbose():
+                    print(f"Clearing memory for workspace: {current_ws_id}")
+                self._workspace_memories[current_ws_id].clear()
+                if hasattr(self, "_manual_memory_updates"):
+                    self._manual_memory_updates.clear()
+                self._workspace_was_lost = False
+
+            # Only update memory when at observation pose
+            if not self._should_update_memory():
+                return
+
+            current_time = time.time()
+            workspace_memory = self._workspace_memories[current_ws_id]
+
+            # Clean up expired manual updates
+            if hasattr(self, "_manual_memory_updates"):
+                expired_labels = [
+                    label
+                    for label, timestamp in self._manual_memory_updates.items()
+                    if current_time - timestamp > self._manual_update_timeout
+                ]
+                for label in expired_labels:
+                    del self._manual_memory_updates[label]
+
+            # Update memory with new detections
+            objects_added = 0
+            objects_updated = 0
+
+            for obj in detected_objects:
+                x_center, y_center = obj.xy_com()
+                label = obj.label()
+
+                # Check for manual updates
+                if hasattr(self, "_manual_memory_updates") and label in self._manual_memory_updates:
+                    found_manual = False
+                    for memory_obj in workspace_memory:
+                        if memory_obj.label() == label:
+                            manual_dist = ((memory_obj.x_com() - x_center) ** 2 + (memory_obj.y_com() - y_center) ** 2) ** 0.5
+
+                            if manual_dist > 0.05:
+                                if self.verbose():
+                                    print(f"Keeping manual update for {label}")
+                                found_manual = True
+                                break
+                            else:
+                                memory_obj._x_com = x_center
+                                memory_obj._y_com = y_center
+                                objects_updated += 1
+                                found_manual = True
+                                break
+
+                    if found_manual:
+                        continue
+
+                # Check if object already exists in memory
+                is_duplicate = False
+                for memory_obj in workspace_memory:
+                    if (
+                        memory_obj.label() == label
+                        and abs(memory_obj.x_com() - x_center) <= 0.05
+                        and abs(memory_obj.y_com() - y_center) <= 0.05
+                    ):
+                        is_duplicate = True
+                        break
+
+                if not is_duplicate:
+                    workspace_memory.append(obj)
+                    objects_added += 1
+
+            if self.verbose() and (objects_added > 0 or objects_updated > 0):
+                print(
+                    f"Workspace '{current_ws_id}' memory update: "
+                    f"added {objects_added}, updated {objects_updated} "
+                    f"(total: {len(workspace_memory)})"
+                )
 
     def get_observation_pose(self, workspace_id: str) -> "PoseObjectPNP":
         """

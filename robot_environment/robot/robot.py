@@ -442,6 +442,227 @@ class Robot(RobotAPI):
     #
     #     return None, success
 
+    def pick_place_object_across_workspaces(
+        self,
+        object_name: str,
+        pick_workspace_id: str,
+        pick_coordinate: List,
+        place_workspace_id: str,
+        place_coordinate: List,
+        location: Union["Location", str, None] = None,
+    ) -> bool:
+        """
+        Pick an object from one workspace and place it in another workspace.
+
+        Args:
+            object_name: Name of the object to pick
+            pick_workspace_id: ID of the workspace to pick from
+            pick_coordinate: [x, y] coordinate in pick workspace
+            place_workspace_id: ID of the workspace to place in
+            place_coordinate: [x, y] coordinate in place workspace
+            location: Relative placement location (Location enum or string)
+
+        Returns:
+            bool: True if successful, False otherwise
+
+        Example:
+            robot.pick_place_object_across_workspaces(
+                object_name='cube',
+                pick_workspace_id='niryo_ws_left',
+                pick_coordinate=[0.2, 0.05],
+                place_workspace_id='niryo_ws_right',
+                place_coordinate=[0.25, -0.05],
+                location=Location.RIGHT_NEXT_TO
+            )
+        """
+        if self.verbose():
+            print(f"Multi-workspace operation: {object_name}")
+            print(f"  Pick from: {pick_workspace_id} at {pick_coordinate}")
+            print(f"  Place in: {place_workspace_id} at {place_coordinate}")
+
+        # Step 1: Move to pick workspace observation pose
+        self.move2observation_pose(pick_workspace_id)
+        self.environment()._current_workspace_id = pick_workspace_id
+
+        # Step 2: Pick the object
+        success = self.pick_object_from_workspace(object_name, pick_workspace_id, pick_coordinate)
+
+        if not success:
+            print(f"Failed to pick {object_name} from {pick_workspace_id}")
+            return False
+
+        # Step 3: Move to place workspace observation pose
+        self.move2observation_pose(place_workspace_id)
+        self.environment()._current_workspace_id = place_workspace_id
+
+        # Step 4: Place the object
+        place_success = self.place_object_in_workspace(place_workspace_id, place_coordinate, location)
+
+        if place_success:
+            # Update memory: remove from source, add to target
+            self.environment().update_object_in_workspace(
+                source_workspace_id=pick_workspace_id,
+                target_workspace_id=place_workspace_id,
+                object_label=object_name,
+                old_coordinate=pick_coordinate,
+                new_coordinate=place_coordinate,
+            )
+
+            if self.verbose():
+                print(f"Successfully moved {object_name} from {pick_workspace_id} " f"to {place_workspace_id}")
+
+        return place_success
+
+    def pick_object_from_workspace(self, object_name: str, workspace_id: str, pick_coordinate: List) -> bool:
+        """
+        Pick an object from a specific workspace.
+
+        Args:
+            object_name: Name of the object to pick
+            workspace_id: ID of the workspace
+            pick_coordinate: [x, y] coordinate in workspace
+
+        Returns:
+            bool: True if successful
+        """
+        coords_str = "[" + ", ".join(f"{x:.2f}" for x in pick_coordinate) + "]"
+        message = f"Picking {object_name} from workspace {workspace_id} at {coords_str}."
+        print(message)
+
+        thread_oral = self.environment().oralcom_call_text2speech_async(message)
+
+        # Get object from specific workspace memory
+        obj_to_pick = self._get_nearest_object_in_workspace(object_name, workspace_id, pick_coordinate)
+
+        if obj_to_pick:
+            self._object_last_picked = obj_to_pick
+            self._object_source_workspace = workspace_id
+            success = self._robot.robot_pick_object(obj_to_pick)
+        else:
+            success = False
+
+        thread_oral.join()
+        return success
+
+    def place_object_in_workspace(
+        self, workspace_id: str, place_coordinate: List, location: Union["Location", str, None] = None
+    ) -> bool:
+        """
+        Place a picked object in a specific workspace.
+
+        Args:
+            workspace_id: ID of the target workspace
+            place_coordinate: [x, y] coordinate in workspace
+            location: Relative placement location
+
+        Returns:
+            bool: True if successful
+        """
+        location = Location.convert_str2location(location)
+
+        if self._object_last_picked:
+            # old_coordinate = [self._object_last_picked.x_com(), self._object_last_picked.y_com()]
+            message = (
+                f"Placing {self._object_last_picked.label()} in workspace "
+                f"{workspace_id} {location} coordinate "
+                f"[{place_coordinate[0]:.2f}, {place_coordinate[1]:.2f}]."
+            )
+        else:
+            # old_coordinate = None
+            message = (
+                f"Placing object in workspace {workspace_id} {location} "
+                f"coordinate [{place_coordinate[0]:.2f}, {place_coordinate[1]:.2f}]."
+            )
+
+        print(message)
+        thread_oral = self.environment().oralcom_call_text2speech_async(message)
+
+        # Get workspace for coordinate transformation
+        workspace = self.environment().get_workspace_by_id(workspace_id)
+        if workspace is None:
+            print(f"Error: Workspace {workspace_id} not found")
+            thread_oral.join()
+            return False
+
+        # Find reference object in target workspace if location specified
+        obj_where_to_place = None
+        if location is not None and location is not Location.NONE:
+            obj_where_to_place = self._get_nearest_object_in_workspace(None, workspace_id, place_coordinate)
+
+            if obj_where_to_place is None:
+                place_pose = PoseObjectPNP(place_coordinate[0], place_coordinate[1], 0.09, 0.0, 1.57, 0.0)
+            else:
+                place_pose = obj_where_to_place.pose_center()
+        else:
+            place_pose = PoseObjectPNP(place_coordinate[0], place_coordinate[1], 0.09, 0.0, 1.57, 0.0)
+
+        # Calculate placement offset based on location
+        if place_pose and obj_where_to_place:
+            x_off = 0.02
+            y_off = 0.02
+
+            if self._object_last_picked:
+                x_off += self._object_last_picked.height_m() / 2
+                y_off += self._object_last_picked.width_m() / 2
+
+            if location == Location.ON_TOP_OF:
+                place_pose.z += 0.02
+            elif location == Location.INSIDE:
+                place_pose.z += 0.01
+            elif location == Location.RIGHT_NEXT_TO:
+                place_pose.y -= obj_where_to_place.width_m() / 2 + y_off
+            elif location == Location.LEFT_NEXT_TO:
+                place_pose.y += obj_where_to_place.width_m() / 2 + y_off
+            elif location == Location.BELOW:
+                place_pose.x -= obj_where_to_place.height_m() / 2 + x_off
+            elif location == Location.ABOVE:
+                place_pose.x += obj_where_to_place.height_m() / 2 + x_off
+
+        success = self._robot.robot_place_object(place_pose)
+
+        # Clear last picked object
+        self._object_last_picked = None
+        if hasattr(self, "_object_source_workspace"):
+            del self._object_source_workspace
+
+        thread_oral.join()
+        return success
+
+    def _get_nearest_object_in_workspace(
+        self, label: Union[str, None], workspace_id: str, target_coords: List
+    ) -> Optional["Object"]:
+        """
+        Find the nearest object in a specific workspace.
+
+        Args:
+            label: Object label to search for (None for any object)
+            workspace_id: ID of the workspace
+            target_coords: Target coordinates [x, y]
+
+        Returns:
+            Object or None
+        """
+        # Get objects from specific workspace memory
+        detected_objects = self.environment().get_detected_objects_from_workspace(workspace_id)
+
+        if self.verbose():
+            print(f"Objects in workspace {workspace_id}: {detected_objects}")
+
+        if len(target_coords) == 0:
+            nearest_object = next((obj for obj in detected_objects if obj.label() == label), None)
+            min_distance = 0
+        else:
+            nearest_object, min_distance = detected_objects.get_nearest_detected_object(target_coords, label)
+
+        if nearest_object:
+            if self.verbose():
+                print(f"Found {nearest_object.label()} at distance {min_distance:.3f}m")
+        else:
+            print(f"Object {label} not found in workspace {workspace_id}")
+            print(f"Available objects: " f"{detected_objects.get_detected_objects_as_comma_separated_string()}")
+
+        return nearest_object
+
     @staticmethod
     def _parse_command(line: str) -> tuple[str, str, list, dict]:
         """
@@ -779,5 +1000,7 @@ class Robot(RobotAPI):
 
     # True, if robot is in motion and therefore cannot see the workspace markers
     _robot_in_motion = False
+
+    _object_source_workspace: Optional[str] = None  # Track source workspace
 
     _verbose = False
