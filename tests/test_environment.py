@@ -9,6 +9,7 @@ from robot_environment.environment import Environment
 from robot_workspace import Objects
 from robot_workspace import Object
 from robot_workspace import PoseObjectPNP
+from .conftest import create_mock_workspace
 
 
 @pytest.fixture
@@ -48,8 +49,12 @@ def mock_dependencies():
         mock_fg_instance.get_current_frame_width_height.return_value = (480, 640)
         mock_fg.return_value = mock_fg_instance
 
+        ws1 = create_mock_workspace("niryo_ws_left")
+        ws2 = create_mock_workspace("niryo_ws_right")
+
         # Setup workspaces mock with complete interface
         mock_ws_instance = Mock()
+        mock_ws_instance.__iter__ = Mock(return_value=iter([ws1, ws2]))
         mock_workspace = Mock()
         mock_workspace.id.return_value = "test_ws"
         mock_workspace.img_shape.return_value = (640, 480, 3)

@@ -17,6 +17,7 @@ import time
 from unittest.mock import Mock, patch, create_autospec
 from robot_environment.environment import Environment
 from robot_workspace import Objects, Object, PoseObjectPNP, Workspace
+from .conftest import create_mock_workspace
 
 
 @pytest.fixture
@@ -49,8 +50,14 @@ def mock_dependencies():
         mock_fg_instance.get_current_frame.return_value = np.zeros((480, 640, 3), dtype=np.uint8)
         mock_fg.return_value = mock_fg_instance
 
+        ws1 = create_mock_workspace("niryo_ws_left")
+        ws2 = create_mock_workspace("niryo_ws_right")
+
         # Setup workspaces with complete interface
         mock_ws_instance = Mock()
+        # Make it iterable
+        mock_ws_instance.__iter__ = Mock(return_value=iter([ws1, ws2]))
+
         mock_workspace = Mock()
         mock_workspace.id.return_value = "test_ws"
         mock_workspace.img_shape.return_value = (640, 480, 3)

@@ -95,10 +95,21 @@ class Environment:
         self._workspace_visibility_state: Dict[str, bool] = {}
 
         # Initialize memory for each workspace
-        for workspace in self._workspaces:
-            workspace_id = workspace.id()
-            self._workspace_memories[workspace_id] = Objects()
-            self._workspace_visibility_state[workspace_id] = False
+        # SAFETY: Check if _workspaces is iterable before iterating
+        if hasattr(self._workspaces, "__iter__"):
+            try:
+                for workspace in self._workspaces:
+                    workspace_id = workspace.id()
+                    self._workspace_memories[workspace_id] = Objects()
+                    self._workspace_visibility_state[workspace_id] = False
+            except Exception as e:
+                if self.verbose():
+                    print(f"Warning: Could not iterate workspaces: {e}")
+                # Initialize with default workspace if iteration fails
+                if hasattr(self._workspaces, "get_workspace_home_id"):
+                    default_ws_id = self._workspaces.get_workspace_home_id()
+                    self._workspace_memories[default_ws_id] = Objects()
+                    self._workspace_visibility_state[default_ws_id] = False
 
         det_mdl = "owlv2"  # "yoloe-11l"  # owlv2
         config = get_default_config(det_mdl)
