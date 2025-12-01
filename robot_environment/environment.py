@@ -239,7 +239,6 @@ class Environment:
 
             # Only update memory when at observation pose
             if not self._should_update_memory():
-                print("Skipping memory update - conditions not met")
                 if self.verbose():
                     print("Skipping memory update - conditions not met")
                 return
@@ -361,7 +360,7 @@ class Environment:
                 print(f"Warning: Could not find {object_label} in memory to remove")
                 print(f"Memory contents: {[(obj.label(), [obj.x_com(), obj.y_com()]) for obj in self._obj_position_memory]}")
 
-    def update_object_in_memory(self, object_label: str, old_coordinate: List[float], new_pose: PoseObjectPNP) -> None:
+    def update_object_in_memory(self, object_label: str, old_coordinate: List[float], new_pose: "PoseObjectPNP") -> None:
         """
         Update an object's position in memory after it has been moved.
 
@@ -399,8 +398,6 @@ class Environment:
                     print(
                         f"Memory contents: {[(obj.label(), [obj.x_com(), obj.y_com()]) for obj in self._obj_position_memory]}"
                     )
-
-        print("_obj_position_memory:", self._obj_position_memory)
 
     def get_detected_objects_from_memory(self) -> "Objects":
         """
