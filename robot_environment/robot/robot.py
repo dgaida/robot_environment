@@ -176,10 +176,13 @@ class Robot(RobotAPI):
 
             # After successful pick and place, remove old position from memory
             # and optionally add new position (if we want to track moved objects)
-            if place_success:
-                self.environment().remove_object_from_memory(object_name, pick_coordinate)
+            # in pick_place already updating the position, so no need to delete the object, because its position was
+            # updated
+            # if place_success:
+                # self.environment().remove_object_from_memory(object_name, pick_coordinate)
                 # Optionally update with new position:
-                self.environment().update_object_in_memory(object_name, pick_coordinate, place_coordinate)
+                # already done in place_object
+                # self.environment().update_object_in_memory(object_name, pick_coordinate, place_coordinate)
 
             return place_success
         else:
@@ -318,6 +321,7 @@ class Robot(RobotAPI):
             # Update memory after successful placement
             if success and self._object_last_picked and old_coordinate:
                 final_coordinate = [place_pose.x, place_pose.y]
+                print("final_coordinate:", final_coordinate)
                 # Remove from old position in memory
                 # nicht löschen, sondern objektposition wird aktualiseirt unten
                 # self.environment().remove_object_from_memory(self._object_last_picked.label(), old_coordinate)
@@ -325,7 +329,7 @@ class Robot(RobotAPI):
                 # muss die neue Position hier doch in memory hinzufügen, damit ich es nach dem ablegen sofort
                 # wieder greifen kann. mein Test im paper Nr. 6.
                 self.environment().update_object_in_memory(
-                    self._object_last_picked.label(), old_coordinate, new_coordinate=final_coordinate
+                    self._object_last_picked.label(), old_coordinate, new_pose=place_pose
                 )
                 # TODO: use logger to log new position
 

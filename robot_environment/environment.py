@@ -239,6 +239,7 @@ class Environment:
 
             # Only update memory when at observation pose
             if not self._should_update_memory():
+                print("Skipping memory update - conditions not met")
                 if self.verbose():
                     print("Skipping memory update - conditions not met")
                 return
@@ -320,6 +321,7 @@ class Environment:
         Manually clear all objects from memory.
         Useful when you know the workspace has changed significantly.
         """
+        print("Warning: Clearing memory of all objects")
         with self._memory_lock:
             if self.verbose():
                 print(f"Manually clearing memory of {len(self._obj_position_memory)} objects")
@@ -350,6 +352,7 @@ class Environment:
                         del self._manual_memory_updates[object_label]
 
                     removed = True
+                    print(f"Removed {object_label} from memory at {coordinate}")
                     if self.verbose():
                         print(f"Removed {object_label} from memory at {coordinate}")
                     break
@@ -358,14 +361,14 @@ class Environment:
                 print(f"Warning: Could not find {object_label} in memory to remove")
                 print(f"Memory contents: {[(obj.label(), [obj.x_com(), obj.y_com()]) for obj in self._obj_position_memory]}")
 
-    def update_object_in_memory(self, object_label: str, old_coordinate: List[float], new_coordinate: List[float]) -> None:
+    def update_object_in_memory(self, object_label: str, old_coordinate: List[float], new_pose: PoseObjectPNP) -> None:
         """
         Update an object's position in memory after it has been moved.
 
         Args:
             object_label: Label of the object
             old_coordinate: Previous coordinate [x, y]
-            new_coordinate: New coordinate [x, y] after movement
+            new_pose: New pose after movement
         """
         import time
 
@@ -374,19 +377,20 @@ class Environment:
             for obj in self._obj_position_memory:
                 if (
                     obj.label() == object_label
-                    and abs(obj.x_com() - old_coordinate[0]) <= 0.05
-                    and abs(obj.y_com() - old_coordinate[1]) <= 0.05
+                    and abs(obj.x_com() - old_coordinate[0]) <= 0.025
+                    and abs(obj.y_com() - old_coordinate[1]) <= 0.025
                 ):
                     # Update position
-                    obj._x_com = new_coordinate[0]
-                    obj._y_com = new_coordinate[1]
+                    obj.set_pose_com(new_pose)
+                    # obj._y_com = new_coordinate[1]
 
                     # Mark this as a manual update with timestamp
                     self._manual_memory_updates[object_label] = time.time()
 
                     updated = True
+                    print(f"Updated {object_label} position in memory: {old_coordinate} -> {new_pose}")
                     if self.verbose():
-                        print(f"Updated {object_label} position in memory: {old_coordinate} -> {new_coordinate}")
+                        print(f"Updated {object_label} position in memory: {old_coordinate} -> {new_pose}")
                     break
 
             if not updated:
@@ -395,6 +399,8 @@ class Environment:
                     print(
                         f"Memory contents: {[(obj.label(), [obj.x_com(), obj.y_com()]) for obj in self._obj_position_memory]}"
                     )
+
+        print("_obj_position_memory:", self._obj_position_memory)
 
     def get_detected_objects_from_memory(self) -> "Objects":
         """
