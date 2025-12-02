@@ -120,9 +120,6 @@ class Environment:
         self._object_broker = RedisMessageBroker()
         self._label_manager = RedisLabelManager()
 
-        # Initialize default labels on startup
-        self._initialize_default_labels()
-
         # det_mdl = "owlv2"  # "yoloe-11l"  # owlv2
         # config = get_default_config(det_mdl)
 
@@ -1132,66 +1129,6 @@ class Environment:
     # *** PUBLIC STATIC/CLASS GET methods ***
 
     # *** PRIVATE methods ***
-
-    def _initialize_default_labels(self):
-        """
-        Initialize Redis with default detectable object labels.
-        This should match the default labels in VisionConfig.
-        """
-        default_labels = [
-            # Geometric shapes
-            "blue circle",
-            "blue square",
-            "blue box",
-            "blue cube",
-            "red circle",
-            "red square",
-            "red box",
-            "red cube",
-            "green circle",
-            "green coin",
-            "green cylinder",
-            "green square",
-            "orange cube",
-            "purple cube",
-            "yellow cube",
-            "green cube",
-            # Office items
-            "black pen",
-            "black ballpoint pen",
-            "pen",
-            "pencil",
-            "book",
-            "computer mouse",
-            "usb stick",
-            "remote control",
-            "battery",
-            "batteries",
-            "screwdriver",
-            "screw",
-            # Food items
-            "chocolate bar",
-            "bounty",
-            "snickers",
-            "mars",
-            "milky way",
-            "twix",
-            "snickers bar",
-            "sweets",
-            "mandarin",
-            "apple",
-            "coke can",
-            # Lighting items
-            "lighter",
-            "cigarette lighter",
-            "philips batteries",
-        ]
-
-        # Publish initial labels to Redis
-        self._label_manager.publish_labels(default_labels, metadata={"source": "robot_environment", "action": "initialize"})
-
-        if self.verbose():
-            print(f"Published {len(default_labels)} default labels to Redis")
 
     # *** PUBLIC properties ***
 

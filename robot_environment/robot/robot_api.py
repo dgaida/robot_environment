@@ -24,12 +24,17 @@ class RobotAPI(ABC):
 
     @abstractmethod
     def pick_place_object(
-        self, object_name: str, pick_coordinate: List, place_coordinate: List, location: Union["Location", str, None] = None
+        self,
+        object_name: str,
+        pick_coordinate: List,
+        place_coordinate: List,
+        location: Union["Location", str, None] = None,
+        z_offset: float = 0.001,
     ) -> bool:
         """
-        Command the pick-and-place robot arm to pick a specific object and place it using its gripper.
-        The gripper will move to the specified 'pick_coordinate' and pick the named object. Then it will move to the
-        specified 'place_coordinate' and place the object there. If you have to pick-and-place an object, call this
+        Instructs the pick-and-place robot arm to pick a specific object and place it using its gripper.
+        The gripper will move to the specified 'pick_coordinate' and pick the named object. It will then move to the
+        specified 'place_coordinate' and place the object there. If you need to pick-and-place an object, call this
         function and not robot_pick_object() followed by robot_place_object().
 
         Example call:
@@ -43,13 +48,22 @@ class RobotAPI(ABC):
         --> Picks the chocolate bar that is located at world coordinates [-0.1, 0.01] and places it right next to an
         object that exists at world coordinate [0.1, 0.11].
 
+        robot.pick_place_object(
+            object_name='cube',
+            pick_coordinate=[0.2, 0.05],
+            place_coordinate=[0.3, 0.1],
+            location=Location.ON_TOP_OF,
+            z_offset=0.02
+        )
+        --> Picks the cube with a 2cm z-offset (useful if it's on top of another object).
+
         Args:
             object_name (str): The name of the object to be picked up. Ensure this name matches an object visible in
             the robot's workspace.
             pick_coordinate (List): The world coordinates [x, y] where the object should be picked up. Use these
             coordinates to identify the object's exact position.
             place_coordinate (List): The world coordinates [x, y] where the object should be placed at.
-            location (Location): Specifies the relative placement position of the picked object in relation to an object
+            location (Location): Specifies the relative placement position of the picked object with respect to an object
             being at the 'place_coordinate'. Possible values are defined in the `Location` Enum:
                 - `Location.LEFT_NEXT_TO`: Left of the reference object.
                 - `Location.RIGHT_NEXT_TO`: Right of the reference object.
@@ -58,6 +72,8 @@ class RobotAPI(ABC):
                 - `Location.ON_TOP_OF`: On top of the reference object.
                 - `Location.INSIDE`: Inside the reference object.
                 - `Location.NONE`: No specific location relative to another object.
+            z_offset (float): Additional height offset in meters to apply when picking (default: 0.001).
+            Useful for picking objects that are stacked on top of other objects.
 
         Returns:
             bool: Always returns `True` after the pick-and-place operation.
@@ -65,7 +81,7 @@ class RobotAPI(ABC):
         return True
 
     @abstractmethod
-    def pick_object(self, object_name: str, pick_coordinate: List) -> bool:
+    def pick_object(self, object_name: str, pick_coordinate: List, z_offset: float = 0.001) -> bool:
         """
         Command the pick-and-place robot arm to pick up a specific object using its gripper. The gripper will move to
         the specified 'pick_coordinate' and pick the named object.
@@ -75,11 +91,16 @@ class RobotAPI(ABC):
         robot.pick_object("pen", [0.01, -0.15])
         --> Picks the pen that is located at world coordinates [0.01, -0.15].
 
+        robot.pick_object("pen", [0.01, -0.15], z_offset=0.02)
+        --> Picks the pen with a 2cm offset above its detected position (useful for stacked objects).
+
         Args:
             object_name (str): The name of the object to be picked up. Ensure this name matches an object visible in
             the robot's workspace.
             pick_coordinate (List): The world coordinates [x, y] where the object should be picked up. Use these
             coordinates to identify the object's exact position.
+            z_offset (float): Additional height offset in meters to apply when picking (default: 0.001).
+            Useful for picking objects that are stacked on top of other objects.
         Returns:
             bool: True
         """

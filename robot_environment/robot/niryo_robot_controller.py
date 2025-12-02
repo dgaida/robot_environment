@@ -24,7 +24,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from robot_workspace import PoseObjectPNP
-    from robot_workspace import Object
     from .robot import Robot
 
 
@@ -156,25 +155,24 @@ class NiryoRobotController(RobotController):
             self._robot = None
 
     @log_start_end_cls()
-    def robot_pick_object(self, obj2pick: "Object") -> bool:
+    def robot_pick_object(self, pick_pose: "PoseObjectPNP") -> bool:
         """
-        Calls the pick command of the self._robot_ctrl to pick the given Object
+        Calls the pick command of the self._robot_ctrl to pick the object at the given pose.
 
         Args:
-            obj2pick: Object that shall be picked
+            pick_pose: Pose where to pick the object (z-offset already applied if needed)
 
         Returns:
             True, if pick was successful, else False
         """
-        pick_pose = obj2pick.pose_com()
-        pick_pose = pick_pose.copy_with_offsets(z_offset=0.001)
-        pick_pose = PoseObjectPNP.convert_pose_object2niryo_pose_object(pick_pose)
+        # Convert to Niryo format
+        pick_pose_niryo = PoseObjectPNP.convert_pose_object2niryo_pose_object(pick_pose)
 
         with self._lock:
             if pyniryo_v == "pyniryo2":
-                self._robot_ctrl.pick_place.pick_from_pose(pick_pose)
+                self._robot_ctrl.pick_place.pick_from_pose(pick_pose_niryo)
             else:
-                self._robot_ctrl.pick_from_pose(pick_pose)
+                self._robot_ctrl.pick_from_pose(pick_pose_niryo)
 
         print("finished pick_from_pose")
         return True

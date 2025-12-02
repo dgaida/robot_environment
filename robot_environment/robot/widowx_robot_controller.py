@@ -19,7 +19,6 @@ except ImportError:
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from robot_workspace import Object
     from .robot import Robot
 
 
@@ -137,22 +136,20 @@ class WidowXRobotController(RobotController):
             self._robot_ctrl = None
 
     @log_start_end_cls()
-    def robot_pick_object(self, obj2pick: "Object") -> bool:
+    def robot_pick_object(self, pick_pose: "PoseObjectPNP") -> bool:
         """
-        Calls the pick command to pick the given Object
+        Calls the pick command to pick an object at the given pose.
 
         Args:
-            obj2pick: Object that shall be picked
+            pick_pose: Pose where to pick the object (z-offset already applied if needed)
 
         Returns:
             True, if pick was successful, else False
         """
         try:
-            pick_pose = obj2pick.pose_com()
-
-            # Add small z-offset for approach
+            # Add small z-offset for approach (additional to any z-offset already in pick_pose)
             pick_pose_approach = pick_pose.copy_with_offsets(z_offset=0.05)
-            pick_pose_grasp = pick_pose.copy_with_offsets(z_offset=0.001)
+            pick_pose_grasp = pick_pose  # Use the pose as-is (z-offset already applied)
 
             with self._lock:
                 # Open gripper

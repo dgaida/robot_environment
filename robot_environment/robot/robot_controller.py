@@ -9,7 +9,6 @@ import threading
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from robot_workspace import Object
     from robot_workspace import PoseObjectPNP
     from .robot import Robot
 
@@ -74,13 +73,25 @@ class RobotController(ABC):
 
     # TODO: also possible to only pass PoseObject of the object. The advantage of passing Object might be
     #  that an object has more then one pick position. then robot can try and pick at a few positions.
+    # @abstractmethod
+    # def robot_pick_object(self, obj2pick: "Object") -> bool:
+    #     """
+    #     Calls the pick command of the self._robot_ctrl to pick the given Object
+    #
+    #     Args:
+    #         obj2pick: Object that shall be picked
+    #
+    #     Returns:
+    #         True, if pick was successful, else False
+    #     """
+    #     return False
     @abstractmethod
-    def robot_pick_object(self, obj2pick: "Object") -> bool:
+    def robot_pick_object(self, pick_pose: "PoseObjectPNP") -> bool:
         """
-        Calls the pick command of the self._robot_ctrl to pick the given Object
+        Calls the pick command of the self._robot_ctrl to pick an object at the given pose.
 
         Args:
-            obj2pick: Object that shall be picked
+            pick_pose: Pose where the object should be picked (includes z-offset if needed)
 
         Returns:
             True, if pick was successful, else False

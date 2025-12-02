@@ -110,6 +110,32 @@ class TestRobot:
         assert success is True
         mock_robot_controller.return_value.robot_pick_object.assert_called_once()
 
+    def test_pick_object_with_z_offset(self, mock_environment, mock_robot_controller):
+        """Test picking object with custom z-offset"""
+        robot = Robot(mock_environment, use_simulation=False, robot_id="niryo")
+
+        # Mock detected objects
+        mock_obj = Mock(spec=Object)
+        mock_obj.label.return_value = "pencil"
+        mock_obj.x_com.return_value = 0.25
+        mock_obj.y_com.return_value = 0.05
+        mock_obj.coordinate.return_value = [0.25, 0.05]
+        mock_obj.pose_com.return_value = PoseObjectPNP(0.25, 0.05, 0.01)
+
+        with patch.object(robot, "get_detected_objects", return_value=Objects([mock_obj])):
+            success = robot.pick_object("pencil", [0.25, 0.05], z_offset=0.02)
+
+        assert success is True
+
+        # Verify robot_pick_object was called with pose (not object)
+        mock_robot_controller.return_value.robot_pick_object.assert_called_once()
+        call_args = mock_robot_controller.return_value.robot_pick_object.call_args[0][0]
+
+        # Verify it's a PoseObjectPNP, not an Object
+        assert isinstance(call_args, PoseObjectPNP)
+        # Verify z-offset was applied
+        assert call_args.z == pytest.approx(0.03, abs=0.001)  # 0.01 + 0.02
+
     def test_pick_object_not_found(self, mock_environment, mock_robot_controller):
         """Test picking object that doesn't exist"""
         robot = Robot(mock_environment, use_simulation=False, robot_id="niryo")
@@ -321,6 +347,37 @@ class TestRobot:
             mock_get.side_effect = [Objects([mock_pick_obj]), Objects([mock_place_obj])]
 
             success = robot.pick_place_object("pencil", [0.15, -0.05], [0.3, 0.1], location=Location.RIGHT_NEXT_TO)
+
+        assert success is True
+
+    def test_pick_place_object_with_z_offset(self, mock_environment, mock_robot_controller):
+        """Test pick and place with z-offset"""
+        robot = Robot(mock_environment, use_simulation=False, robot_id="niryo")
+
+        mock_pick_obj = Mock(spec=Object)
+        mock_pick_obj.label.return_value = "pencil"
+        mock_pick_obj.x_com.return_value = 0.15
+        mock_pick_obj.y_com.return_value = -0.05
+        mock_pick_obj.coordinate.return_value = [0.15, -0.05]
+        mock_pick_obj.width_m.return_value = 0.02
+        mock_pick_obj.height_m.return_value = 0.15
+        mock_pick_obj.pose_com.return_value = PoseObjectPNP(0.15, -0.05, 0.01)
+
+        mock_place_obj = Mock(spec=Object)
+        mock_place_obj.label.return_value = "box"
+        mock_place_obj.x_com.return_value = 0.3
+        mock_place_obj.y_com.return_value = 0.1
+        mock_place_obj.coordinate.return_value = [0.3, 0.1]
+        mock_place_obj.width_m.return_value = 0.05
+        mock_place_obj.height_m.return_value = 0.05
+        mock_place_obj.pose_center.return_value = PoseObjectPNP(0.3, 0.1, 0.01)
+
+        with patch.object(robot, "get_detected_objects") as mock_get:
+            mock_get.side_effect = [Objects([mock_pick_obj]), Objects([mock_place_obj])]
+
+            success = robot.pick_place_object(
+                "pencil", [0.15, -0.05], [0.3, 0.1], location=Location.RIGHT_NEXT_TO, z_offset=0.02
+            )
 
         assert success is True
 

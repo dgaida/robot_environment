@@ -7,7 +7,6 @@ import threading
 from unittest.mock import Mock, patch
 from robot_environment.robot.niryo_robot_controller import NiryoRobotController
 from robot_workspace import PoseObjectPNP
-from robot_workspace import Object
 
 
 @pytest.fixture
@@ -100,33 +99,44 @@ class TestNiryoRobotController:
         assert isinstance(pose, PoseObjectPNP)
         assert pose.x == 0.2
 
-    def test_robot_pick_object(self, mock_robot, mock_niryo_robot):
-        """Test picking an object"""
+    def test_robot_pick_object_with_pose(self, mock_robot, mock_niryo_robot):
+        """Test picking with a pose object instead of Object"""
         controller = NiryoRobotController(mock_robot, use_simulation=False)
 
-        # Create mock object
-        mock_obj = Mock(spec=Object)
-        mock_pose = PoseObjectPNP(0.25, 0.05, 0.01, 0.0, 1.57, 0.0)
-        mock_obj.pose_com.return_value = mock_pose
+        pick_pose = PoseObjectPNP(0.25, 0.05, 0.03, 0.0, 1.57, 0.0)  # With z-offset already applied
 
-        result = controller.robot_pick_object(mock_obj)
+        result = controller.robot_pick_object(pick_pose)
 
         assert result is True
         mock_niryo_robot.return_value.pick_from_pose.assert_called_once()
 
-    def test_robot_pick_object_with_z_offset(self, mock_robot, mock_niryo_robot):
-        """Test that pick adds z-offset"""
-        controller = NiryoRobotController(mock_robot, use_simulation=False)
-
-        mock_obj = Mock(spec=Object)
-        mock_pose = PoseObjectPNP(0.25, 0.05, 0.01, 0.0, 1.57, 0.0)
-        mock_obj.pose_com.return_value = mock_pose
-
-        controller.robot_pick_object(mock_obj)
-
-        # Check that pose was modified with offset
-        call_args = mock_niryo_robot.return_value.pick_from_pose.call_args[0][0]
-        assert call_args.z == pytest.approx(0.011, abs=0.001)
+    # def test_robot_pick_object(self, mock_robot, mock_niryo_robot):
+    #     """Test picking an object"""
+    #     controller = NiryoRobotController(mock_robot, use_simulation=False)
+    #
+    #     # Create mock object
+    #     mock_obj = Mock(spec=Object)
+    #     mock_pose = PoseObjectPNP(0.25, 0.05, 0.01, 0.0, 1.57, 0.0)
+    #     mock_obj.pose_com.return_value = mock_pose
+    #
+    #     result = controller.robot_pick_object(mock_obj)
+    #
+    #     assert result is True
+    #     mock_niryo_robot.return_value.pick_from_pose.assert_called_once()
+    #
+    # def test_robot_pick_object_with_z_offset(self, mock_robot, mock_niryo_robot):
+    #     """Test that pick adds z-offset"""
+    #     controller = NiryoRobotController(mock_robot, use_simulation=False)
+    #
+    #     mock_obj = Mock(spec=Object)
+    #     mock_pose = PoseObjectPNP(0.25, 0.05, 0.01, 0.0, 1.57, 0.0)
+    #     mock_obj.pose_com.return_value = mock_pose
+    #
+    #     controller.robot_pick_object(mock_obj)
+    #
+    #     # Check that pose was modified with offset
+    #     call_args = mock_niryo_robot.return_value.pick_from_pose.call_args[0][0]
+    #     assert call_args.z == pytest.approx(0.011, abs=0.001)
 
     def test_robot_place_object(self, mock_robot, mock_niryo_robot):
         """Test placing an object"""

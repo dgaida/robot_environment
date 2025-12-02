@@ -131,7 +131,12 @@ class Robot(RobotAPI):
 
     @log_start_end_cls()
     def pick_place_object(
-        self, object_name: str, pick_coordinate: List, place_coordinate: List, location: Union["Location", str, None] = None
+        self,
+        object_name: str,
+        pick_coordinate: List,
+        place_coordinate: List,
+        location: Union["Location", str, None] = None,
+        z_offset: float = 0.001,
     ) -> bool:
         """
         Instructs the pick-and-place robot arm to pick a specific object and place it using its gripper.
@@ -150,6 +155,15 @@ class Robot(RobotAPI):
         --> Picks the chocolate bar that is located at world coordinates [-0.1, 0.01] and places it right next to an
         object that exists at world coordinate [0.1, 0.11].
 
+        robot.pick_place_object(
+            object_name='cube',
+            pick_coordinate=[0.2, 0.05],
+            place_coordinate=[0.3, 0.1],
+            location=Location.ON_TOP_OF,
+            z_offset=0.02
+        )
+        --> Picks the cube with a 2cm z-offset (useful if it's on top of another object).
+
         Args:
             object_name (str): The name of the object to be picked up. Ensure this name matches an object visible in
             the robot's workspace.
@@ -165,31 +179,22 @@ class Robot(RobotAPI):
                 - `Location.ON_TOP_OF`: On top of the reference object.
                 - `Location.INSIDE`: Inside the reference object.
                 - `Location.NONE`: No specific location relative to another object.
+            z_offset (float): Additional height offset in meters to apply when picking (default: 0.001).
+            Useful for picking objects that are stacked on top of other objects.
 
         Returns:
             bool: Always returns `True` after the pick-and-place operation.
         """
-        success = self.pick_object(object_name, pick_coordinate)
+        success = self.pick_object(object_name, pick_coordinate, z_offset=z_offset)
 
         if success:
             place_success = self.place_object(place_coordinate, location)
-
-            # After successful pick and place, remove old position from memory
-            # and optionally add new position (if we want to track moved objects)
-            # in pick_place already updating the position, so no need to delete the object, because its position was
-            # updated
-            # if place_success:
-                # self.environment().remove_object_from_memory(object_name, pick_coordinate)
-                # Optionally update with new position:
-                # already done in place_object
-                # self.environment().update_object_in_memory(object_name, pick_coordinate, place_coordinate)
-
             return place_success
         else:
             return False
 
     @log_start_end_cls()
-    def pick_object(self, object_name: str, pick_coordinate: List) -> bool:
+    def pick_object(self, object_name: str, pick_coordinate: List, z_offset: float = 0.001) -> bool:
         """
         Command the pick-and-place robot arm to pick up a specific object using its gripper. The gripper will move to
         the specified 'pick_coordinate' and pick the named object.
@@ -199,11 +204,16 @@ class Robot(RobotAPI):
         robot.pick_object("pen", [0.01, -0.15])
         --> Picks the pen that is located at world coordinates [0.01, -0.15].
 
+        robot.pick_object("pen", [0.01, -0.15], z_offset=0.02)
+        --> Picks the pen with a 2cm offset above its detected position (useful for stacked objects).
+
         Args:
             object_name (str): The name of the object to be picked up. Ensure this name matches an object visible in
             the robot's workspace.
             pick_coordinate (List): The world coordinates [x, y] where the object should be picked up. Use these
             coordinates to identify the object's exact position.
+            z_offset (float): Additional height offset in meters to apply when picking (default: 0.001).
+            Useful for picking objects that are stacked on top of other objects.
         Returns:
             bool: True
         """
@@ -218,7 +228,11 @@ class Robot(RobotAPI):
         if obj_to_pick:
             self._object_last_picked = obj_to_pick
 
-            success = self._robot.robot_pick_object(obj_to_pick)
+            # Apply z_offset to the pick pose
+            pick_pose = obj_to_pick.pose_com()
+            pick_pose = pick_pose.copy_with_offsets(z_offset=z_offset)
+
+            success = self._robot.robot_pick_object(pick_pose)
         else:
             success = False
 
@@ -454,6 +468,7 @@ class Robot(RobotAPI):
         place_workspace_id: str,
         place_coordinate: List,
         location: Union["Location", str, None] = None,
+        z_offset: float = 0.001,
     ) -> bool:
         """
         Pick an object from one workspace and place it in another workspace.
@@ -465,6 +480,7 @@ class Robot(RobotAPI):
             place_workspace_id: ID of the workspace to place in
             place_coordinate: [x, y] coordinate in place workspace
             location: Relative placement location (Location enum or string)
+            z_offset: Additional height offset in meters when picking (default: 0.001)
 
         Returns:
             bool: True if successful, False otherwise
@@ -476,7 +492,8 @@ class Robot(RobotAPI):
                 pick_coordinate=[0.2, 0.05],
                 place_workspace_id='niryo_ws_right',
                 place_coordinate=[0.25, -0.05],
-                location=Location.RIGHT_NEXT_TO
+                location=Location.RIGHT_NEXT_TO,
+                z_offset=0.02
             )
         """
         if self.verbose():
@@ -489,7 +506,7 @@ class Robot(RobotAPI):
         self.environment()._current_workspace_id = pick_workspace_id
 
         # Step 2: Pick the object
-        success = self.pick_object_from_workspace(object_name, pick_workspace_id, pick_coordinate)
+        success = self.pick_object_from_workspace(object_name, pick_workspace_id, pick_coordinate, z_offset=z_offset)
 
         if not success:
             print(f"Failed to pick {object_name} from {pick_workspace_id}")
@@ -517,7 +534,9 @@ class Robot(RobotAPI):
 
         return place_success
 
-    def pick_object_from_workspace(self, object_name: str, workspace_id: str, pick_coordinate: List) -> bool:
+    def pick_object_from_workspace(
+        self, object_name: str, workspace_id: str, pick_coordinate: List, z_offset: float = 0.001
+    ) -> bool:
         """
         Pick an object from a specific workspace.
 
@@ -525,6 +544,7 @@ class Robot(RobotAPI):
             object_name: Name of the object to pick
             workspace_id: ID of the workspace
             pick_coordinate: [x, y] coordinate in workspace
+            z_offset: Additional height offset in meters (default: 0.001)
 
         Returns:
             bool: True if successful
@@ -541,7 +561,12 @@ class Robot(RobotAPI):
         if obj_to_pick:
             self._object_last_picked = obj_to_pick
             self._object_source_workspace = workspace_id
-            success = self._robot.robot_pick_object(obj_to_pick)
+
+            # Apply z_offset to the pick pose
+            pick_pose = obj_to_pick.pose_com()
+            pick_pose = pick_pose.copy_with_offsets(z_offset=z_offset)
+
+            success = self._robot.robot_pick_object(pick_pose)
         else:
             success = False
 
