@@ -9,6 +9,7 @@ import cv2
 
 from robot_workspace import Workspaces
 from robot_workspace import NiryoWorkspaces
+from robot_workspace import WidowXWorkspaces
 from .camera.framegrabber import FrameGrabber
 from .camera.niryo_framegrabber import NiryoFrameGrabber
 from .camera.widowx_framegrabber import WidowXFrameGrabber
@@ -70,8 +71,7 @@ class Environment:
                 print(self._workspaces.get_home_workspace())
         elif isinstance(self.get_robot_controller(), WidowXRobotController):
             self._framegrabber = WidowXFrameGrabber(self, verbose=verbose)
-            # TODO: WidowXWorkspaces erstellen
-            self._workspaces = Workspaces(self, verbose)
+            self._workspaces = WidowXWorkspaces(self, verbose)
         else:
             if verbose:
                 print("error:", self.get_robot_controller())
@@ -418,6 +418,8 @@ class Environment:
         Args:
             visualize (bool): If True, displays the updated camera feed in a window.
         """
+        t1 = t2 = t3 = 0.0
+
         self.robot_move2observation_pose(self._workspaces.get_workspace_home_id())
 
         while not self._stop_event.is_set():
@@ -426,49 +428,50 @@ class Environment:
             # Track workspace visibility state
             self._track_workspace_visibility()
 
+            # this method gets a new frame from camera and publishes it to redis streamer
             self.get_current_frame()
-            t1 = time.time()
             if self.verbose():
+                t1 = time.time()
                 print(f"Frame capture: {(t1 - t0) * 1000:.1f}ms")
 
             time.sleep(0.1)
 
-            self._visual_cortex.detect_objects_from_redis()
-            t2 = time.time()
-            if self.verbose():
-                print(f"Detection: {(t2 - t1) * 1000:.1f}ms")
-
-            time.sleep(0.1)
+            # self._visual_cortex.detect_objects_from_redis()
+            # if self.verbose():
+            #     t2 = time.time()
+            #     print(f"Detection: {(t2 - t1) * 1000:.1f}ms")
+            #
+            # time.sleep(0.1)
 
             detected_objects = self.get_detected_objects()
-            t3 = time.time()
             if self.verbose():
+                t3 = time.time()
                 print(f"Get objects: {(t3 - t2) * 1000:.1f}ms")
 
             # Update memory only when appropriate
             self._check_new_detections(detected_objects)
 
             # Get annotated image (in BGR)
-            annotated_image = self._visual_cortex.get_annotated_image()
-            t4 = time.time()
+            # annotated_image = self._visual_cortex.get_annotated_image()
+            # if self.verbose():
+            #     t4 = time.time()
+            #     print(f"Annotation: {(t4 - t3) * 1000:.1f}ms")
+            #
+            # # Display the image if visualize is True
+            # if visualize and annotated_image is not None:
+            #     # TODO: nicht der richtige Ort hier, nur temporär
+            #     # annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
+            #
+            #     # cv2.imshow expects BGR - no conversion needed!
+            #     cv2.imshow("Camera View", annotated_image)
+            #     # Break the loop if ESC key is pressed
+            #     if cv2.waitKey(1) & 0xFF == 27:  # 27 is the ASCII code for the ESC key
+            #         if self.verbose():
+            #             print("Exiting camera update loop.")
+            #         break
+
             if self.verbose():
-                print(f"Annotation: {(t4 - t3) * 1000:.1f}ms")
-
-            # Display the image if visualize is True
-            if visualize and annotated_image is not None:
-                # TODO: nicht der richtige Ort hier, nur temporär
-                # annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
-
-                # cv2.imshow expects BGR - no conversion needed!
-                cv2.imshow("Camera View", annotated_image)
-                # Break the loop if ESC key is pressed
-                if cv2.waitKey(1) & 0xFF == 27:  # 27 is the ASCII code for the ESC key
-                    if self.verbose():
-                        print("Exiting camera update loop.")
-                    break
-
-            t5 = time.time()
-            if self.verbose():
+                t5 = time.time()
                 print(f"Total loop: {(t5 - t0) * 1000:.1f}ms")
                 print(
                     f"Memory status: {len(self._obj_position_memory)} objects, "
@@ -476,7 +479,7 @@ class Environment:
                     f"workspace_lost={self._workspace_was_lost}\n"
                 )
 
-            yield annotated_image
+            # yield annotated_image
 
             if self.get_robot_in_motion():
                 time.sleep(0.25)
@@ -484,11 +487,14 @@ class Environment:
                 time.sleep(0.05)
 
         # Close the OpenCV window when exiting
-        if visualize:
-            cv2.destroyAllWindows()
+        # if visualize:
+        #     cv2.destroyAllWindows()
 
     # *** PUBLIC SET methods ***
 
+    # TODO: schreibe hier direkt in den redis stream rein, der die detektierbaren objekte speichert. beduetet aber auch,
+    #  dass in detect_objects_publish_annotated_frames.py ein timer gestartet werden muss, der einmal pro sekunde prüft
+    #  welche objekte detektierbar sind, also den redis abruft.
     @log_start_end_cls()
     def add_object_name2object_labels(self, object_name: str) -> str:
         """
@@ -1039,10 +1045,13 @@ class Environment:
 
         return mymessage
 
+    # TODO: muss die detected_objects direkt von redis stream holen und nicht über _visual_cortex
     def get_detected_objects(self) -> "Objects":
         detected_obj_list_dict = self._visual_cortex.get_detected_objects()
         return Objects.dict_list_to_objects(detected_obj_list_dict, self.get_workspace(0))
 
+    # TODO: muss auch die detectierbaren objekte über redis publizieren. nur einmal am anfang und wenn sich daran was
+    #  ändert. das muss ich in visualcortex machen und dann hier den redis stream konsumieren
     def get_object_labels(self) -> List[List[str]]:
         """
 
