@@ -23,9 +23,13 @@ from text2speech import Text2Speech
 from robot_workspace import Objects
 
 # from redis_robot_comm import RedisMessageBroker
+from redis_robot_comm import RedisMessageBroker
 
-from vision_detect_segment import VisualCortex
-from vision_detect_segment import get_default_config
+# Add this new import at the top of environment.py
+from redis_robot_comm import RedisLabelManager
+
+# from vision_detect_segment import VisualCortex
+# from vision_detect_segment import get_default_config
 
 from typing import TYPE_CHECKING, List, Optional, Dict
 
@@ -111,16 +115,24 @@ class Environment:
                     self._workspace_memories[default_ws_id] = Objects()
                     self._workspace_visibility_state[default_ws_id] = False
 
-        det_mdl = "owlv2"  # "yoloe-11l"  # owlv2
-        config = get_default_config(det_mdl)
+        # ======= NEW: Redis-based communication =======
+        # Replace _visual_cortex with Redis clients
+        self._object_broker = RedisMessageBroker()
+        self._label_manager = RedisLabelManager()
 
-        self._visual_cortex = VisualCortex(objdetect_model_id=det_mdl, device="auto", verbose=verbose, config=config)
+        # Initialize default labels on startup
+        self._initialize_default_labels()
+
+        # det_mdl = "owlv2"  # "yoloe-11l"  # owlv2
+        # config = get_default_config(det_mdl)
+
+        # self._visual_cortex = VisualCortex(objdetect_model_id=det_mdl, device="auto", verbose=verbose, config=config)
 
         if start_camera_thread:
             if verbose:
                 print("Starting camera update thread...")
             # Start background camera updates
-            self.start_camera_updates(visualize=True)  # set visualize=False if you don't want OpenCV windows
+            self.start_camera_updates(visualize=False)  # set visualize=False if you don't want OpenCV windows
         else:
             if verbose:
                 print("Camera thread disabled (manual control)")
@@ -141,6 +153,15 @@ class Environment:
             if self.verbose():
                 print("Shutting down environment...")
             self._stop_event.set()
+
+        # Close Redis connections
+        if hasattr(self, "_object_broker"):
+            # RedisMessageBroker doesn't need explicit cleanup
+            pass
+
+        if hasattr(self, "_label_manager"):
+            # RedisLabelManager doesn't need explicit cleanup
+            pass
 
     # PUBLIC methods
 
@@ -418,7 +439,7 @@ class Environment:
         Args:
             visualize (bool): If True, displays the updated camera feed in a window.
         """
-        t1 = t2 = t3 = 0.0
+        t1 = 0.0
 
         self.robot_move2observation_pose(self._workspaces.get_workspace_home_id())
 
@@ -429,7 +450,7 @@ class Environment:
             self._track_workspace_visibility()
 
             # this method gets a new frame from camera and publishes it to redis streamer
-            self.get_current_frame()
+            img = self.get_current_frame()
             if self.verbose():
                 t1 = time.time()
                 print(f"Frame capture: {(t1 - t0) * 1000:.1f}ms")
@@ -446,7 +467,7 @@ class Environment:
             detected_objects = self.get_detected_objects()
             if self.verbose():
                 t3 = time.time()
-                print(f"Get objects: {(t3 - t2) * 1000:.1f}ms")
+                print(f"Get objects: {(t3 - t1) * 1000:.1f}ms")
 
             # Update memory only when appropriate
             self._check_new_detections(detected_objects)
@@ -479,7 +500,7 @@ class Environment:
                     f"workspace_lost={self._workspace_was_lost}\n"
                 )
 
-            # yield annotated_image
+            yield img
 
             if self.get_robot_in_motion():
                 time.sleep(0.25)
@@ -492,25 +513,29 @@ class Environment:
 
     # *** PUBLIC SET methods ***
 
-    # TODO: schreibe hier direkt in den redis stream rein, der die detektierbaren objekte speichert. beduetet aber auch,
-    #  dass in detect_objects_publish_annotated_frames.py ein timer gestartet werden muss, der einmal pro sekunde prüft
-    #  welche objekte detektierbar sind, also den redis abruft.
-    @log_start_end_cls()
     def add_object_name2object_labels(self, object_name: str) -> str:
         """
-        Call this method if the user wants to add another object to the list of recognizable objects. Adds the
-        object called object_name to the list of recognizable objects.
+        Add a new object to the list of recognizable objects via Redis.
+        The vision_detect_segment system will pick up this change.
 
         Args:
-            object_name (str): The name of the object that should also be recognizable by the robot.
+            object_name: Name of the object to add
 
         Returns:
-            str: Message saying that the given object_name was added to the list of recognizable objects.
+            str: Status message
         """
-        self._visual_cortex.add_object_name2object_labels(object_name)
-        mymessage = f"Added {object_name} to the list of recognizable objects."
+        # Add label to Redis stream
+        success = self._label_manager.add_label(object_name)
+
+        if success:
+            mymessage = f"Added {object_name} to the list of recognizable objects."
+        else:
+            mymessage = f"{object_name} is already in the list of recognizable objects."
+
+        # Provide audio feedback
         thread_oral = self._oralcom.call_text2speech_async(mymessage)
         thread_oral.join()
+
         return mymessage
 
     def stop_camera_updates(self):
@@ -1034,31 +1059,54 @@ class Environment:
 
     def get_object_labels_as_string(self) -> str:
         """
-        Returns all object labels that the object detection model is able to detect as a comma separated string.
-        Call this method if the user wants to know which objects the robot can pick or is able to detect.
+        Returns all object labels that the object detection model is able to detect
+        as a comma separated string.
 
         Returns:
-            str: "chocolate bar, blue box, cigarette, ..."
+            str: Comma-separated list of detectable objects
         """
         object_labels = self.get_object_labels()
-        mymessage = f"I can recognize these objects: {', '.join(object_labels[0])}"
 
-        return mymessage
+        if not object_labels or not object_labels[0]:
+            return "No detectable objects configured."
 
-    # TODO: muss die detected_objects direkt von redis stream holen und nicht über _visual_cortex
+        return f"I can recognize these objects: {', '.join(object_labels[0])}"
+
     def get_detected_objects(self) -> "Objects":
-        detected_obj_list_dict = self._visual_cortex.get_detected_objects()
-        return Objects.dict_list_to_objects(detected_obj_list_dict, self.get_workspace(0))
-
-    # TODO: muss auch die detectierbaren objekte über redis publizieren. nur einmal am anfang und wenn sich daran was
-    #  ändert. das muss ich in visualcortex machen und dann hier den redis stream konsumieren
-    def get_object_labels(self) -> List[List[str]]:
         """
+        Get detected objects directly from Redis stream.
 
         Returns:
-            list of a list of all detectable objects as strings
+            Objects: Collection of detected objects
         """
-        return self._visual_cortex.get_object_labels()
+        # Get latest objects from Redis (published by vision_detect_segment)
+        objects_dict_list = self._object_broker.get_latest_objects(max_age_seconds=2.0)
+
+        if not objects_dict_list:
+            if self.verbose():
+                print("No fresh object detections available from Redis")
+            return Objects()
+
+        # Convert dictionaries to Object instances
+        return Objects.dict_list_to_objects(objects_dict_list, self.get_workspace(0))
+
+    def get_object_labels(self) -> List[List[str]]:
+        """
+        Get list of detectable object labels from Redis.
+
+        Returns:
+            List of lists of detectable object strings
+        """
+        # Get latest labels from Redis (published by vision_detect_segment)
+        labels = self._label_manager.get_latest_labels(timeout_seconds=60.0)
+
+        if labels is None:
+            if self.verbose():
+                print("No labels available from Redis, using empty list")
+            return [[]]
+
+        # Return in the expected nested list format
+        return [labels]
 
     # *** PUBLIC methods ***
 
@@ -1084,6 +1132,66 @@ class Environment:
     # *** PUBLIC STATIC/CLASS GET methods ***
 
     # *** PRIVATE methods ***
+
+    def _initialize_default_labels(self):
+        """
+        Initialize Redis with default detectable object labels.
+        This should match the default labels in VisionConfig.
+        """
+        default_labels = [
+            # Geometric shapes
+            "blue circle",
+            "blue square",
+            "blue box",
+            "blue cube",
+            "red circle",
+            "red square",
+            "red box",
+            "red cube",
+            "green circle",
+            "green coin",
+            "green cylinder",
+            "green square",
+            "orange cube",
+            "purple cube",
+            "yellow cube",
+            "green cube",
+            # Office items
+            "black pen",
+            "black ballpoint pen",
+            "pen",
+            "pencil",
+            "book",
+            "computer mouse",
+            "usb stick",
+            "remote control",
+            "battery",
+            "batteries",
+            "screwdriver",
+            "screw",
+            # Food items
+            "chocolate bar",
+            "bounty",
+            "snickers",
+            "mars",
+            "milky way",
+            "twix",
+            "snickers bar",
+            "sweets",
+            "mandarin",
+            "apple",
+            "coke can",
+            # Lighting items
+            "lighter",
+            "cigarette lighter",
+            "philips batteries",
+        ]
+
+        # Publish initial labels to Redis
+        self._label_manager.publish_labels(default_labels, metadata={"source": "robot_environment", "action": "initialize"})
+
+        if self.verbose():
+            print(f"Published {len(default_labels)} default labels to Redis")
 
     # *** PUBLIC properties ***
 
