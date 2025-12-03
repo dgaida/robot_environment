@@ -1,8 +1,6 @@
 # Robot Environment
 
-A comprehensive Python framework for robotic pick-and-place operations with vision-based object detection and manipulation capabilities.
-
-## Badges
+**A comprehensive Python framework for robotic pick-and-place operations with vision-based object detection and manipulation capabilities**
 
 ![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -13,87 +11,191 @@ A comprehensive Python framework for robotic pick-and-place operations with visi
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
+---
+
 ## Overview
 
-This project provides a complete software stack for controlling robotic arms (currently supporting Niryo Ned2 and WidowX) with integrated computer vision for object detection, workspace management, and intelligent manipulation. The system combines real-time camera processing, Redis-based communication, and natural language interaction capabilities.
+`robot_environment` provides a complete software stack for controlling robotic arms with integrated computer vision for object detection, workspace management, and intelligent manipulation. The system combines real-time camera processing, Redis-based communication, and natural language interaction capabilities to enable robust pick-and-place operations.
 
-## Key Features
+### Key Features
 
-- **Multi-Robot Support**: Modular architecture supporting Niryo Ned2 and WidowX robotic arms
-- **Vision-Based Object Detection**: Integration with OwlV2 for real-time object detection and segmentation
-- **Workspace Management**: Flexible workspace definition and camera-to-world coordinate transformation
-- **Redis Communication**: Efficient image streaming and object data sharing via Redis
-- **Text-to-Speech**: Natural language feedback using Kokoro TTS
-- **Thread-Safe Operations**: Concurrent camera updates and robot control
-- **Simulation Support**: Compatible with both real robots and Gazebo simulation
+- 🤖 **Multi-Robot Support** - Modular architecture supporting Niryo Ned2 and WidowX robotic arms
+- 👁️ **Vision-Based Object Detection** - Integration with multiple detection models (OWL-V2, YOLO-World, YOLOE, Grounding-DINO)
+- 🗺️ **Workspace Management** - Flexible workspace definition with camera-to-world coordinate transformation
+- 📡 **Redis Communication** - Efficient image streaming and object data sharing via Redis
+- 🔊 **Text-to-Speech** - Natural language feedback using Kokoro TTS or ElevenLabs
+- 🧵 **Thread-Safe Operations** - Concurrent camera updates and robot control with proper locking
+- 🎮 **Simulation Support** - Compatible with both real robots and Gazebo simulation
+- 💾 **Object Memory Management** - Intelligent tracking of detected objects with workspace-aware updates
+
+---
+
+## What's New
+
+### Multi-Workspace Support
+- Operate across multiple workspaces simultaneously
+- Transfer objects between different work areas
+- Independent object memory per workspace
+- Automatic workspace visibility tracking
+
+### Redis-Based Architecture
+- Decoupled communication between vision and robot control
+- Real-time image streaming with variable sizes
+- Dynamic object label management
+- Annotated frame publishing for visualization
+
+### Enhanced Object Detection
+- Support for latest YOLOE models with built-in segmentation
+- Object tracking with persistent IDs across frames
+- Label stabilization to prevent flickering
+- Configurable confidence thresholds and detection models
+
+---
 
 ## Architecture
 
-### Core Components
+### System Overview
 
 ```
-robot_environment/
-├── camera/              # Frame grabbing and image acquisition
-│   ├── framegrabber.py
-│   ├── niryo_framegrabber.py
-│   └── widowx_framegrabber.py
-├── objects/             # Object detection and representation
-│   ├── object.py
-│   ├── objects.py
-│   └── pose_object.py
-├── robot/               # Robot control abstractions
-│   ├── robot.py
-│   ├── robot_controller.py
-│   ├── niryo_robot_controller.py
-│   └── widowx_robot_controller.py
-├── workspaces/          # Workspace definitions and management
-│   ├── workspace.py
-│   ├── workspaces.py
-│   └── niryo_workspace.py
-├── text2speech/         # Audio output capabilities
-│   └── text2speech.py
-└── environment.py       # Main environment orchestration
+┌─────────────────────────────────────────────────────────────┐
+│                    Environment Layer                        │
+│  (Central orchestrator coordinating all subsystems)         │
+└─────────────────────────────────────────────────────────────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+┌───────▼────────┐   ┌──────▼──────┐   ┌────────▼─────────┐
+│  Robot Control │   │   Vision    │   │    Workspace     │
+│     Layer      │   │    Layer    │   │      Layer       │
+└────────────────┘   └─────────────┘   └──────────────────┘
+        │                   │                   │
+┌───────▼────────┐   ┌──────▼──────┐   ┌────────▼─────────┐
+│ RobotController│   │FrameGrabber │   │    Workspace     │
+│   (Abstract)   │   │  (Abstract) │   │   (Abstract)     │
+└────────────────┘   └─────────────┘   └──────────────────┘
+        │                   │                   │
+┌───────▼────────┐   ┌──────▼──────┐   ┌────────▼─────────┐
+│ NiryoRobot     │   │ NiryoFrame  │   │ NiryoWorkspace   │
+│  Controller    │   │   Grabber   │   │                  │
+└────────────────┘   └─────────────┘   └──────────────────┘
+                            │
+                    ┌───────▼───────┐
+                    │ Redis Streams │
+                    │  (Images +    │
+                    │   Objects)    │
+                    └───────────────┘
 ```
+
+### Core Components
+
+**Environment Layer**
+- `Environment` - Central orchestrator managing all subsystems
+- Coordinates camera updates, object detection, and robot control
+- Manages object memory with workspace-aware tracking
+- Handles thread-safe operations with proper locking
+
+**Robot Control Layer**
+- `Robot` - High-level robot API implementing pick-and-place operations
+- `RobotController` - Abstract base class for hardware control
+- `NiryoRobotController` - Niryo Ned2 implementation with pyniryo
+- `WidowXRobotController` - WidowX implementation with InterbotixManipulatorXS
+
+**Vision Layer**
+- `FrameGrabber` - Abstract camera interface with Redis streaming
+- `NiryoFrameGrabber` - Niryo-mounted camera with undistortion
+- `WidowXFrameGrabber` - Intel RealSense integration (stub)
+- External: `VisualCortex` from `vision_detect_segment` package
+
+**Workspace Layer**
+- `Workspace` - Abstract workspace with coordinate transformation
+- `NiryoWorkspace` - Niryo-specific workspace implementation
+- `Workspaces` - Collection managing multiple workspaces
+
+**Object Representation**
+- `Object` - Detected object with full spatial information
+- `Objects` - Collection with spatial queries and filtering
+- `PoseObjectPNP` - 6-DOF pose representation
+
+**Communication Layer**
+- `RedisImageStreamer` - Variable-size image streaming (from `redis_robot_comm`)
+- `RedisMessageBroker` - Object detection results publishing
+- `RedisLabelManager` - Dynamic object label configuration
+
+For detailed architecture documentation, see **[docs/README.md](docs/README.md)**
+
+---
 
 ## Installation
 
 ### Prerequisites
 
-- Python 3.8+
-- Redis server
-- Robot-specific drivers (pyniryo for Niryo, interbotix for WidowX)
+- Python ≥ 3.9
+- Redis Server ≥ 5.0
+- Robot-specific drivers:
+  - Niryo: `pyniryo` or `pyniryo2`
+  - WidowX: `interbotix-xs-modules`
+
+### Basic Installation
+
+```bash
+git clone https://github.com/dgaida/robot_environment.git
+cd robot_environment
+pip install -e .
+```
 
 ### Dependencies
 
+Core dependencies are automatically installed:
 ```bash
 pip install numpy opencv-python redis torch torchaudio
-pip install vision-detect-segment redis-robot-comm
-pip install elevenlabs kokoro  # For text-to-speech
-pip install pyniryo  # For Niryo robots
+pip install vision-detect-segment redis-robot-comm robot-workspace text2speech
 ```
+
+Robot-specific dependencies:
+```bash
+# For Niryo Ned2
+pip install pyniryo
+
+# For WidowX
+pip install interbotix-xs-modules
+```
+
+### Redis Server
+
+```bash
+# Using Docker (recommended)
+docker run -p 6379:6379 redis:alpine
+
+# Or install locally
+# Ubuntu/Debian:
+sudo apt-get install redis-server
+
+# macOS:
+brew install redis
+```
+
+---
 
 ## Quick Start
 
-### Basic Usage
-
-```bash
-docker run -p 6379:6379 redis:alpine
-```
+### Basic Pick and Place
 
 ```python
 from robot_environment.environment import Environment
+from robot_workspace import Location
 import threading
 import time
 
 # Initialize environment
 env = Environment(
-    el_api_key="your_elevenlabs_key",  # For TTS
-    use_simulation=False,               # True for Gazebo
+    el_api_key="your_elevenlabs_key",  # For text-to-speech
+    use_simulation=False,               # Set True for Gazebo
     robot_id="niryo",                   # or "widowx"
-    verbose=True
+    verbose=True,
+    start_camera_thread=True            # Auto-start camera updates
 )
 
-# Start camera updates in background
+# Alternative: Manual camera thread control
 def start_camera_updates(environment, visualize=False):
     def loop():
         for img in environment.update_camera_and_objects(visualize=visualize):
@@ -102,218 +204,713 @@ def start_camera_updates(environment, visualize=False):
     t.start()
     return t
 
-camera_thread = start_camera_updates(env, visualize=True)
-
 # Move to observation pose
 env.robot_move2observation_pose(env.get_workspace_home_id())
 
-# Wait for objects to be detected
+# Wait for object detection
 time.sleep(2)
 
 # Get detected objects
-detected_objects = env.get_detected_objects()
-print(f"Detected {len(detected_objects)} objects")
+detected_objects = env.get_detected_objects_from_memory()
+print(f"Detected {len(detected_objects)} objects:")
+for obj in detected_objects:
+    print(f"  - {obj.label()} at [{obj.x_com():.2f}, {obj.y_com():.2f}]")
 
 # Pick and place an object
 robot = env.robot()
-robot.pick_place_object(
-    object_label="pencil",
-    pick_location=[-0.1, 0.01],
-    place_location=[0.1, 0.11],
-    location="right next to"
+success = robot.pick_place_object(
+    object_name="pencil",
+    pick_coordinate=[-0.1, 0.01],
+    place_coordinate=[0.1, 0.11],
+    location=Location.RIGHT_NEXT_TO
 )
+
+if success:
+    print("✓ Object successfully picked and placed")
+else:
+    print("✗ Pick and place operation failed")
+
+# Cleanup
+env.cleanup()
 ```
 
-### Advanced Features
-
-#### Object Filtering
+### Multi-Workspace Operations
 
 ```python
-from robot_environment.robot.robot_api import Location
+from robot_environment.environment import Environment
+from robot_workspace import Location
 
-# Get objects in specific locations
+env = Environment("key", False, "niryo", verbose=True)
+
+# Get workspace IDs
+left_ws_id = env.workspaces().get_workspace_left_id()
+right_ws_id = env.workspaces().get_workspace_right_id()
+
+# Observe left workspace
+env.robot_move2observation_pose(left_ws_id)
+env.set_current_workspace(left_ws_id)
+time.sleep(2)
+
+# Get objects from left workspace
+left_objects = env.get_detected_objects_from_workspace(left_ws_id)
+print(f"Left workspace: {len(left_objects)} objects")
+
+# Transfer object to right workspace
+if len(left_objects) > 0:
+    obj = left_objects[0]
+    robot.pick_place_object_across_workspaces(
+        object_name=obj.label(),
+        pick_workspace_id=left_ws_id,
+        pick_coordinate=[obj.x_com(), obj.y_com()],
+        place_workspace_id=right_ws_id,
+        place_coordinate=[0.25, -0.05],
+        location=Location.RIGHT_NEXT_TO
+    )
+```
+
+For complete multi-workspace examples, see **[examples/multi_workspace_example.py](examples/multi_workspace_example.py)**
+
+---
+
+## Advanced Features
+
+### Object Detection and Filtering
+
+```python
+from robot_workspace import Location
+
+# Get objects from memory (persists during robot motion)
+detected_objects = env.get_detected_objects_from_memory()
+
+# Spatial filtering
 objects_left = detected_objects.get_detected_objects(
     location=Location.LEFT_NEXT_TO,
     coordinate=[0.2, 0.0],
     label="cube"
 )
 
-# Get nearest object
+# Find nearest object
 nearest, distance = detected_objects.get_nearest_detected_object(
     coordinate=[0.25, 0.05],
     label="pencil"
 )
 
-# Get largest/smallest objects
+# Size-based queries
 largest, size = detected_objects.get_largest_detected_object()
 smallest, size = detected_objects.get_smallest_detected_object()
+
+# Sort by size
+sorted_objects = detected_objects.get_detected_objects_sorted(ascending=True)
 ```
 
-#### Workspace Management
+### Workspace Coordinate System
 
 ```python
-# Get workspace information
+# Get workspace corners
 workspace = env.get_workspace(0)
-print(f"Workspace size: {workspace.width_m()}m x {workspace.height_m()}m")
+upper_left = workspace.xy_ul_wc()
+lower_right = workspace.xy_lr_wc()
+center = workspace.xy_center_wc()
 
-# Transform coordinates
+# Transform camera coordinates to world coordinates
 pose = workspace.transform_camera2world_coords(
     workspace_id="niryo_ws",
-    u_rel=0.5,  # Center of image
+    u_rel=0.5,  # Center of image (normalized [0,1])
     v_rel=0.5,
     yaw=0.0
 )
+
+# Get workspace dimensions
+width = workspace.width_m()
+height = workspace.height_m()
+print(f"Workspace: {width:.3f}m × {height:.3f}m")
 ```
 
-#### Redis Integration
-
-The system automatically publishes camera frames and detected objects to Redis:
+### Object Memory Management
 
 ```python
-# Objects are automatically published as JSON-serializable dictionaries
-# Images are streamed with metadata including:
-# - workspace_id
-# - frame_id
-# - robot_pose
-# - timestamp
+# Memory is automatically updated when at observation pose
+# Manual memory operations:
+
+# Clear all memory
+env.clear_memory()
+
+# Remove specific object after manipulation
+env.remove_object_from_memory("pencil", [0.25, 0.05])
+
+# Update object position after placement
+env.update_object_in_memory(
+    object_label="cube",
+    old_coordinate=[0.2, 0.0],
+    new_pose=new_pose_object
+)
+
+# Get memory contents
+memory_objects = env.get_detected_objects_from_memory()
 ```
 
-## Object Detection
-
-Objects are detected using the VisualCortex module with OwlV2:
+### Finding Free Space
 
 ```python
-# Object properties
-obj = detected_objects[0]
-print(f"Label: {obj.label()}")
-print(f"Position: {obj.x_com():.3f}, {obj.y_com():.3f}")
-print(f"Size: {obj.width_m():.3f}m x {obj.height_m():.3f}m")
-print(f"Rotation: {obj.gripper_rotation():.2f} rad")
-print(f"Area: {obj.size_m2() * 10000:.2f} cm²")
+# Find largest free area in workspace
+largest_area_m2, center_x, center_y = env.get_largest_free_space_with_center()
 
-# Serialize for transmission
-obj_dict = obj.to_dict()
-obj_json = obj.to_json()
-```
+print(f"Free space: {largest_area_m2*10000:.2f} cm²")
+print(f"Center: [{center_x:.2f}, {center_y:.2f}]")
 
-## Robot Control
-
-### Pick and Place
-
-```python
-# Simple pick and place
+# Place object at center of free space
 robot.pick_place_object(
-    object_label="red cube",
-    pick_location=[0.235, 0.3],
-    place_location=[0.54, 0.43],
-    location="right next to"
+    object_name="box",
+    pick_coordinate=[0.2, 0.0],
+    place_coordinate=[center_x, center_y],
+    location=Location.NONE
 )
 ```
 
-### Direct Manipulation
+### Pushing Objects
 
 ```python
-# Get object
-obj = detected_objects.get_detected_object(
-    coordinate=[0.2, 0.0],
-    label="cube"
+# For objects too large to grip
+success = robot.push_object(
+    object_name="large_box",
+    push_coordinate=[0.3, 0.1],
+    direction="left",    # "up", "down", "left", "right"
+    distance=50.0        # millimeters
 )
-
-# Pick object
-success = robot_controller.robot_pick_object(obj)
-
-# Place at specific pose
-place_pose = workspace.transform_camera2world_coords(
-    workspace_id="niryo_ws",
-    u_rel=0.8,
-    v_rel=0.5,
-    yaw=0.0
-)
-success = robot_controller.robot_place_object(place_pose)
 ```
 
-## Text-to-Speech
+### Custom Object Labels
 
 ```python
-# Asynchronous speech output
+# Add new detectable object
+message = env.add_object_name2object_labels("custom_tool")
+print(message)  # "Added custom_tool to recognizable objects"
+
+# Get current labels
+labels = env.get_object_labels_as_string()
+print(labels)  # "I can recognize these objects: pencil, pen, custom_tool, ..."
+```
+
+### Text-to-Speech Feedback
+
+```python
+# Asynchronous speech (non-blocking)
 thread = env.oralcom_call_text2speech_async(
-    "I have detected a red cube at position 0.25, 0.05"
+    "I have detected a pencil at position 0.25, 0.05"
 )
+# Continue with other operations
+robot.pick_object("pencil", [0.25, 0.05])
 thread.join()  # Wait for speech to complete
 ```
 
+---
+
 ## Configuration
 
-### Adding New Workspaces
-
-For Niryo robots, edit `niryo_workspace.py`:
+### Robot Selection
 
 ```python
-def _set_observation_pose(self) -> None:
-    if self._id == "my_new_workspace":
-        self._observation_pose = PoseObjectPNP(
-            x=0.18, y=0.0, z=0.36,
-            roll=0.0, pitch=math.pi/2, yaw=0.0
-        )
-```
+# Niryo Ned2 (real robot)
+env = Environment(
+    el_api_key="key",
+    use_simulation=False,
+    robot_id="niryo"
+)
 
-### Camera Calibration
-
-Camera intrinsics are automatically retrieved from the robot. For custom cameras:
-
-```python
-# In framegrabber implementation
-self._mtx, self._dist = get_camera_intrinsics()
-```
-
-## Thread Safety
-
-All robot operations are thread-safe through the use of locks:
-
-```python
-with robot_controller.lock():
-    # Thread-safe robot operations
-    pose = robot.get_pose()
-```
-
-## Error Handling
-
-```python
-try:
-    success = robot.pick_place_object("cube", [0.2, 0.0], [0.3, 0.0])
-    if not success:
-        print("Pick and place operation failed")
-except Exception as e:
-    print(f"Error: {e}")
-```
-
-## Simulation Mode
-
-```python
-# Use Gazebo simulation
+# Niryo in Gazebo simulation
 env = Environment(
     el_api_key="key",
     use_simulation=True,
-    robot_id="niryo",
-    verbose=True
+    robot_id="niryo"
+)
+
+# WidowX robot
+env = Environment(
+    el_api_key="key",
+    use_simulation=False,
+    robot_id="widowx"
 )
 ```
 
+### Adding Custom Workspaces
+
+Edit `niryo_workspace.py`:
+
+```python
+def _set_observation_pose(self) -> None:
+    if self._id == "my_custom_workspace":
+        self._observation_pose = PoseObjectPNP(
+            x=0.20, y=0.0, z=0.35,
+            roll=0.0, pitch=math.pi/2, yaw=0.0
+        )
+    # ... existing workspaces
+```
+
+### Vision Configuration
+
+The vision system uses `vision_detect_segment` with configurable models:
+
+```python
+# Models are configured in environment.py
+# Default: OWL-V2 for open-vocabulary detection
+# Available: "owlv2", "yolo-world", "yoloe-11l", "grounding_dino"
+
+# To change model, modify in environment.py:
+self._visual_cortex = VisualCortex(
+    objdetect_model_id="yoloe-11l",  # Fast with built-in segmentation
+    device="auto",
+    verbose=verbose,
+    config=config
+)
+```
+
+---
+
 ## API Reference
 
-[API Reference](docs/api.md)
+### Environment Class
+
+**Initialization:**
+```python
+Environment(
+    el_api_key: str,
+    use_simulation: bool,
+    robot_id: str,
+    verbose: bool = False,
+    start_camera_thread: bool = True
+)
+```
+
+**Key Methods:**
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `get_current_frame()` | Capture current camera image | np.ndarray |
+| `get_detected_objects()` | Get objects from Redis | Objects |
+| `get_detected_objects_from_memory()` | Get objects from memory | Objects |
+| `robot_move2observation_pose(workspace_id)` | Move to observation position | None |
+| `get_workspace(index)` | Get workspace by index | Workspace |
+| `get_workspace_by_id(workspace_id)` | Get workspace by ID | Workspace |
+| `get_robot_pose()` | Get current gripper pose | PoseObjectPNP |
+| `clear_memory()` | Clear object memory | None |
+| `cleanup()` | Stop threads and cleanup | None |
+
+### Robot Class
+
+**Pick and Place:**
+```python
+pick_place_object(
+    object_name: str,
+    pick_coordinate: List[float],
+    place_coordinate: List[float],
+    location: Location = None,
+    z_offset: float = 0.001
+) -> bool
+```
+
+**Individual Operations:**
+```python
+pick_object(object_name: str, pick_coordinate: List[float], z_offset: float = 0.001) -> bool
+place_object(place_coordinate: List[float], location: Location = None) -> bool
+push_object(object_name: str, push_coordinate: List[float], direction: str, distance: float) -> bool
+```
+
+**Multi-Workspace:**
+```python
+pick_place_object_across_workspaces(
+    object_name: str,
+    pick_workspace_id: str,
+    pick_coordinate: List[float],
+    place_workspace_id: str,
+    place_coordinate: List[float],
+    location: Location = None,
+    z_offset: float = 0.001
+) -> bool
+```
+
+### Object Class
+
+**Properties:**
+```python
+label() -> str                    # Object class name
+xy_com() -> Tuple[float, float]   # Center of mass [x, y]
+x_com() -> float                  # X coordinate
+y_com() -> float                  # Y coordinate
+width_m() -> float                # Width in meters
+height_m() -> float               # Height in meters
+size_m2() -> float                # Area in square meters
+gripper_rotation() -> float       # Optimal grasp angle (radians)
+has_mask() -> bool                # Has segmentation mask
+```
+
+**Serialization:**
+```python
+to_dict() -> Dict                 # Convert to dictionary
+to_json() -> str                  # Convert to JSON string
+from_dict(data, workspace)        # Create from dictionary
+from_json(json_str, workspace)    # Create from JSON string
+```
+
+### Objects Collection
+
+**Queries:**
+```python
+get_detected_object(coordinate, label) -> Object           # Find by location
+get_nearest_detected_object(coordinate, label) -> Object   # Find nearest
+get_largest_detected_object() -> Tuple[Object, float]      # Find largest
+get_smallest_detected_object() -> Tuple[Object, float]     # Find smallest
+get_detected_objects_sorted(ascending=True) -> Objects     # Sort by size
+get_detected_objects(location, coordinate, label) -> Objects  # Filter by location
+```
+
+### Location Enum
+
+```python
+from robot_workspace import Location
+
+Location.LEFT_NEXT_TO   # y > coordinate[1]
+Location.RIGHT_NEXT_TO  # y < coordinate[1]
+Location.ABOVE          # x > coordinate[0]
+Location.BELOW          # x < coordinate[0]
+Location.ON_TOP_OF      # Stack on object
+Location.INSIDE         # Place inside container
+Location.CLOSE_TO       # Within 2cm
+Location.NONE           # Exact coordinate
+```
+
+For complete API documentation, see **[docs/api.md](docs/api.md)**
+
+---
+
+## Performance Considerations
+
+### Detection Speed
+
+| Model | Detection | Segmentation | Total FPS | Best For |
+|-------|-----------|--------------|-----------|----------|
+| YOLOE-11L | 6-10ms | Built-in | 100-160 FPS | Real-time unified tasks |
+| YOLO-World | 20-50ms | 50-100ms (FastSAM) | 10-25 FPS | Speed-critical |
+| OWL-V2 | 100-200ms | 200-500ms (SAM2) | 1-3 FPS | Custom classes |
+| Grounding-DINO | 200-400ms | 200-500ms (SAM2) | 1-2 FPS | Complex queries |
+
+### Optimization Tips
+
+```python
+# 1. Use faster detection model
+config = get_default_config("yoloe-11s")  # Fast variant
+
+# 2. Reduce object labels
+config.set_object_labels(["cube", "cylinder"])  # Only what you need
+
+# 3. Disable segmentation if not needed
+config.enable_segmentation = False
+
+# 4. Adjust camera update rate
+time.sleep(0.5)  # Between camera updates
+
+# 5. Use GPU acceleration
+cortex = VisualCortex("yoloe-11l", device="cuda")
+```
+
+### Memory Management
+
+- Object memory stores detection history during robot motion
+- Memory automatically updated when at observation pose
+- Old detections removed when workspace visibility changes
+- Manual updates from pick/place operations persist briefly
+
+---
+
+## Testing
+
+### Run Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=robot_environment --cov-report=html --cov-report=term
+
+# Run specific test file
+pytest tests/test_environment.py
+
+# Run integration tests
+pytest -m integration
+
+# Skip slow tests
+pytest -m "not slow"
+```
+
+### Test Organization
+
+```
+tests/
+├── conftest.py              # Fixtures and configuration
+├── test_environment.py      # Environment tests
+├── test_environment_extended.py  # Extended environment tests
+├── camera/
+│   └── test_niryo_framegrabber.py
+├── robot/
+│   ├── test_robot.py
+│   ├── test_robot_api.py
+│   ├── test_niryo_robot_controller.py
+│   └── test_widowx_robot_controller.py
+└── test_integration.py      # Integration tests
+```
+
+For detailed testing information, see **[tests/README.md](tests/README.md)**
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**No Objects Detected**
+```python
+# Check Redis connection
+from redis_robot_comm import RedisMessageBroker
+broker = RedisMessageBroker()
+if broker.test_connection():
+    print("✓ Redis connected")
+
+# Verify camera thread is running
+env = Environment(..., start_camera_thread=True)
+
+# Check object labels
+labels = env.get_object_labels_as_string()
+print(labels)
+
+# Add custom labels if needed
+env.add_object_name2object_labels("your_object")
+```
+
+**Objects at Wrong Positions**
+```python
+# Check workspace calibration
+workspace = env.get_workspace_by_id("niryo_ws")
+print(f"Corners: UL={workspace.xy_ul_wc()}, LR={workspace.xy_lr_wc()}")
+
+# Ensure workspace is level and stable
+# Verify camera is properly mounted
+
+# Get fresh detection before picking
+env.robot_move2observation_pose(workspace_id)
+time.sleep(2)  # Wait for detection
+objects = env.get_detected_objects_from_memory()
+```
+
+**Robot Won't Move**
+```python
+# Check connection
+robot_ctrl = env.get_robot_controller()
+pose = robot_ctrl.get_pose()
+print(f"Current pose: {pose}")
+
+# Verify calibration (Niryo)
+robot_ctrl.calibrate()
+
+# Check coordinates are reachable
+workspace = env.get_workspace(0)
+print(f"Valid range: X=[{workspace.xy_lr_wc().x}, {workspace.xy_ul_wc().x}]")
+print(f"             Y=[{workspace.xy_lr_wc().y}, {workspace.xy_ul_wc().y}]")
+```
+
+**Memory Issues**
+```python
+# Clear stale memory
+env.clear_memory()
+
+# Force fresh detection
+env.robot_move2observation_pose(workspace_id)
+time.sleep(2)
+
+# Check memory contents
+memory = env.get_detected_objects_from_memory()
+print(f"Objects in memory: {len(memory)}")
+```
+
+For comprehensive troubleshooting, see **[docs/troubleshooting.md](docs/troubleshooting.md)**
+
+---
+
+## Examples
+
+### Complete Examples
+
+- **[main.py](main.py)** - Basic pick and place demonstration
+- **[examples/multi_workspace_example.py](examples/multi_workspace_example.py)** - Multi-workspace operations
+
+### Run Examples
+
+```bash
+# Start Redis server
+docker run -p 6379:6379 redis:alpine
+
+# Run basic example
+python main.py
+
+# Run multi-workspace examples
+cd examples
+python multi_workspace_example.py
+```
+
+---
+
+## Documentation
+
+- **[Architecture Documentation](docs/README.md)** - Detailed system architecture
+- **[API Reference](docs/api.md)** - Complete API documentation
+- **[Multi-Workspace Guide](docs/multi_workspace.md)** - Multi-workspace operations
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+- **[Testing Guide](tests/README.md)** - Testing documentation
+
+---
+
+## Development
+
+### Code Quality
+
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Linting with Ruff
+ruff check . --fix
+
+# Formatting with Black
+black .
+
+# Type checking with mypy
+mypy robot_environment --ignore-missing-imports
+
+# Security scanning with Bandit
+bandit -r robot_environment/ -ll
+```
+
+### Pre-Commit Hooks
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+---
+
+## CI/CD
+
+The project includes comprehensive GitHub Actions workflows:
+
+- **Tests** - Multi-platform testing (Ubuntu, Windows, macOS) across Python 3.9-3.11
+- **Code Quality** - Ruff, Black, mypy checks
+- **Security** - CodeQL and Bandit security scanning
+- **Dependency Review** - Automated security audits
+- **Release** - Automated package building on tags
+
+---
+
+## Contributing
+
+Contributions are welcome! Please ensure:
+
+1. Code follows existing architecture patterns
+2. Thread safety is maintained
+3. Documentation is updated
+4. Type hints are included
+5. Tests pass successfully
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+---
+
+## Related Projects
+
+This package integrates with several companion projects:
+
+- **[vision_detect_segment](https://github.com/dgaida/vision_detect_segment)** - Object detection and segmentation
+- **[redis_robot_comm](https://github.com/dgaida/redis_robot_comm)** - Redis-based communication
+- **[robot_workspace](https://github.com/dgaida/robot_workspace)** - Workspace management and object representation
+- **[text2speech](https://github.com/dgaida/text2speech)** - Natural language feedback
+- **[robot_mcp](https://github.com/dgaida/robot_mcp)** - LLM-based robot control using Model Context Protocol
+
+---
 
 ## License
 
-MIT License
+This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
+
+---
+
+## Citation
+
+If you use this package in your research, please cite:
+
+```bibtex
+@software{robot_environment,
+  author = {Gaida, Daniel},
+  title = {robot_environment: Vision-Based Robotic Manipulation Framework},
+  year = {2025},
+  url = {https://github.com/dgaida/robot_environment}
+}
+```
+
+---
 
 ## Acknowledgments
 
-- OwlV2 for object detection
-- Kokoro for text-to-speech
-- Redis for inter-process communication
-- Niryo and Trossen Robotics for robot hardware
+This package builds upon:
+
+- **[pyniryo](https://github.com/NiryoRobotics/pyniryo)** - Niryo robot control
+- **[InterbotixManipulatorXS](https://github.com/Interbotix/interbotix_ros_manipulators)** - WidowX robot control
+- **[Supervision](https://github.com/roboflow/supervision)** - Annotation framework
+- **[Transformers](https://github.com/huggingface/transformers)** - Vision models
+- **[Ultralytics](https://github.com/ultralytics/ultralytics)** - YOLO models
+- **[Redis](https://redis.io/)** - High-performance messaging
+
+---
 
 ## Support
 
-For issues and questions, please open an issue on GitHub.
+- **GitHub Issues:** [https://github.com/dgaida/robot_environment/issues](https://github.com/dgaida/robot_environment/issues)
+- **Documentation:** [docs/README.md](docs/README.md)
+- **Examples:** [examples/](examples/)
+
+---
+
+## Author
+
+**Daniel Gaida**
+Email: daniel.gaida@th-koeln.de
+GitHub: [@dgaida](https://github.com/dgaida)
+
+Project Link: [https://github.com/dgaida/robot_environment](https://github.com/dgaida/robot_environment)
+
+---
+
+## Roadmap
+
+### Planned Features
+
+- [ ] Additional robot support (UR5, Franka Emika)
+- [ ] Improved collision detection and avoidance
+- [ ] Force/torque sensor integration
+- [ ] Advanced grasp planning
+- [ ] Multi-robot coordination
+- [ ] Web-based control interface
+- [ ] ROS2 integration
+- [ ] Improved simulation support
+
+### Recent Additions
+
+- ✅ Multi-workspace support
+- ✅ Redis-based architecture
+- ✅ YOLOE model support with built-in segmentation
+- ✅ Object tracking with persistent IDs
+- ✅ Enhanced object memory management
+- ✅ Workspace visibility tracking
+- ✅ Thread-safe operations with proper locking
+
+---
+
+**Last Updated:** December 2025
