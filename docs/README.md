@@ -8,303 +8,92 @@ The `robot_environment` package provides a comprehensive framework for robotic p
 
 1. **Environment Layer** - Central orchestrator
 2. **Robot Control Layer** - Hardware abstraction and motion control
-3. **Vision Layer** - Object detection and tracking
+3. **Camera Layer** - Image acquisition and streaming
 4. **Workspace Layer** - Coordinate transformation and workspace management
 5. **Communication Layer** - Redis-based data streaming
 6. **Interaction Layer** - Text-to-speech feedback
+
+**Note:** Object detection is handled by a **separate process** (`vision_detect_segment`) that communicates via Redis streams.
 
 ## System Architecture
 
 ![System Architecture](architecture_package.png)
 
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Environment Layer                        │
+│  (Central orchestrator coordinating all subsystems)         │
+└─────────────────────────────────────────────────────────────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+┌───────▼────────┐   ┌──────▼──────┐   ┌────────▼─────────┐
+│  Robot Control │   │   Camera    │   │    Workspace     │
+│     Layer      │   │    Layer    │   │      Layer       │
+└────────────────┘   └─────────────┘   └──────────────────┘
+        │                   │                   │
+┌───────▼────────┐   ┌──────▼──────┐   ┌────────▼─────────┐
+│ RobotController│   │FrameGrabber │   │    Workspace     │
+│   (Abstract)   │   │  (Abstract) │   │   (Abstract)     │
+└────────────────┘   └─────────────┘   └──────────────────┘
+        │                   │                   │
+┌───────▼────────┐   ┌──────▼──────┐   ┌────────▼─────────┐
+│ NiryoRobot     │   │ NiryoFrame  │   │ NiryoWorkspace   │
+│  Controller    │   │   Grabber   │   │                  │
+└────────────────┘   └─────────────┘   └──────────────────┘
+                            │
+                    ┌───────▼───────┐
+                    │ Redis Streams │
+                    │  (Images +    │
+                    │   Objects)    │
+                    └───────┬───────┘
+                            │
+                    ┌───────▼───────┐
+                    │ vision_detect │
+                    │   _segment    │
+                    │ (Separate     │
+                    │  Process)     │
+                    └───────────────┘
+```
+
 ## Core Components
 
-### 1. Environment (`environment.py`)
-
-The `Environment` class serves as the central orchestrator that coordinates all subsystems.
-
-**Responsibilities:**
-- Initialize and manage all subsystems
-- Coordinate camera updates and object detection
-- Provide unified API for robot operations
-- Manage object memory and detection history
-
-**Key Dependencies:**
-- `Robot` - Robot control interface
-- `FrameGrabber` - Camera interface
-- `Workspaces` - Workspace management
-- `VisualCortex` - Object detection (from `vision_detect_segment`)
-- `Text2Speech` - Audio feedback
-- `RedisMessageBroker` - Object data publishing
-
-**Workflow:**
-```python
-env = Environment(el_api_key, use_simulation, robot_id, verbose)
-# 1. Creates Robot (which creates RobotController)
-# 2. Creates FrameGrabber for camera
-# 3. Creates Workspaces collection
-# 4. Creates VisualCortex for detection
-# 5. Starts background camera thread
-```
-
-### 2. Robot Control Layer
-
-#### Robot (`robot/robot.py`)
-
-High-level robot API implementing `RobotAPI` interface.
-
-**Responsibilities:**
-- Implement pick-and-place operations
-- Object position verification
-- Command parsing and execution
-- Safety checks
-
-**Key Methods:**
-- `pick_place_object()` - Complete pick and place operation
-- `pick_object()` - Pick operation only
-- `place_object()` - Place operation with location logic
-- `push_object()` - Push operation for non-grippable objects
-
-#### RobotController (`robot/robot_controller.py`)
-
-Abstract base class for robot hardware control.
-
-**Implementations:**
-- `NiryoRobotController` - Niryo Ned2 robot
-- `WidowXRobotController` - WidowX robot (stub)
-
-**Responsibilities:**
-- Hardware communication
-- Low-level motion commands
-- Thread-safe operation (via locks)
-- Pose transformations
-
-**Critical Feature - Thread Safety:**
-```python
-with self._lock:  # Ensures thread-safe robot access
-    pose = self._robot_ctrl.get_pose()
-```
-
-### 3. Vision Layer
-
-#### VisualCortex (from `vision_detect_segment`)
-
-External package providing object detection capabilities.
-
-**Features:**
-- Multi-model support (OWL-V2, YOLO-World, Grounding-DINO)
-- Object tracking
-- Instance segmentation (SAM2, FastSAM)
-- Redis integration
-
-**Integration:**
-```python
-self._visual_cortex = VisualCortex(
-    objdetect_model_id="owlv2",
-    device="auto",
-    config=config
-)
-```
-
-**Data Flow:**
-1. FrameGrabber captures image → Redis
-2. VisualCortex reads from Redis
-3. Detects objects with bounding boxes
-4. Optional tracking and segmentation
-5. Publishes results to Redis
-
-#### FrameGrabber (`camera/framegrabber.py`)
-
-Abstract base class for camera interfaces.
-
-**Implementations:**
-- `NiryoFrameGrabber` - Niryo robot's mounted camera
-- `WidowXFrameGrabber` - Intel RealSense (stub)
-
-**Responsibilities:**
-- Image acquisition
-- Image undistortion
-- Workspace extraction
-- Redis streaming via `RedisImageStreamer`
-
-**Key Features:**
-```python
-# Variable-size image streaming
-streamer.publish_image(
-    image,
-    metadata={'workspace_id': ws_id, 'robot_pose': pose},
-    compress_jpeg=True
-)
-```
-
-### 4. Object Representation Layer
-
-#### Object (`objects/object.py`)
-
-Represents a detected object with full spatial information.
-
-**Properties:**
-- Label and workspace reference
-- Pixel coordinates (bounding box)
-- World coordinates (pose)
-- Physical dimensions (meters)
-- Segmentation mask (optional)
-- Gripper rotation (for optimal pickup)
-
-**Coordinate Systems:**
-- Image coordinates: `(u, v)` pixels
-- Relative coordinates: `(u_rel, v_rel)` normalized [0,1]
-- World coordinates: `(x, y, z)` meters
-
-**Serialization:**
-```python
-# Convert to JSON for Redis
-obj_dict = obj.to_dict()
-json_str = obj.to_json()
-
-# Reconstruct from JSON
-reconstructed = Object.from_dict(obj_dict, workspace)
-```
-
-#### Objects (`objects/objects.py`)
-
-Collection class extending Python's `List`.
-
-**Query Methods:**
-- `get_detected_object(coordinate, label)` - Find by location
-- `get_nearest_detected_object(coordinate)` - Nearest search
-- `get_largest_detected_object()` - Size-based queries
-- `get_detected_objects(location, coordinate, label)` - Spatial filtering
-
-**Spatial Filters:**
-```python
-Location.LEFT_NEXT_TO   # y > coordinate[1]
-Location.RIGHT_NEXT_TO  # y < coordinate[1]
-Location.ABOVE          # x > coordinate[0]
-Location.BELOW          # x < coordinate[0]
-Location.CLOSE_TO       # distance <= 2cm
-```
-
-#### PoseObjectPNP (`objects/pose_object.py`)
-
-File source: [Niryo Robotics](https://niryorobotics.github.io/pyniryo/v1.2.1/api/api.html#pyniryo.api.objects.PoseObject)
-
-6-DOF pose representation.
-
-**Components:**
-- Position: `(x, y, z)` in meters
-- Orientation: `(roll, pitch, yaw)` in radians
-
-**Features:**
-- Arithmetic operations (`+`, `-`)
-- Transformation matrices (4×4 homogeneous)
-- Quaternion conversion
-- Approximate equality checks
-
-### 5. Workspace Layer
-
-#### Workspace (`workspaces/workspace.py`)
-
-Abstract base class defining a robot workspace.
-
-**Responsibilities:**
-- Camera-to-world coordinate transformation
-- Workspace boundary definition
-- Visibility detection
-- Observation pose management
-
-**Key Concept - Coordinate Transformation:**
-```
-Image Coordinates (pixels)
-    ↓ normalize
-Relative Coordinates [0,1]
-    ↓ transform_camera2world_coords()
-World Coordinates (meters)
-```
-
-#### NiryoWorkspace (`workspaces/niryo_workspace.py`)
-
-Niryo-specific workspace implementation.
-
-**Features:**
-- Uses Niryo's built-in vision system
-- Supports multiple workspace definitions
-- Automatic corner detection
-- Predefined observation poses
-
-**Workspace Corners:**
-- `xy_ul_wc()` - Upper left
-- `xy_ur_wc()` - Upper right
-- `xy_ll_wc()` - Lower left
-- `xy_lr_wc()` - Lower right
-- `xy_center_wc()` - Center point
-
-#### Workspaces (`workspaces/workspaces.py`)
-
-Collection managing multiple workspaces.
-
-**Features:**
-- Workspace lookup by ID
-- Visible workspace detection
-- Home workspace management
-
-### 6. Communication Layer
-
-#### RedisImageStreamer (from `redis_robot_comm`)
-
-Handles variable-size image streaming.
-
-**Features:**
-- JPEG compression
-- Metadata attachment
-- Variable image sizes
-- Automatic base64 encoding
-
-**Usage:**
-```python
-streamer = RedisImageStreamer(stream_name='robot_camera')
-stream_id = streamer.publish_image(
-    image,
-    metadata={'workspace_id': 'ws1', 'frame_id': 42},
-    compress_jpeg=True,
-    quality=85
-)
-```
-
-#### RedisMessageBroker (from `redis_robot_comm`)
-
-Publishes object detection results.
-
-**Data Format:**
-```json
-{
-  "id": "obj_abc123",
-  "label": "pencil",
-  "position": {"x": 0.25, "y": 0.05, "z": 0.01},
-  "dimensions": {"width_m": 0.02, "height_m": 0.15},
-  "workspace_id": "niryo_ws",
-  "timestamp": 1699876543.21
-}
-```
-
-### 7. Interaction Layer
-
-#### Text2Speech (from `text2speech` package)
-
-Provides natural language feedback.
-
-**Features:**
-- Asynchronous speech generation
-- ElevenLabs or Kokoro TTS
-- Thread-safe operation
-
-**Usage:**
-```python
-thread = env.oralcom_call_text2speech_async(
-    "I have picked up the pencil"
-)
-thread.join()  # Wait for completion
-```
+### Environment Layer
+- `Environment` - Central orchestrator managing all subsystems
+- Coordinates camera updates, object retrieval, and robot control
+- Manages object memory with workspace-aware tracking
+- Handles thread-safe operations with proper locking
+
+### Robot Control Layer
+- `Robot` - High-level robot API implementing pick-and-place operations
+- `RobotController` - Abstract base class for hardware control
+- `NiryoRobotController` - Niryo Ned2 implementation with pyniryo
+- `WidowXRobotController` - WidowX implementation with InterbotixManipulatorXS
+
+### Camera Layer
+- `FrameGrabber` - Abstract camera interface with Redis streaming
+- `NiryoFrameGrabber` - Niryo-mounted camera with undistortion
+- `WidowXFrameGrabber` - Intel RealSense integration (stub)
+- **External**: Object detection via `vision_detect_segment` package (separate process)
+
+### Workspace Layer
+- `Workspace` - Abstract workspace with coordinate transformation
+- `NiryoWorkspace` - Niryo-specific workspace implementation
+- `Workspaces` - Collection managing multiple workspaces
+
+### Object Representation
+- `Object` - Detected object with full spatial information
+- `Objects` - Collection with spatial queries and filtering
+- `PoseObjectPNP` - 6-DOF pose representation
+
+### Communication Layer (Redis-based)
+- `RedisImageStreamer` - Variable-size image streaming (from `redis_robot_comm`)
+- `RedisMessageBroker` - Object detection results consumption (from `redis_robot_comm`)
+- `RedisLabelManager` - Dynamic object label configuration (from `redis_robot_comm`)
+
+For detailed architecture documentation, see **[docs/README.md](docs/README.md)**
+
+---
 
 ## Data Flow Architecture
 
@@ -312,10 +101,13 @@ thread.join()  # Wait for completion
 
 ```
 1. INITIALIZATION
-   Environment
+   Environment (robot_environment process)
       ├─→ Robot → RobotController (connects to hardware)
       ├─→ FrameGrabber (initializes camera)
       ├─→ Workspaces (loads workspace definitions)
+      └─→ Redis Communication (RedisMessageBroker, RedisLabelManager)
+
+   Separate Process: vision_detect_segment
       └─→ VisualCortex (loads detection models)
 
 2. OBSERVATION
@@ -323,7 +115,7 @@ thread.join()  # Wait for completion
       └─→ RobotController.move2observation_pose()
           └─→ Gripper moves to hover above workspace
 
-3. IMAGE CAPTURE & DETECTION
+3. IMAGE CAPTURE & STREAMING
    FrameGrabber.get_current_frame()
       ├─→ Capture image from camera
       ├─→ Undistort image
@@ -331,36 +123,37 @@ thread.join()  # Wait for completion
       └─→ RedisImageStreamer.publish_image()
               └─→ Redis: 'robot_camera' stream
 
-   VisualCortex.detect_objects_from_redis()
-      ├─→ Read from Redis stream
-      ├─→ Run detection model
-      ├─→ Optional: Track objects
-      ├─→ Optional: Segment objects
-      └─→ RedisMessageBroker.publish_objects()
-              └─→ Redis: 'detected_objects' stream
+4. OBJECT DETECTION (SEPARATE PROCESS)
+   vision_detect_segment VisualCortex
+      ├─→ Read from Redis stream 'robot_camera'
+      ├─→ Run detection model (OWL-V2, YOLO-World, YOLOE, etc.)
+      ├─→ Optional: Track objects with persistent IDs
+      ├─→ Optional: Segment objects (SAM2, FastSAM)
+      └─→ Publish results to Redis 'detected_objects' stream
 
-4. OBJECT PROCESSING
+5. OBJECT RETRIEVAL
    Environment.get_detected_objects()
-      ├─→ Read from Redis
+      ├─→ RedisMessageBroker.get_latest_objects()
+      ├─→ Read from Redis stream 'detected_objects'
       ├─→ Deserialize JSON
       └─→ Convert to Object instances
               ├─→ Calculate world coordinates
-              ├─→ Determine object orientation (needed for gripper rotation)
+              ├─→ Determine object orientation (for gripper rotation)
               └─→ Store in Objects collection
 
-5. PICK OPERATION
+6. PICK OPERATION
    Robot.pick_object(label, coordinate)
       ├─→ Find nearest object with label
       ├─→ Text2Speech: "Going to pick {label}"
-      └─→ RobotController.robot_pick_object(obj)
+      └─→ RobotController.robot_pick_object(pose)
               ├─→ Lock acquired
               ├─→ Move to pre-grasp pose
-              ├─→ Move to grasp pose (z_offset=0.001m)
+              ├─→ Move to grasp pose (z_offset applied)
               ├─→ Close gripper
               ├─→ Lift object
               └─→ Lock released
 
-6. PLACE OPERATION
+7. PLACE OPERATION
    Robot.place_object(coordinate, location)
       ├─→ Calculate placement pose
       │   └─→ Apply location offset (LEFT_NEXT_TO, ABOVE, etc.)
@@ -377,18 +170,18 @@ thread.join()  # Wait for completion
 ### Continuous Camera Update Loop
 
 ```
-Background Thread (daemon):
+Background Thread (daemon) in robot_environment:
     Loop:
         1. Move to observation pose (if not in motion)
-        2. Capture frame → Redis
-        3. Wait 0.5s
-        4. Trigger detection
-        5. Wait 0.5s
-        6. Get detected objects
-        7. Update memory
-        8. Display annotated image (if visualize=True)
-        9. Sleep (0.25s or 0.5s depending on robot motion)
+        2. Capture frame → Redis stream 'robot_camera'
+        3. Wait 0.1s
+        4. (vision_detect_segment detects in parallel)
+        5. Get detected objects from Redis 'detected_objects'
+        6. Update memory
+        7. Sleep (0.25s or 0.5s depending on robot motion)
 ```
+
+**Note:** Object detection happens in a **separate process** (`vision_detect_segment`), which continuously monitors the `robot_camera` Redis stream and publishes results to `detected_objects`.
 
 ## Thread Safety
 
@@ -428,51 +221,73 @@ def get_target_pose_from_rel(self, ws_id, u_rel, v_rel, yaw):
 
 ### 1. vision_detect_segment
 
-**Purpose:** Object detection and segmentation
+**Purpose:** Object detection and segmentation (runs as **separate process**)
 
 **Integration Points:**
-- `VisualCortex` instantiated in `Environment.__init__()`
-- Reads images from Redis (via `detect_objects_from_redis()`)
-- Returns detections as list of dictionaries
-- Provides annotated images for visualization
+- Reads images from Redis stream `robot_camera` (published by `FrameGrabber`)
+- Publishes detection results to Redis stream `detected_objects`
+- Subscribes to Redis channel `object_labels` for dynamic label configuration
+- **Completely decoupled** from `robot_environment` - communicates only via Redis
 
-**Configuration:**
+**How to Run:**
+The vision system is configured and run independently as a separate process:
 ```python
+# External process (vision_detect_segment)
+from vision_detect_segment import VisualCortex, get_default_config
+
 config = get_default_config("owlv2")
-self._visual_cortex = VisualCortex(
-    objdetect_model_id="owlv2",  # or "yoloworld", "groundingdino"
-    device="auto",                # or "cuda", "cpu"
-    verbose=verbose,
+cortex = VisualCortex(
+    objdetect_model_id="owlv2",  # or "yolo-world", "yoloe-11l", etc.
+    device="auto",
+    verbose=True,
     config=config
 )
+
+# Continuously detect from Redis
+cortex.detect_objects_from_redis(stream_name="robot_camera")
 ```
 
 **Models Supported:**
 - **OWL-V2**: Open-vocabulary detection
 - **YOLO-World**: Fast real-time detection
+- **YOLOE-11L**: Fast with built-in segmentation
 - **Grounding-DINO**: Text-guided detection
+
+**Data Flow:**
+1. `robot_environment` publishes images → Redis stream `robot_camera`
+2. `vision_detect_segment` reads from Redis → detects objects
+3. `vision_detect_segment` publishes results → Redis stream `detected_objects`
+4. `robot_environment` reads detections from Redis
 
 ### 2. redis_robot_comm
 
-**Purpose:** Redis-based communication
+**Purpose:** Redis-based communication infrastructure
 
 **Components Used:**
-- `RedisImageStreamer` - Variable-size image streaming
-- `RedisMessageBroker` - Object data publishing
+- `RedisImageStreamer` - Variable-size image streaming (used by `FrameGrabber`)
+- `RedisMessageBroker` - Object data consumption (used by `Environment`)
+- `RedisLabelManager` - Dynamic label configuration (used by `Environment`)
 
 **Integration:**
 ```python
-# In FrameGrabber
+# In FrameGrabber - publish images
 self.streamer = RedisImageStreamer(stream_name='robot_camera')
+self.streamer.publish_image(image, metadata={...}, compress_jpeg=True)
 
-# In Environment (for object publishing)
-self._broker = RedisMessageBroker()
-self._broker.publish_objects(objects_dict_list)
+# In Environment - consume detections
+self._object_broker = RedisMessageBroker()
+objects_dict_list = self._object_broker.get_latest_objects(max_age_seconds=2.0)
+
+# In Environment - manage labels
+self._label_manager = RedisLabelManager()
+self._label_manager.add_label("new_object")
+labels = self._label_manager.get_latest_labels()
 ```
 
 **Data Streams:**
-- `robot_camera` - Compressed images with metadata
-- `detected_objects` - Object detection results
+- `robot_camera` - Compressed images with metadata (published by `robot_environment`)
+- `detected_objects` - Object detection results (published by `vision_detect_segment`, consumed by `robot_environment`)
+- `object_labels` - Dynamic label configuration (published by `robot_environment` via `RedisLabelManager`)
 
 ### 3. text2speech
 
@@ -670,21 +485,23 @@ finally:
 
 | Model | Detection | Segmentation | Total FPS |
 |-------|-----------|--------------|-----------|
+| YOLOE-11L | 6-10ms | Built-in | 100-160 FPS |
 | YOLO-World | 20-50ms | 50-100ms (FastSAM) | 10-25 FPS |
 | OWL-V2 | 100-200ms | 200-500ms (SAM2) | 1-3 FPS |
 | Grounding-DINO | 200-400ms | 200-500ms (SAM2) | 1-2 FPS |
 
 ### Recommendations
 
-- **Real-time**: Use YOLO-World + FastSAM
+- **Real-time**: Use YOLOE-11L or YOLO-World
 - **Accuracy**: Use OWL-V2 or Grounding-DINO + SAM2
-- **Camera rate**: 5 FPS sufficient for pick-and-place
+- **Camera rate**: 5-10 FPS sufficient for pick-and-place
 
 ### Memory Management
 
 - Object memory stores detection history
 - Background thread continuously updates
 - Old detections persist until new scan
+- Manual updates from pick/place operations override detections temporarily
 
 ## Extension Points
 
@@ -721,9 +538,9 @@ The `robot_environment` architecture provides:
 ✅ **Hardware Abstraction** - Easy to add new robots
 ✅ **Thread Safety** - Concurrent camera and control
 ✅ **External Integration** - Clean package boundaries
-✅ **Redis Communication** - Decoupled data flow
+✅ **Redis Communication** - Decoupled data flow via separate processes
 ✅ **Flexible Workspaces** - Multiple workspace support
 ✅ **Rich Object Representation** - Full spatial information
 ✅ **Natural Interaction** - Text-to-speech feedback
 
-This architecture enables robust pick-and-place operations with vision-based object detection while maintaining extensibility and clean code organization.
+This architecture enables robust pick-and-place operations with vision-based object detection while maintaining extensibility and clean code organization. The key innovation is the **decoupled vision system** running as a separate process, communicating via Redis streams, which allows for independent scaling and development of vision capabilities.
