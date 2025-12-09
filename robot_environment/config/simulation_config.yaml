@@ -1,0 +1,59 @@
+# Example simulation_config.yaml - Simulation Configuration
+
+robot_id: niryo_sim
+robot_type: niryo
+
+ip_address: 192.168.247.128
+use_simulation: true
+
+workspaces:
+  niryo_ws:
+    id: niryo_ws
+    observation_pose:
+      x: 0.20
+      y: 0.0
+      z: 0.35
+      roll: 0.0
+      pitch: 1.57
+      yaw: 0.0
+    upper_left:
+      x: 0.35
+      y: 0.15
+    lower_right:
+      x: 0.15
+      y: -0.15
+
+camera:
+  resolution: [640, 480]
+  fps: 30
+
+vision:
+  detection_model: yoloe-11s  # Faster model for simulation
+  confidence_threshold: 0.3
+  enable_segmentation: false  # Disable for speed
+  enable_tracking: false
+  object_labels:
+    - cube
+    - cylinder
+
+control:
+  pick_z_offset_m: 0.001
+  place_z_offset_m: 0.005
+  approach_height_m: 0.05
+  max_velocity: 0.2  # Faster in simulation
+  move_timeout_s: 60.0  # Longer timeouts for simulation
+
+memory:
+  position_tolerance_m: 0.1  # More lenient in simulation
+  manual_update_timeout_s: 10.0
+
+redis:
+  host: localhost
+  port: 6379
+
+tts:
+  enable_speech: false  # Usually disabled in simulation
+
+verbose: true
+start_camera_thread: true
+camera_update_rate_hz: 5.0  # Lower rate for simulation

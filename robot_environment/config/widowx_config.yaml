@@ -1,0 +1,90 @@
+# Example widowx_config.yaml - WidowX Robot Configuration
+
+robot_id: widowx_01
+robot_type: widowx
+
+# Connection (WidowX uses ROS)
+ip_address: ""
+use_simulation: false
+
+# Workspaces
+workspaces:
+  widowx_ws:
+    id: widowx_ws
+    observation_pose:
+      x: 0.30
+      y: 0.0
+      z: 0.20
+      roll: 0.0
+      pitch: 1.57
+      yaw: 0.0
+    upper_left:
+      x: 0.40
+      y: 0.20
+    lower_right:
+      x: 0.20
+      y: -0.20
+    height_m: 0.0
+
+# Camera (Intel RealSense)
+camera:
+  resolution: [640, 480]
+  fps: 30
+  camera_matrix:
+    - [615.0, 0.0, 320.0]
+    - [0.0, 615.0, 240.0]
+    - [0.0, 0.0, 1.0]
+  distortion_coeffs: [0.0, 0.0, 0.0, 0.0, 0.0]
+
+# Vision
+vision:
+  detection_model: yoloe-11l
+  confidence_threshold: 0.25
+  enable_segmentation: true
+  enable_tracking: true
+  object_labels:
+    - pen
+    - cube
+    - bottle
+  redis_stream_name: widowx_camera
+  redis_objects_channel: widowx_objects
+  redis_labels_channel: widowx_labels
+
+# Control parameters
+control:
+  pick_z_offset_m: 0.001
+  place_z_offset_m: 0.005
+  approach_height_m: 0.05
+  placement_offset_x_m: 0.02
+  placement_offset_y_m: 0.02
+  stack_offset_z_m: 0.02
+  push_speed_mm_s: 50.0
+  max_velocity: 0.1
+  max_acceleration: 0.5
+  move_timeout_s: 30.0
+  pick_timeout_s: 15.0
+  place_timeout_s: 15.0
+
+# Memory
+memory:
+  position_tolerance_m: 0.05
+  manual_update_timeout_s: 5.0
+  enable_multi_workspace: false
+
+# Redis
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+  password: null
+  socket_timeout: 5.0
+
+# TTS
+tts:
+  provider: kokoro
+  enable_speech: true
+
+# System
+verbose: false
+start_camera_thread: true
+camera_update_rate_hz: 10.0
