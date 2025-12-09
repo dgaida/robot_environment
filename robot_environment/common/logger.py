@@ -1,32 +1,38 @@
-# class defining a decorator to log functions entry and exit
-# final
+"""
+Logging decorators for robot_environment package.
+"""
 
+import logging
 import inspect
+from functools import wraps
 
 # TODO: in future move definition elsewhere
 # variable that defines whether pyniryo or pyniryo2 should be used
 pyniryo_v = "pyniryo"  # "pyniryo2"
 
 
-def log_start_end(verbose: bool = True):
+def log_start_end(logger: logging.Logger):
     """
-    Returns a decorator to log the start and end of a function.
+    Decorator to log function entry and exit.
 
     Args:
-        verbose (bool): If True, logs will be printed.
+        logger: Logger instance to use
 
     Returns:
-        function: Decorator for logging start and end of functions.
+        Decorator function
     """
 
     def decorator(func):
+        @wraps(func)
         def wrapper(*args, **kwargs):
-            if verbose:
-                print(f"START {func.__name__}")
-            result = func(*args, **kwargs)
-            if verbose:
-                print(f"END {func.__name__}")
-            return result
+            logger.debug(f"START {func.__name__}")
+            try:
+                result = func(*args, **kwargs)
+                logger.debug(f"END {func.__name__}")
+                return result
+            except Exception as e:
+                logger.error(f"ERROR in {func.__name__}: {e}", exc_info=True)
+                raise
 
         return wrapper
 
@@ -35,28 +41,41 @@ def log_start_end(verbose: bool = True):
 
 def log_start_end_cls():
     """
-    Decorator to log the start and end of a method, including class name and line number.
+    Decorator to log class method entry and exit.
+    Uses instance's logger if available, or creates a module logger.
     """
 
     def decorator(func):
+        @wraps(func)
         def wrapper(self, *args, **kwargs):
-            # Get verbose attribute from the instance or class
-            verbose = getattr(self, "_verbose", False)
-            class_name = None
-            func_line_number = None
+            # Try to get logger from instance
+            if hasattr(self, "_logger"):
+                logger = self._logger
+            else:
+                # Fallback to module logger
+                logger = logging.getLogger(self.__class__.__module__)
 
-            if verbose:
-                # Retrieve class name
+            class_name = ""
+
+            # Only log if verbose or DEBUG level
+            should_log = (hasattr(self, "_verbose") and self._verbose) or logger.isEnabledFor(logging.DEBUG)
+
+            if should_log:
                 class_name = self.__class__.__name__
-                # Retrieve line number where the function is defined
-                func_line_number = inspect.getsourcelines(func)[1]
-                # Log start message
-                print(f"START {func.__name__} (Class: {class_name}, Line: {func_line_number})")
-            result = func(self, *args, **kwargs)
-            if verbose:
-                # Log end message
-                print(f"END {func.__name__} (Class: {class_name}, Line: {func_line_number})")
-            return result
+                func_line = inspect.getsourcelines(func)[1]
+                logger.debug(f"START {func.__name__} " f"(Class: {class_name}, Line: {func_line})")
+
+            try:
+                result = func(self, *args, **kwargs)
+
+                if should_log:
+                    logger.debug(f"END {func.__name__}")
+
+                return result
+
+            except Exception as e:
+                logger.error(f"ERROR in {class_name}.{func.__name__}: {e}", exc_info=True)
+                raise
 
         return wrapper
 

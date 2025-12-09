@@ -3,6 +3,7 @@
 # Documentation and type definitions are almost final (chatgpt can maybe improve it)
 
 from ..common.logger import log_start_end_cls
+from ..common.logger_config import get_package_logger
 
 from .robot_api import RobotAPI, Location
 
@@ -47,6 +48,9 @@ class Robot(RobotAPI):
         self._environment = environment
         self._verbose = verbose
         self._object_last_picked = None
+
+        self._logger = get_package_logger(__name__, verbose)
+        self._logger.info(f"Initializing robot: {robot_id}")
 
         if robot_id == "niryo":
             self._robot = NiryoRobotController(self, use_simulation, verbose)
@@ -219,7 +223,7 @@ class Robot(RobotAPI):
         """
         coords_str = "[" + ", ".join(f"{x:.2f}" for x in pick_coordinate) + "]"
         message = f"Going to pick {object_name} at coordinate {coords_str}."
-        print(message)
+        self._logger.info(message)
 
         thread_oral = self.environment().oralcom_call_text2speech_async(message)
 

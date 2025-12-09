@@ -28,8 +28,8 @@ from redis_robot_comm import RedisMessageBroker
 # Add this new import at the top of environment.py
 from redis_robot_comm import RedisLabelManager
 
-# from vision_detect_segment import VisualCortex
-# from vision_detect_segment import get_default_config
+from .common.logger_config import get_package_logger
+import logging
 
 from typing import TYPE_CHECKING, List, Optional, Dict
 
@@ -63,6 +63,12 @@ class Environment:
         """
         self._use_simulation = use_simulation
         self._verbose = verbose
+        self._logger = get_package_logger(__name__, verbose)
+
+        self._logger.info("Initializing Environment")
+        self._logger.debug(
+            f"Configuration: simulation={use_simulation}, " f"robot_id={robot_id}, camera_thread={start_camera_thread}"
+        )
 
         # important that Robot comes before framegrabber and before workspace
         self._robot = Robot(self, use_simulation, robot_id, verbose)
@@ -116,14 +122,8 @@ class Environment:
                     self._workspace_visibility_state[default_ws_id] = False
 
         # ======= NEW: Redis-based communication =======
-        # Replace _visual_cortex with Redis clients
         self._object_broker = RedisMessageBroker()
         self._label_manager = RedisLabelManager()
-
-        # det_mdl = "owlv2"  # "yoloe-11l"  # owlv2
-        # config = get_default_config(det_mdl)
-
-        # self._visual_cortex = VisualCortex(objdetect_model_id=det_mdl, device="auto", verbose=verbose, config=config)
 
         if start_camera_thread:
             if verbose:
@@ -1144,13 +1144,17 @@ class Environment:
     def use_simulation(self) -> bool:
         return self._use_simulation
 
+    @property
     def verbose(self) -> bool:
-        """
+        """Check if verbose (DEBUG) logging is enabled."""
+        return self._logger.isEnabledFor(logging.DEBUG)
 
-        Returns:
-            True, if verbose is on, else False
-        """
-        return self._verbose
+    @verbose.setter
+    def verbose(self, value: bool):
+        """Set verbose logging on/off."""
+        from .common.logger_config import set_verbose
+
+        set_verbose(self._logger, value)
 
     # *** PRIVATE variables ***
 
