@@ -1,6 +1,5 @@
 # robot class around Niryo robot for smart pick and place
-# a few TODOs
-# Documentation and type definitions are almost final (chatgpt can maybe improve it)
+# Updated with proper logging throughout
 
 from ..common.logger import log_start_end_cls
 from ..common.logger_config import get_package_logger
@@ -9,7 +8,6 @@ from .robot_api import RobotAPI, Location
 
 from .niryo_robot_controller import NiryoRobotController
 
-# from redis_robot_comm import RedisMessageBroker
 from robot_workspace import PoseObjectPNP
 from robot_workspace import Object
 from robot_workspace import Objects
@@ -23,7 +21,8 @@ if TYPE_CHECKING:
 
 import math
 import re
-import json
+
+# import json
 import ast
 
 
@@ -57,12 +56,6 @@ class Robot(RobotAPI):
         else:
             self._robot = None
 
-        # self._broker = RedisMessageBroker()
-
-    # *** PUBLIC SET methods ***
-
-    # *** PUBLIC GET methods ***
-
     def handle_object_detection(self, objects_dict_list):
         """Process incoming object detections from Redis"""
         # Convert dictionaries back to Object instances
@@ -70,9 +63,7 @@ class Robot(RobotAPI):
 
         # Now work with Object instances as before
         for obj in objects:
-            print(f"Received object: {obj.label()} at {obj.xy_com()}")
-
-    # GET methods from RobotController
+            self._logger.debug(f"Received object: {obj.label()} at {obj.xy_com()}")
 
     def get_pose(self) -> "PoseObjectPNP":
         """
@@ -101,8 +92,7 @@ class Robot(RobotAPI):
         Returns:
             pose_object: Pose of the point in world coordinates of the robot.
         """
-        if self.verbose():
-            print("robot::get_target_pose_from_rel", workspace_id, u_rel, v_rel, yaw)
+        self._logger.debug(f"robot::get_target_pose_from_rel {workspace_id}, {u_rel}, {v_rel}, {yaw}")
 
         return self._robot.get_target_pose_from_rel(workspace_id, u_rel, v_rel, yaw)
 
@@ -187,7 +177,7 @@ class Robot(RobotAPI):
             Useful for picking objects that are stacked on top of other objects.
 
         Returns:
-            bool: Always returns `True` after the pick-and-place operation.
+            bool: True if successful
         """
         success = self.pick_object(object_name, pick_coordinate, z_offset=z_offset)
 
@@ -275,7 +265,8 @@ class Robot(RobotAPI):
         else:
             old_coordinate = None
             message = f"Going to place it {location} coordinate [{place_coordinate[0]:.2f}, {place_coordinate[1]:.2f}]."
-        print(message)
+
+        self._logger.info(message)
 
         thread_oral = self.environment().oralcom_call_text2speech_async(message)
         obj_where_to_place = None
@@ -283,26 +274,20 @@ class Robot(RobotAPI):
         if location is not None and location is not Location.NONE:
             obj_where_to_place = self._get_nearest_object(None, place_coordinate)
             if obj_where_to_place is None:
-                place_pose = PoseObjectPNP(place_coordinate[0], place_coordinate[1], 0.09, 0.0, 1.57, 0.0)  # 0.068,
+                place_pose = PoseObjectPNP(place_coordinate[0], place_coordinate[1], 0.09, 0.0, 1.57, 0.0)
             else:
                 place_pose = obj_where_to_place.pose_center()
         else:
-            # gegeben eine xyz Koordinate, wie kann ich die benötigte greifer pose berechnen? das ist so korrekt und
-            # funkt so in der Simulation
-            # TODO: die Zahl 0.068 kommt von Niryo Robot greifer. bei der Höhe des Greifers, schwebt der Greifer gerade
-            # über den Workspace
-            place_pose = PoseObjectPNP(place_coordinate[0], place_coordinate[1], 0.09, 0.0, 1.57, 0.0)  # 0.068,
-            if self.verbose():
-                print("place_object:", place_pose)
+            place_pose = PoseObjectPNP(place_coordinate[0], place_coordinate[1], 0.09, 0.0, 1.57, 0.0)
+            self._logger.debug(f"place_object: {place_pose}")
 
-        x_off = 0.02  # 2 cm # 10
-        y_off = 0.02  # 2 cm # 10
+        x_off = 0.02
+        y_off = 0.02
 
         if self._object_last_picked:
             x_off += self._object_last_picked.height_m() / 2
             y_off += self._object_last_picked.width_m() / 2
 
-        # ich muss das in x, y Koordinaten machen und nicht in Pixelkoordinaten
         if place_pose:
             # TODO: use height of object instead
             if location == Location.ON_TOP_OF:
@@ -319,19 +304,16 @@ class Robot(RobotAPI):
                 #  ich muss anstatt width und height eine größe haben dim_x und dim_y, die a x und y koordinate gebunden sind
                 #  ich habe das in object klasse repariert, width geht immer entlang y-achse jetzt. prüfen hier
                 place_pose.x -= obj_where_to_place.height_m() / 2 + x_off
-                # place_pose.x -= obj_where_to_place.width_m() / 2 - x_off
-                # print(place_pose)
             elif location == Location.ABOVE:
                 # TODO: nutze hier auch width, da width immer die größere größe ist und nicht eine koordinatenrichtugn hat
                 #  ich habe das in object klasse repariert, width geht immer entlang y-achse jetzt. prüfen hier
                 print(obj_where_to_place.height_m(), self._object_last_picked.width_m(), x_off)
                 place_pose.x += obj_where_to_place.height_m() / 2 + x_off
-                # place_pose.x += obj_where_to_place.width_m() / 2 + x_off
-                print(place_pose)
+                self._logger.debug(f"{place_pose}")
             elif location is Location.NONE or location is None:
                 pass  # I do not have to do anything as the given location is where to place the object
             else:
-                print("unknown location!!!!!!!!!!!", location, type(location))
+                self._logger.error(f"Unknown location: {location} (type: {type(location)})")
 
             success = self._robot.robot_place_object(place_pose)
 
@@ -339,29 +321,16 @@ class Robot(RobotAPI):
             # Update memory after successful placement
             if success and self._object_last_picked and old_coordinate:
                 final_coordinate = [place_pose.x, place_pose.y]
-                print("final_coordinate:", final_coordinate)
-                # Remove from old position in memory
-                # nicht löschen, sondern objektposition wird aktualiseirt unten
-                # self.environment().remove_object_from_memory(self._object_last_picked.label(), old_coordinate)
-                # Note: We DON'T add the new position to memory here
-                # muss die neue Position hier doch in memory hinzufügen, damit ich es nach dem ablegen sofort
-                # wieder greifen kann. mein Test im paper Nr. 6.
+                self._logger.debug(f"final_coordinate: {final_coordinate}")
+
                 self.environment().update_object_in_memory(
                     self._object_last_picked.label(), old_coordinate, new_pose=place_pose
                 )
-                # TODO: use logger to log new position
 
                 # Give the memory system a moment to register the update
                 import time
 
-                time.sleep(0.1)  # 100ms should be enough
-            # have to get access to objects in environment because _object_last_picked is deleted in 3 lines
-            # das Problem an meiner Implementierung ist, dass sobald das LLM aufgerufen wird, wird es
-            # mit einer statischen Liste von Objekten mit deren Positionen aufgerufen. wenn während der Ausführung des
-            # LLms oder des roboters danach etwas an der Position der Objekte ändert, bekommt der roboter das nicht
-            # mit, da die objekte quasi nur im visualcortex leben und keine realen objekte sind. eigentlich
-            # bräuchte man noch ein objekt tracker, der objekte eindeutig trackt. dann kann roboter auch neue koordinaten
-            # des objekts erhalten, falls es sich wegbewegt hat.
+                time.sleep(0.1)
         else:
             success = False
 
@@ -392,7 +361,7 @@ class Robot(RobotAPI):
             bool: True
         """
         message = f"Calling push with {object_name} and {direction}"
-        print(message)
+        self._logger.info(message)
 
         thread_oral = self.environment().oralcom_call_text2speech_async(message)
 
@@ -419,7 +388,7 @@ class Robot(RobotAPI):
             # gripper 0° rotated. TODO: I have to test these orientations
             push_pose.yaw = 0.0
         else:
-            print("Unknown direction!", direction)
+            self._logger.error(f"Unknown direction: {direction}")
 
         if obj_to_push is not None:
             success = self._robot.robot_push_object(push_pose, direction, distance)
@@ -429,40 +398,6 @@ class Robot(RobotAPI):
         thread_oral.join()
 
         return success
-
-    # @log_start_end_cls()
-    # def execute_python_code_safe(self, python_code: str) -> tuple[None, bool]:
-    #     """
-    #     Safely execute Python code using structured commands.
-    #
-    #     Args:
-    #         python_code (str): The commands to execute.
-    #
-    #     Returns:
-    #         tuple[None, bool]: (None, success)
-    #     """
-    #     self._robot_in_motion = True
-    #     message = f"Executing python code:\n{python_code}"
-    #     self.environment().append_assistant_message2chat_history(message)
-    #
-    #     if self.verbose():
-    #         print(message)
-    #
-    #     success = True
-    #
-    #     # Process each line as a command
-    #     for line in python_code.splitlines():
-    #         target_object, method, pos_args, kw_args = self._parse_command(line)
-    #         if target_object and method:
-    #             success = success and self._execute_command(target_object, method, pos_args, kw_args)
-    #         else:
-    #             self.environment().append_assistant_message2chat_history(f"Invalid command: {line}")
-    #             success = False
-    #             continue
-    #
-    #     self._robot_in_motion = False
-    #
-    #     return None, success
 
     def pick_place_object_across_workspaces(
         self,
@@ -500,10 +435,9 @@ class Robot(RobotAPI):
                 z_offset=0.02
             )
         """
-        if self.verbose():
-            print(f"Multi-workspace operation: {object_name}")
-            print(f"  Pick from: {pick_workspace_id} at {pick_coordinate}")
-            print(f"  Place in: {place_workspace_id} at {place_coordinate}")
+        self._logger.debug(f"Multi-workspace operation: {object_name}")
+        self._logger.debug(f"  Pick from: {pick_workspace_id} at {pick_coordinate}")
+        self._logger.debug(f"  Place in: {place_workspace_id} at {place_coordinate}")
 
         # Step 1: Move to pick workspace observation pose
         self.move2observation_pose(pick_workspace_id)
@@ -513,7 +447,7 @@ class Robot(RobotAPI):
         success = self.pick_object_from_workspace(object_name, pick_workspace_id, pick_coordinate, z_offset=z_offset)
 
         if not success:
-            print(f"Failed to pick {object_name} from {pick_workspace_id}")
+            self._logger.error(f"Failed to pick {object_name} from {pick_workspace_id}")
             return False
 
         # Step 3: Move to place workspace observation pose
@@ -533,8 +467,7 @@ class Robot(RobotAPI):
                 new_coordinate=place_coordinate,
             )
 
-            if self.verbose():
-                print(f"Successfully moved {object_name} from {pick_workspace_id} " f"to {place_workspace_id}")
+            self._logger.info(f"Successfully moved {object_name} from {pick_workspace_id} to {place_workspace_id}")
 
         return place_success
 
@@ -555,7 +488,7 @@ class Robot(RobotAPI):
         """
         coords_str = "[" + ", ".join(f"{x:.2f}" for x in pick_coordinate) + "]"
         message = f"Picking {object_name} from workspace {workspace_id} at {coords_str}."
-        print(message)
+        self._logger.info(message)
 
         thread_oral = self.environment().oralcom_call_text2speech_async(message)
 
@@ -594,26 +527,24 @@ class Robot(RobotAPI):
         location = Location.convert_str2location(location)
 
         if self._object_last_picked:
-            # old_coordinate = [self._object_last_picked.x_com(), self._object_last_picked.y_com()]
             message = (
                 f"Placing {self._object_last_picked.label()} in workspace "
                 f"{workspace_id} {location} coordinate "
                 f"[{place_coordinate[0]:.2f}, {place_coordinate[1]:.2f}]."
             )
         else:
-            # old_coordinate = None
             message = (
                 f"Placing object in workspace {workspace_id} {location} "
                 f"coordinate [{place_coordinate[0]:.2f}, {place_coordinate[1]:.2f}]."
             )
 
-        print(message)
+        self._logger.info(message)
         thread_oral = self.environment().oralcom_call_text2speech_async(message)
 
         # Get workspace for coordinate transformation
         workspace = self.environment().get_workspace_by_id(workspace_id)
         if workspace is None:
-            print(f"Error: Workspace {workspace_id} not found")
+            self._logger.error(f"Workspace {workspace_id} not found")
             thread_oral.join()
             return False
 
@@ -678,8 +609,7 @@ class Robot(RobotAPI):
         # Get objects from specific workspace memory
         detected_objects = self.environment().get_detected_objects_from_workspace(workspace_id)
 
-        if self.verbose():
-            print(f"Objects in workspace {workspace_id}: {detected_objects}")
+        self._logger.debug(f"Objects in workspace {workspace_id}: {detected_objects}")
 
         if len(target_coords) == 0:
             nearest_object = next((obj for obj in detected_objects if obj.label() == label), None)
@@ -688,11 +618,10 @@ class Robot(RobotAPI):
             nearest_object, min_distance = detected_objects.get_nearest_detected_object(target_coords, label)
 
         if nearest_object:
-            if self.verbose():
-                print(f"Found {nearest_object.label()} at distance {min_distance:.3f}m")
+            self._logger.debug(f"Found {nearest_object.label()} at distance {min_distance:.3f}m")
         else:
-            print(f"Object {label} not found in workspace {workspace_id}")
-            print(f"Available objects: " f"{detected_objects.get_detected_objects_as_comma_separated_string()}")
+            self._logger.warning(f"Object {label} not found in workspace {workspace_id}")
+            self._logger.info(f"Available objects: " f"{detected_objects.get_detected_objects_as_comma_separated_string()}")
 
         return nearest_object
 
@@ -742,199 +671,16 @@ class Robot(RobotAPI):
 
             return target_object, method, positional_args, keyword_args
         except Exception as e:
-            print(f"Error parsing command: {e}")
+            # Using a module logger since this is a static method
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error parsing command: {e}", exc_info=True)
             return None, None, [], {}
 
-    # @log_start_end_cls()
-    # def _execute_command(self, target_object: str, method: str, positional_args: list, keyword_args: dict) -> bool:
-    #     """
-    #     Execute a parsed command.
-    #
-    #     Args:
-    #         target_object (str): The object to invoke the method on ('robot' or 'agent').
-    #         method (str): The method name to call.
-    #         positional_args (list): Positional arguments for the method.
-    #         keyword_args (dict): Keyword arguments for the method.
-    #
-    #     Returns:
-    #         bool: True if the command was executed successfully, False otherwise.
-    #     """
-    #     if self.verbose():
-    #         print(target_object, method)
-    #         print(positional_args, keyword_args)
-    #
-    #     try:
-    #         # Route commands to the appropriate target object
-    #         if target_object == "robot":
-    #             # with self.environment().lock():
-    #             if method == "pick_place_object":
-    #                 return self.pick_place_object(*positional_args, **keyword_args)
-    #             elif method == "pick_object":
-    #                 return self.pick_object(*positional_args, **keyword_args)
-    #             elif method == "place_object":
-    #                 return self.place_object(*positional_args, **keyword_args)
-    #             elif method == "push_object":
-    #                 return self.push_object(*positional_args, **keyword_args)
-    #             else:
-    #                 raise ValueError(f"Unknown method for robot: {method}")
-    #
-    #         elif target_object == "agent":
-    #             if method == "get_object_labels_and_print2chat":
-    #                 self.environment().agent().get_object_labels_and_print2chat()
-    #                 return True
-    #             elif method == "add_object_name2object_labels":
-    #                 self.environment().agent().add_object_name2object_labels(*positional_args, **keyword_args)
-    #                 return True
-    #             else:
-    #                 raise ValueError(f"Unknown method for agent: {method}")
-    #
-    #         else:
-    #             raise ValueError(f"Unknown target object: {target_object}")
-    #
-    #     except Exception as e:
-    #         self.environment().append_assistant_message2chat_history(f"Error executing command: {e}")
-    #         return False
-
-    # @log_start_end_cls()
-    # def execute_python_code_not_safe(self, python_code: str) -> tuple[dict, bool]:
-    #     """
-    #     Execute the provided Python code within the context of the Robot instance.
-    #
-    #     Args:
-    #         python_code (str): The Python code to execute.
-    #
-    #     Returns:
-    #         tuple:
-    #         - dict: A dictionary of local variables after code execution.
-    #         - bool: success
-    #     """
-    #     self._robot_in_motion = True
-    #
-    #     message = f"Executing python code:\n{python_code}"
-    #
-    #     self.environment().append_assistant_message2chat_history(message)
-    #
-    #     # Execute the Python code in the context of this instance
-    #     local_vars = {"robot": self}  # Pass 'self' as 'robot' to make methods accessible in the code
-    #
-    #     if self.verbose():
-    #         print(message, local_vars)
-    #
-    #     try:
-    #         exec(python_code, globals(), local_vars)
-    #         success = True
-    #     except (Exception, RuntimeError, UnicodeDecodeError) as e:
-    #         self.environment().append_assistant_message2chat_history(f"Error executing generated Python code: {e}")
-    #         # Log or re-raise with additional context
-    #         # raise RuntimeError(f"Error executing generated Python code: {e}")
-    #         success = False
-    #
-    #     self._robot_in_motion = False
-    #
-    #     return local_vars, success  # Return all local variables for further analysis if needed
-    #
-    # @log_start_end_cls()
-    # def execute_python_code(self, python_code: str) -> tuple[None, bool]:
-    #     """
-    #     Safely execute Python code using an isolated function.
-    #
-    #     Args:
-    #         python_code (str): The Python code to execute.
-    #
-    #     Returns:
-    #         tuple[None, bool]: (None, success)
-    #     """
-    #     self._robot_in_motion = True
-    #
-    #     # Indent the code properly for function encapsulation
-    #     indented_code = "\n".join(f"    {line}" for line in python_code.splitlines())
-    #
-    #     # Wrap the indented code in a function definition
-    #     wrapped_code = f"def generated_function():\n{indented_code}"
-    #
-    #     print(wrapped_code)
-    #
-    #     message = f"Executing python code:\n{wrapped_code}"
-    #     self.environment().append_assistant_message2chat_history(message)
-    #
-    #     if self.verbose():
-    #         print(message)
-    #
-    #     try:
-    #         # with self.environment().lock():
-    #         # Create an isolated function for the code
-    #         exec_globals = {"robot": self, "agent": self.environment().agent()}
-    #         exec_locals = {}
-    #         exec(wrapped_code, exec_globals, exec_locals)
-    #
-    #         # Call the generated function
-    #         exec_locals["generated_function"]()
-    #         success = True
-    #     except Exception as e:
-    #         self.environment().append_assistant_message2chat_history(f"Error executing generated Python code: {e}")
-    #         # Get the full stack trace as a string
-    #         self.environment().append_assistant_message2chat_history(traceback.format_exc())
-    #         success = False
-    #     finally:
-    #         self._robot_in_motion = False
-    #
-    #     return None, success
-
-    # this is old, not used anymore
-    # Function to parse and execute
-    def execute_tasks_from_string(self, llm_output):
-        """
-
-        Args:
-            llm_output:
-        """
-        # Regex to extract function calls and JSON payloads
-        function_pattern = re.compile(r"<function=(\w+)>\{\{(.+?)\}\}</function>")
-
-        # Match all function calls in the string
-        matches = function_pattern.findall(llm_output)
-
-        for func_name, json_payload in matches:
-            # Parse JSON arguments
-            args = json.loads(f"{{{json_payload}}}")
-
-            message = f"Executing task: {func_name} for {args['object_name']}"
-            new_message = {"role": "assistant", "content": message}
-
-            thread_oral = self._oralcom.call_text2speech_async(message)
-
-            self._chat_history.append(new_message)
-
-            self._robot_in_motion = True
-
-            # Dynamically get the method by name
-            method = getattr(self, func_name, None)
-            if method:
-                # Call the method with the extracted arguments
-                method(**args)
-            else:
-                print(f"Method '{func_name}' not found in Robot.")
-
-            # wait for thread to finish
-            thread_oral.join()
-
-        self._robot_in_motion = False
-
-    # *** PUBLIC STATIC/CLASS GET methods ***
-
-    # *** PRIVATE methods ***
-
     def get_detected_objects(self):
-        # TODO: 12 means 12 seconds, change to 2 in real environment
-        # objects_dict_list = self._broker.get_latest_objects(10)
-
+        """Get latest detected objects from memory."""
         latest_objects = self._environment.get_detected_objects_from_memory()
-
-        # print([obj['label'] for obj in objects_dict_list])
-
-        # Convert dictionaries back to Object instances
-        # latest_objects = Objects.dict_list_to_objects(objects_dict_list, self.environment().get_workspace(0))
-
         return latest_objects
 
     def _get_nearest_object(self, label: Union[str, None], target_coords: List) -> Optional["Object"]:
@@ -948,12 +694,9 @@ class Robot(RobotAPI):
         Returns:
             object:
         """
-        # TODO: hier muss ich eine FUnktion aufrufen, die dtected objects von einem buffer holt, denn wenn roboter
-        # einmal in bewegung, erkennt er ja keine objekte mehr. bzw. wenn robote rin motion, dann sollte keine neuen objekte
-        # detektiert werden.
         detected_objects = self.get_detected_objects()
 
-        print("detected_objects", detected_objects)
+        self._logger.debug(f"detected_objects: {detected_objects}")
 
         if len(target_coords) == 0:  # then no target coords are given, true for push method
             nearest_object = next((obj for obj in detected_objects if obj.label() == label), None)
@@ -962,13 +705,11 @@ class Robot(RobotAPI):
             nearest_object, min_distance = detected_objects.get_nearest_detected_object(target_coords, label)
 
         if nearest_object:
-            print(f"Nearest object found: {nearest_object} with {min_distance}")
+            self._logger.debug(f"Nearest object found: {nearest_object} with distance {min_distance}")
         else:
-            # TODO: append_assistant_message2chat_history not used anymore
-            print(f"Object {label} does not exist: " f"{detected_objects.get_detected_objects_as_comma_separated_string()}")
-            # self.environment().append_assistant_message2chat_history(
-            #    f"Object {label} does not exist: "
-            #    f"{detected_objects.get_detected_objects_as_comma_separated_string()}")
+            self._logger.warning(
+                f"Object {label} does not exist: " f"{detected_objects.get_detected_objects_as_comma_separated_string()}"
+            )
 
             # add functionality that looks for the most similar object in self.get_detected_objects()
             # and ask user whether this object should be used instead. if answer of user is yes, then set
@@ -978,10 +719,9 @@ class Robot(RobotAPI):
             nearest_object_name = None
 
             if nearest_object_name is not None:
-                print(f"I have detected the object {nearest_object_name}. Do you want to handle this object instead?")
-                # TODO: append_assistant_message2chat_history not used anymore
-                # self.environment().append_assistant_message2chat_history(
-                #     f"I have detected the object {nearest_object_name}. Do you want to handle this object instead?")
+                self._logger.info(
+                    f"I have detected the object {nearest_object_name}. Do you want to handle this object instead?"
+                )
 
                 # TODO: auf antwort von user warten und diese prüfen.
                 answer = "yes"
@@ -990,8 +730,6 @@ class Robot(RobotAPI):
                     return None
                 else:
                     nearest_object = next((obj for obj in detected_objects if obj.label() == nearest_object_name), None)
-
-        # print("nearest_object", nearest_object)
 
         return nearest_object
 
@@ -1010,7 +748,6 @@ class Robot(RobotAPI):
 
     def robot(self) -> "RobotController":
         """
-
         Returns:
             RobotController: object that controls the robot.
         """
@@ -1018,9 +755,7 @@ class Robot(RobotAPI):
 
     def verbose(self) -> bool:
         """
-
         Returns: True, if verbose is on, else False
-
         """
         return self._verbose
 
@@ -1037,3 +772,4 @@ class Robot(RobotAPI):
     _object_source_workspace: Optional[str] = None  # Track source workspace
 
     _verbose = False
+    _logger = None

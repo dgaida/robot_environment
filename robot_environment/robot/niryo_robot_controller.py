@@ -1,9 +1,9 @@
 # robot class around Niryo robot for smart pick and place
-# a few TODOs
-# Documentation and type definitions are final (chatgpt can improve it)
+# Updated with proper logging
 
 import numpy as np
 from ..common.logger import log_start_end_cls, pyniryo_v
+from ..common.logger_config import get_package_logger
 
 from .robot_controller import RobotController
 from robot_workspace import PoseObjectPNP
@@ -17,8 +17,8 @@ else:
     from pyniryo import NiryoRobot
     from pyniryo.api.objects import PoseObject
     from pyniryo.api.enums_communication import RobotAxis
-from pyniryo.api.exceptions import NiryoRobotException  # RobotCommandException
-from pyniryo.api.exceptions import TcpCommandException  # RobotCommandException
+from pyniryo.api.exceptions import NiryoRobotException
+from pyniryo.api.exceptions import TcpCommandException
 
 from typing import TYPE_CHECKING
 
@@ -31,7 +31,6 @@ class NiryoRobotController(RobotController):
     """
     Class for the pick-and-place niryo ned2 robot that provides the primitive tasks of the robot like
     pick and place operations.
-
     """
 
     # *** CONSTRUCTORS ***
@@ -46,10 +45,9 @@ class NiryoRobotController(RobotController):
             else False if we work with a real robot.
             verbose:
         """
-        self._executor = ThreadPoolExecutor(max_workers=1)  # Dedicated thread pool for long-running tasks
-
-        # print(pyniryo.__version__)
+        self._executor = ThreadPoolExecutor(max_workers=1)
         self._shutdown_v = False
+        self._logger = get_package_logger(__name__, verbose)
 
         super().__init__(robot, use_simulation, verbose)
 
@@ -58,24 +56,21 @@ class NiryoRobotController(RobotController):
         super().__del__()
 
         if hasattr(self, "_executor") and self._executor:
-            print("Shutting down ThreadPoolExecutor in destructor...")
+            self._logger.debug("Shutting down ThreadPoolExecutor in destructor...")
             self._executor.shutdown(wait=True)
 
-        print("Destructor called, Robot deleted.")
+        self._logger.debug("Destructor called, Robot deleted.")
         with self._lock:
-            print("Destructor called, Robot deleted.2")
+            self._logger.debug("Destructor called, Robot deleted.2")
             self._shutdown()
 
-    # ============================================
-    # METHOD 2: Explicit cleanup method (RECOMMENDED)
-    # ============================================
     def cleanup(self):
         """
         Explicit cleanup method - call this when you're done with the object.
         This is more reliable than relying on __del__.
         """
         if hasattr(self, "_executor") and self._executor:
-            print("Shutting down ThreadPoolExecutor...")
+            self._logger.info("Shutting down ThreadPoolExecutor...")
             self._shutdown_v = True
             self._executor.shutdown(wait=True)
             self._executor = None
@@ -128,14 +123,13 @@ class NiryoRobotController(RobotController):
             True, if calibration was successful, else False
         """
         self._calibrate_auto()
-
         return True
 
     def reset_connection(self) -> None:
         """
         Reset the connection to the robot by safely disconnecting and reconnecting.
         """
-        print("Resetting the robot connection...")
+        self._logger.info("Resetting the robot connection...")
         try:
             # Attempt to close the connection safely
             if self._robot_ctrl is not None:
@@ -143,15 +137,14 @@ class NiryoRobotController(RobotController):
                     self._shutdown()
 
         except Exception as e:
-            print(f"Error while closing connection: {e}")
+            self._logger.error(f"Error while closing connection: {e}", exc_info=True)
 
         # Reinitialize the connection
         try:
             self._create_robot()
-            if self.verbose():
-                print("Connection successfully reset.")
+            self._logger.info("Connection successfully reset.")
         except Exception as e:
-            print(f"Failed to reconnect to the robot: {e}")
+            self._logger.error(f"Failed to reconnect to the robot: {e}", exc_info=True)
             self._robot = None
 
     @log_start_end_cls()
@@ -174,7 +167,7 @@ class NiryoRobotController(RobotController):
             else:
                 self._robot_ctrl.pick_from_pose(pick_pose_niryo)
 
-        print("finished pick_from_pose")
+        self._logger.info("Finished pick_from_pose")
         return True
         # TODO: in newest version available
         # return not self._robot_ctrl.collision_detected
@@ -193,8 +186,7 @@ class NiryoRobotController(RobotController):
         place_pose = PoseObjectPNP.convert_pose_object2niryo_pose_object(place_pose)
         place_pose = place_pose.copy_with_offsets(z_offset=0.005)
 
-        if self.verbose():
-            print(place_pose)
+        self._logger.debug(f"Place pose: {place_pose}")
 
         with self._lock:
             if pyniryo_v == "pyniryo2":
@@ -221,8 +213,7 @@ class NiryoRobotController(RobotController):
         """
         push_pose = PoseObjectPNP.convert_pose_object2niryo_pose_object(push_pose)
 
-        if self.verbose():
-            print(push_pose)
+        self._logger.debug(f"Push pose: {push_pose}")
 
         with self._lock:
             if pyniryo_v == "pyniryo2":
@@ -241,13 +232,12 @@ class NiryoRobotController(RobotController):
             elif direction == "right":
                 self._shift_pose(RobotAxis.Y, -distance)
             else:
-                print("Unknown direction!", direction)
+                self._logger.error(f"Unknown direction: {direction}")
 
         return True
         # TODO: in newest version available
         # return not self._robot_ctrl.collision_detected
 
-    # @log_start_end_cls()
     def get_target_pose_from_rel(self, workspace_id: str, u_rel: float, v_rel: float, yaw: float) -> "PoseObjectPNP":
         """
         Given relative image coordinates [u_rel, v_rel] and optionally an orientation of the point (yaw),
@@ -265,13 +255,11 @@ class NiryoRobotController(RobotController):
         Returns:
             pose_object: Pose of the point in world coordinates of the robot.
         """
-        if self.verbose():
-            print(f"Thread {threading.current_thread().name}: {workspace_id}, {u_rel}, {v_rel}, {yaw}")
+        self._logger.debug(f"Thread {threading.current_thread().name}: {workspace_id}, {u_rel}, {v_rel}, {yaw}")
 
         # Use the asyncio lock for thread-safe access
         with self._lock:
-            if self.verbose():
-                print(f"Thread {threading.current_thread().name} acquired lock")
+            self._logger.debug(f"Thread {threading.current_thread().name} acquired lock")
 
             try:
                 x_rel = max(0.0, min(u_rel, 1.0))
@@ -285,29 +273,26 @@ class NiryoRobotController(RobotController):
                 obj_coords = PoseObjectPNP.convert_niryo_pose_object2pose_object(obj_coords)
 
             except (NiryoRobotException, UnicodeDecodeError, SyntaxError, TcpCommandException) as e:
-                print(f"Thread {threading.current_thread().name} Error: {e}")
-                # Return zero pose on ANY error (already as PoseObjectPNP)
+                self._logger.error(f"Thread {threading.current_thread().name} Error: {e}", exc_info=True)
                 obj_coords = PoseObjectPNP(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
             finally:
-                if self.verbose():
-                    print(f"Thread {threading.current_thread().name} releasing lock")
+                self._logger.debug(f"Thread {threading.current_thread().name} releasing lock")
 
-        if self.verbose():
-            print(f"Thread {threading.current_thread().name} exiting: {obj_coords}")
+        self._logger.debug(f"Thread {threading.current_thread().name} exiting: {obj_coords}")
 
         return obj_coords
 
     def get_target_pose_from_rel_timeout(
         self, workspace_id: str, x_rel: float, y_rel: float, yaw: float, timeout: float = 0.75
     ) -> "PoseObjectPNP":
-        print(f"Thread {threading.current_thread().name} entering: {workspace_id}, {x_rel}, {y_rel}, {yaw}")
+        self._logger.debug(f"Thread {threading.current_thread().name} entering: {workspace_id}, {x_rel}, {y_rel}, {yaw}")
 
         if not self._lock.acquire(timeout=timeout):
-            print(f"Thread {threading.current_thread().name} failed to acquire lock within timeout")
+            self._logger.error(f"Thread {threading.current_thread().name} failed to acquire lock within timeout")
             return PoseObject(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
         try:
-            print(f"Thread {threading.current_thread().name} acquired lock")
+            self._logger.debug(f"Thread {threading.current_thread().name} acquired lock")
             future = self._executor.submit(self._robot_ctrl.get_target_pose_from_rel, workspace_id, 0.0, x_rel, y_rel, yaw)
 
             try:
@@ -321,14 +306,13 @@ class NiryoRobotController(RobotController):
                 future.cancel()  # Attempt to cancel the task if it is still running
 
         except (NiryoRobotException, UnicodeDecodeError, SyntaxError, TcpCommandException) as e:
-            print(f"Thread {threading.current_thread().name} Error: {e}")
-            # self.reset_connection()
+            self._logger.error(f"Thread {threading.current_thread().name} Error: {e}", exc_info=True)
             obj_coords = PoseObject(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
         finally:
-            print(f"Thread {threading.current_thread().name} releasing lock")
+            self._logger.debug(f"Thread {threading.current_thread().name} releasing lock")
             self._lock.release()
 
-        print(f"Thread {threading.current_thread().name} exiting: {obj_coords}")
+        self._logger.debug(f"Thread {threading.current_thread().name} exiting: {obj_coords}")
         obj_coords = PoseObjectPNP.convert_niryo_pose_object2pose_object(obj_coords)
 
         return obj_coords
@@ -343,10 +327,8 @@ class NiryoRobotController(RobotController):
         """
         observation_pose = self._robot.environment().get_observation_pose(workspace_id)
 
-        # IMPORTANT: Check for None BEFORE attempting conversion
         if observation_pose is None:
-            if self.verbose():
-                print("observation_pose is None for workspace:", workspace_id)
+            self._logger.warning(f"observation_pose is None for workspace: {workspace_id}")
             return
 
         # Only convert if we have a valid pose
@@ -356,16 +338,9 @@ class NiryoRobotController(RobotController):
             with self._lock:
                 self._move_pose(observation_pose)
         except UnicodeDecodeError as e:
-            print("move2observation_pose:", e)
-            print("move2observation_pose:", observation_pose)
+            self._logger.error(f"move2observation_pose error: {e}, pose: {observation_pose}", exc_info=True)
 
-        if self.verbose():
-            print("move_pose finished", observation_pose)
-            print(self.get_pose(), observation_pose)
-
-    # *** PUBLIC STATIC/CLASS GET methods ***
-
-    # *** PRIVATE methods ***
+        self._logger.debug(f"move_pose finished, current: {self.get_pose()}, target: {observation_pose}")
 
     def _shutdown(self) -> None:
         """
@@ -452,3 +427,4 @@ class NiryoRobotController(RobotController):
 
     # ip address of the robot
     _robot_ip_address = ""
+    _logger = None

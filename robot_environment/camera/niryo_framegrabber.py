@@ -1,12 +1,11 @@
 # class implementing a framegrabber for Niryo Ned2 robot arm
-# TODO: is_point_visible prüfen
-# Documentation and type definitions are almost final (chatgpt might be able to improve it).
+# Updated with proper logging
 
 from ..common.logger import log_start_end_cls
+from ..common.logger_config import get_package_logger
 
 import cv2
 
-# from pyniryo2 import NiryoRobot
 from pyniryo import uncompress_image, undistort_image, extract_img_workspace
 
 from ..robot.niryo_robot_controller import NiryoRobotController
@@ -32,7 +31,6 @@ class NiryoFrameGrabber(FrameGrabber):
     @log_start_end_cls()
     def __init__(self, environment: "Environment", stream_name="robot_camera", verbose: bool = False):
         """
-
         Args:
             environment: Environment object this FrameGrabber is installed in
             verbose:
@@ -45,13 +43,14 @@ class NiryoFrameGrabber(FrameGrabber):
         """
         super().__init__(environment, verbose)
 
+        self._logger = get_package_logger(__name__, verbose)
+
         robot = environment.get_robot_controller()
 
         if not isinstance(robot, NiryoRobotController):
             raise TypeError("robot must be an instance of NiryoRobotController.")
 
-        # get NiryoRobot from NiryoRobotController
-        self._robot = robot  # .robot_ctrl()
+        self._robot = robot
 
         self._mtx, self._dist = self._robot.get_camera_intrinsics()
 
@@ -73,7 +72,7 @@ class NiryoFrameGrabber(FrameGrabber):
         try:
             img_compressed = self._robot.get_img_compressed()
         except UnicodeDecodeError as e:
-            print("get_current_frame:", e)
+            self._logger.error(f"Error getting compressed image: {e}", exc_info=True)
             return self._current_frame
 
         img_raw = uncompress_image(img_compressed)
@@ -87,8 +86,7 @@ class NiryoFrameGrabber(FrameGrabber):
             # TODO: try to get transformation between camera and gripper
             camera_pose = gripper_pose
 
-            if self.verbose():
-                print("camera_pose:", camera_pose)
+            self._logger.debug(f"camera_pose: {camera_pose}")
 
             current_frame = img_work
             myworkspace = self._environment.get_visible_workspace(camera_pose)
@@ -96,11 +94,10 @@ class NiryoFrameGrabber(FrameGrabber):
             if myworkspace is not None:
                 myworkspace.set_img_shape(img_work.shape)
             else:
-                print("DEBUG", myworkspace)
+                self._logger.debug(f"No visible workspace: {myworkspace}")
         else:
             current_frame = img
 
-        # self._current_frame = cv2.cvtColor(current_frame, cv2.COLOR_BGR2RGB)
         self._current_frame = current_frame
 
         # TODO: benötige ich die Methode? für was? falls ja, wo muss die aufgerufen werden? funktioniert hat die noch
@@ -128,51 +125,10 @@ class NiryoFrameGrabber(FrameGrabber):
             "image_source": "robot_mounted_camera",
         }
 
-        # Redis automatically handles the variable image size
-        stream_id = self.streamer.publish_image(
-            image, metadata=metadata, compress_jpeg=True, quality=85  # Good balance of quality/size for robotics
-        )
+        stream_id = self.streamer.publish_image(image, metadata=metadata, compress_jpeg=True, quality=85)
 
         self.frame_counter += 1
         return stream_id
-
-    # def run_adaptive_capture(self, get_current_image_func, target_fps: float = 5.0):
-    #     """
-    #     Run image capture that adapts to changing image sizes
-    #
-    #     Args:
-    #         get_current_image_func: Function that returns (image, workspace_id, robot_pose)
-    #     """
-    #     frame_interval = 1.0 / target_fps
-    #
-    #     print(f"Starting adaptive image capture at {target_fps} FPS")
-    #
-    #     try:
-    #         while True:
-    #             start_time = time.time()
-    #
-    #             # Get current image (size may vary)
-    #             try:
-    #                 image, workspace_id, robot_pose = get_current_image_func()
-    #
-    #                 if image is not None:
-    #                     self.publish_workspace_image(image, workspace_id, robot_pose)
-    #
-    #                     if self.frame_counter % 25 == 0:
-    #                         height, width = image.shape[:2]
-    #                         print(f"Frame {self.frame_counter}: {width}x{height}, workspace: {workspace_id}")
-    #
-    #             except Exception as e:
-    #                 print(f"Error capturing frame: {e}")
-    #
-    #             # Maintain target FPS
-    #             elapsed = time.time() - start_time
-    #             sleep_time = frame_interval - elapsed
-    #             if sleep_time > 0:
-    #                 time.sleep(sleep_time)
-    #
-    #     except KeyboardInterrupt:
-    #         print("Vision publisher stopped")
 
     def is_point_visible(self, world_point: np.array, camera_to_gripper_transform=np.eye(4)) -> bool:
         """
@@ -273,3 +229,4 @@ class NiryoFrameGrabber(FrameGrabber):
 
     # camera distortion coefficients
     _dist = None
+    _logger = None

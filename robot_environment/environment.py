@@ -1,5 +1,5 @@
 # environment class in which a robot for smart pick and place exists
-# Updated with proper object memory management
+# Updated with proper logging throughout
 
 import threading
 from .common.logger import log_start_end_cls
@@ -19,13 +19,9 @@ from .robot.widowx_robot_controller import WidowXRobotController
 
 from text2speech import Text2Speech
 
-# from robot_workspace import Object
 from robot_workspace import Objects
 
-# from redis_robot_comm import RedisMessageBroker
 from redis_robot_comm import RedisMessageBroker
-
-# Add this new import at the top of environment.py
 from redis_robot_comm import RedisLabelManager
 
 from .common.logger_config import get_package_logger
@@ -77,14 +73,12 @@ class Environment:
             self._framegrabber = NiryoFrameGrabber(self, verbose=verbose)
             self._workspaces = NiryoWorkspaces(self, verbose)
 
-            if verbose:
-                print(self._workspaces.get_home_workspace())
+            self._logger.debug(f"Home workspace: {self._workspaces.get_home_workspace()}")
         elif isinstance(self.get_robot_controller(), WidowXRobotController):
             self._framegrabber = WidowXFrameGrabber(self, verbose=verbose)
             self._workspaces = WidowXWorkspaces(self, verbose)
         else:
-            if verbose:
-                print("error:", self.get_robot_controller())
+            self._logger.error(f"Unknown robot controller type: {self.get_robot_controller()}")
 
         self._oralcom = Text2Speech(el_api_key, verbose=verbose)
 
@@ -113,32 +107,26 @@ class Environment:
                     self._workspace_memories[workspace_id] = Objects()
                     self._workspace_visibility_state[workspace_id] = False
             except Exception as e:
-                if self.verbose():
-                    print(f"Warning: Could not iterate workspaces: {e}")
-                # Initialize with default workspace if iteration fails
+                self._logger.warning(f"Could not iterate workspaces: {e}")
                 if hasattr(self._workspaces, "get_workspace_home_id"):
                     default_ws_id = self._workspaces.get_workspace_home_id()
                     self._workspace_memories[default_ws_id] = Objects()
                     self._workspace_visibility_state[default_ws_id] = False
 
-        # ======= NEW: Redis-based communication =======
+        # Redis-based communication
         self._object_broker = RedisMessageBroker()
         self._label_manager = RedisLabelManager()
 
         if start_camera_thread:
-            if verbose:
-                print("Starting camera update thread...")
-            # Start background camera updates
-            self.start_camera_updates(visualize=False)  # set visualize=False if you don't want OpenCV windows
+            self._logger.info("Starting camera update thread...")
+            self.start_camera_updates(visualize=False)
         else:
-            if verbose:
-                print("Camera thread disabled (manual control)")
+            self._logger.info("Camera thread disabled (manual control)")
 
     def __del__(self):
         """ """
         if hasattr(self, "_stop_event"):
-            if self.verbose():
-                print("Shutting down environment in del...")
+            self._logger.debug("Shutting down environment in destructor...")
             self._stop_event.set()
 
     def cleanup(self):
@@ -147,8 +135,7 @@ class Environment:
         This is more reliable than relying on __del__.
         """
         if hasattr(self, "_stop_event"):
-            if self.verbose():
-                print("Shutting down environment...")
+            self._logger.info("Shutting down environment...")
             self._stop_event.set()
 
         # Close Redis connections
@@ -189,8 +176,8 @@ class Environment:
         # 3. We're at or near observation pose
         should_update = workspace_visible and not robot_in_motion
 
-        if self.verbose() and should_update:
-            print("Memory update conditions met: workspace visible, robot stationary")
+        if should_update:
+            self._logger.debug("Memory update conditions met: workspace visible, robot stationary")
 
         return should_update
 
@@ -207,8 +194,7 @@ class Environment:
 
         # If workspace is now visible but was previously lost, clear memory
         if workspace_visible and not robot_in_motion and self._workspace_was_lost:
-            if self.verbose():
-                print("Clearing memory: returned to observation pose after workspace loss")
+            self._logger.debug("Clearing memory: returned to observation pose after workspace loss")
             return True
 
         return False
@@ -227,13 +213,7 @@ class Environment:
         # Detect when workspace is lost (moving away from observation pose)
         if prev_at_observation and not self._is_at_observation_pose:
             self._workspace_was_lost = True
-            if self.verbose():
-                print("Workspace lost - robot moved from observation pose")
-
-        # Reset flag when back at observation pose
-        if self._is_at_observation_pose and self._workspace_was_lost:
-            # Don't reset here - wait for clear_memory to be called
-            pass
+            self._logger.debug("Workspace lost - robot moved from observation pose")
 
     def _check_new_detections(self, detected_objects: "Objects") -> None:
         """
@@ -249,16 +229,14 @@ class Environment:
         with self._memory_lock:
             # Clear memory if we just returned to observation pose
             if self._should_clear_memory():
-                if self.verbose():
-                    print(f"Clearing memory of {len(self._obj_position_memory)} objects")
+                self._logger.debug(f"Clearing memory of {len(self._obj_position_memory)} objects")
                 self._obj_position_memory.clear()
                 self._manual_memory_updates.clear()  # Also clear manual update tracking
                 self._workspace_was_lost = False
 
             # Only update memory when at observation pose
             if not self._should_update_memory():
-                if self.verbose():
-                    print("Skipping memory update - conditions not met")
+                self._logger.debug("Skipping memory update - conditions not met")
                 return
 
             current_time = time.time()
@@ -271,8 +249,7 @@ class Environment:
             ]
             for label in expired_labels:
                 del self._manual_memory_updates[label]
-                if self.verbose():
-                    print(f"Manual update timeout expired for {label}")
+                self._logger.debug(f"Manual update timeout expired for {label}")
 
             # Update memory with new detections
             objects_added = 0
@@ -291,11 +268,10 @@ class Environment:
                             # Check if detected position is close to manual update
                             manual_dist = ((memory_obj.x_com() - x_center) ** 2 + (memory_obj.y_com() - y_center) ** 2) ** 0.5
 
-                            if manual_dist > 0.05:  # 5cm threshold
-                                # Detected position differs significantly from manual update
-                                # Trust the manual update (object was just placed there)
-                                if self.verbose():
-                                    print(f"Keeping manual update for {label} despite detection at different position")
+                            if manual_dist > 0.05:
+                                self._logger.debug(
+                                    f"Keeping manual update for {label} despite detection at different position"
+                                )
                                 found_manual = True
                                 break
                             else:
@@ -304,8 +280,7 @@ class Environment:
                                 memory_obj._y_com = y_center
                                 objects_updated += 1
                                 found_manual = True
-                                if self.verbose():
-                                    print(f"Detection confirms manual update for {label}")
+                                self._logger.debug(f"Detection confirms manual update for {label}")
                                 break
 
                     if found_manual:
@@ -326,22 +301,21 @@ class Environment:
                     self._obj_position_memory.append(obj)
                     objects_added += 1
 
-            if self.verbose() and (objects_added > 0 or objects_updated > 0):
-                print(
+            if objects_added > 0 or objects_updated > 0:
+                self._logger.debug(
                     f"Memory update: added {objects_added}, updated {objects_updated} "
                     f"(total: {len(self._obj_position_memory)})"
                 )
-                print(f"Active manual updates: {list(self._manual_memory_updates.keys())}")
+                self._logger.debug(f"Active manual updates: {list(self._manual_memory_updates.keys())}")
 
     def clear_memory(self) -> None:
         """
         Manually clear all objects from memory.
         Useful when you know the workspace has changed significantly.
         """
-        print("Warning: Clearing memory of all objects")
+        self._logger.warning("Clearing memory of all objects")
         with self._memory_lock:
-            if self.verbose():
-                print(f"Manually clearing memory of {len(self._obj_position_memory)} objects")
+            self._logger.debug(f"Manually clearing memory of {len(self._obj_position_memory)} objects")
             self._obj_position_memory.clear()
             self._workspace_was_lost = False
 
@@ -369,14 +343,14 @@ class Environment:
                         del self._manual_memory_updates[object_label]
 
                     removed = True
-                    print(f"Removed {object_label} from memory at {coordinate}")
-                    if self.verbose():
-                        print(f"Removed {object_label} from memory at {coordinate}")
+                    self._logger.info(f"Removed {object_label} from memory at {coordinate}")
                     break
 
-            if not removed and self.verbose():
-                print(f"Warning: Could not find {object_label} in memory to remove")
-                print(f"Memory contents: {[(obj.label(), [obj.x_com(), obj.y_com()]) for obj in self._obj_position_memory]}")
+            if not removed:
+                self._logger.warning(f"Could not find {object_label} in memory to remove")
+                self._logger.debug(
+                    f"Memory contents: {[(obj.label(), [obj.x_com(), obj.y_com()]) for obj in self._obj_position_memory]}"
+                )
 
     def update_object_in_memory(self, object_label: str, old_coordinate: List[float], new_pose: "PoseObjectPNP") -> None:
         """
@@ -399,23 +373,17 @@ class Environment:
                 ):
                     # Update position
                     obj.set_pose_com(new_pose)
-                    # obj._y_com = new_coordinate[1]
-
-                    # Mark this as a manual update with timestamp
                     self._manual_memory_updates[object_label] = time.time()
 
                     updated = True
-                    print(f"Updated {object_label} position in memory: {old_coordinate} -> {new_pose}")
-                    if self.verbose():
-                        print(f"Updated {object_label} position in memory: {old_coordinate} -> {new_pose}")
+                    self._logger.info(f"Updated {object_label} position in memory: {old_coordinate} -> {new_pose}")
                     break
 
             if not updated:
-                if self.verbose():
-                    print(f"Warning: Could not find {object_label} in memory to update")
-                    print(
-                        f"Memory contents: {[(obj.label(), [obj.x_com(), obj.y_com()]) for obj in self._obj_position_memory]}"
-                    )
+                self._logger.warning(f"Could not find {object_label} in memory to update")
+                self._logger.debug(
+                    f"Memory contents: {[(obj.label(), [obj.x_com(), obj.y_com()]) for obj in self._obj_position_memory]}"
+                )
 
     def get_detected_objects_from_memory(self) -> "Objects":
         """
@@ -448,54 +416,24 @@ class Environment:
 
             # this method gets a new frame from camera and publishes it to redis streamer
             img = self.get_current_frame()
-            if self.verbose():
-                t1 = time.time()
-                print(f"Frame capture: {(t1 - t0) * 1000:.1f}ms")
+            t1 = time.time()
+            self._logger.debug(f"Frame capture: {(t1 - t0) * 1000:.1f}ms")
 
             time.sleep(0.1)
 
-            # self._visual_cortex.detect_objects_from_redis()
-            # if self.verbose():
-            #     t2 = time.time()
-            #     print(f"Detection: {(t2 - t1) * 1000:.1f}ms")
-            #
-            # time.sleep(0.1)
-
             detected_objects = self.get_detected_objects()
-            if self.verbose():
-                t3 = time.time()
-                print(f"Get objects: {(t3 - t1) * 1000:.1f}ms")
+            t3 = time.time()
+            self._logger.debug(f"Get objects: {(t3 - t1) * 1000:.1f}ms")
 
-            # Update memory only when appropriate
             self._check_new_detections(detected_objects)
 
-            # Get annotated image (in BGR)
-            # annotated_image = self._visual_cortex.get_annotated_image()
-            # if self.verbose():
-            #     t4 = time.time()
-            #     print(f"Annotation: {(t4 - t3) * 1000:.1f}ms")
-            #
-            # # Display the image if visualize is True
-            # if visualize and annotated_image is not None:
-            #     # TODO: nicht der richtige Ort hier, nur temporär
-            #     # annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
-            #
-            #     # cv2.imshow expects BGR - no conversion needed!
-            #     cv2.imshow("Camera View", annotated_image)
-            #     # Break the loop if ESC key is pressed
-            #     if cv2.waitKey(1) & 0xFF == 27:  # 27 is the ASCII code for the ESC key
-            #         if self.verbose():
-            #             print("Exiting camera update loop.")
-            #         break
-
-            if self.verbose():
-                t5 = time.time()
-                print(f"Total loop: {(t5 - t0) * 1000:.1f}ms")
-                print(
-                    f"Memory status: {len(self._obj_position_memory)} objects, "
-                    f"at_observation={self._is_at_observation_pose}, "
-                    f"workspace_lost={self._workspace_was_lost}\n"
-                )
+            t5 = time.time()
+            self._logger.debug(f"Total loop: {(t5 - t0) * 1000:.1f}ms")
+            self._logger.debug(
+                f"Memory status: {len(self._obj_position_memory)} objects, "
+                f"at_observation={self._is_at_observation_pose}, "
+                f"workspace_lost={self._workspace_was_lost}\n"
+            )
 
             yield img
 
@@ -503,10 +441,6 @@ class Environment:
                 time.sleep(0.25)
             else:
                 time.sleep(0.05)
-
-        # Close the OpenCV window when exiting
-        # if visualize:
-        #     cv2.destroyAllWindows()
 
     # *** PUBLIC SET methods ***
 
@@ -586,12 +520,9 @@ class Environment:
         x_max, y_max = workspace_top_left.x, workspace_top_left.y
         x_min, y_min = workspace_bottom_right.x, workspace_bottom_right.y
 
-        if self.verbose():
-            print(x_min, y_min, x_max, y_max)
+        self._logger.debug(f"Workspace bounds: x=[{x_min}, {x_max}], y=[{y_min}, {y_max}]")
+        self._logger.debug(f"Detected objects:\n{chr(10).join(obj.as_string_for_llm_lbl() for obj in detected_objects)}")
 
-            print("\n".join(obj.as_string_for_llm_lbl() for obj in detected_objects))
-
-        # Calculate workspace dimensions in meters
         workspace_width = abs(y_max - y_min)
         workspace_height = abs(x_max - x_min)
 
@@ -621,9 +552,8 @@ class Environment:
             u_end, v_end = to_grid_coords(x_start, y_start)
             u_start, v_start = to_grid_coords(x_end, y_end)
 
-            if self.verbose():
-                print(x_start, y_start, x_end, y_end)
-                print(u_start, v_start, u_end, v_end)
+            self._logger.debug(f"Object bounds: x=[{x_start}, {x_end}], y=[{y_start}, {y_end}]")
+            self._logger.debug(f"Grid coords: u=[{u_start}, {u_end}], v=[{v_start}, {v_end}]")
 
             # Mark grid cells as occupied
             grid[v_start : v_end + 1, u_start : u_end + 1] = 1
@@ -664,7 +594,7 @@ class Environment:
         # Map the center to world coordinates
         center_x, center_y = to_world_coords(u_center, v_center)
 
-        if self.verbose():
+        if self.verbose:
             grid[v_center : v_center + 1, u_center : u_center + 1] = 2
 
             # Normalize grid to 0–255 for visualization
@@ -673,8 +603,11 @@ class Environment:
             cv2.imshow("grid", grid_visual)
             cv2.waitKey(0)
 
-        print(f"Largest free area: {largest_area_m2:.4f} square meters")
-        print(f"Center of the largest free area: ({center_x:.4f}, {center_y:.4f}) meters")
+        # self._logger.debug(f"Largest free area: {largest_area_m2:.4f} m²")
+        # self._logger.debug(f"Center: ({center_x:.4f}, {center_y:.4f})")
+
+        self._logger.info(f"Largest free area: {largest_area_m2:.4f} square meters")
+        self._logger.info(f"Center of the largest free area: ({center_x:.4f}, {center_y:.4f}) meters")
 
         return largest_area_m2, center_x, center_y
 
@@ -705,7 +638,7 @@ class Environment:
         elif point == "center point":
             return self.get_workspace_by_id(workspace_id).xy_center_wc().xy_coordinate()
         else:
-            print("Error: get_workspace_coordinate_from_point:", point)
+            self._logger.error(f"Unknown point type: {point}")
             return None
 
     # GET methods from Workspaces
@@ -774,10 +707,9 @@ class Environment:
         """Set the current workspace being observed."""
         if workspace_id in self._workspace_memories:
             self._current_workspace_id = workspace_id
-            if self.verbose():
-                print(f"Current workspace set to: {workspace_id}")
+            self._logger.debug(f"Current workspace set to: {workspace_id}")
         else:
-            print(f"Warning: Workspace '{workspace_id}' not found")
+            self._logger.warning(f"Workspace '{workspace_id}' not found")
 
     def get_detected_objects_from_workspace(self, workspace_id: str) -> Objects:
         """
@@ -808,8 +740,7 @@ class Environment:
         """Clear memory for a specific workspace."""
         with self._memory_lock:
             if workspace_id in self._workspace_memories:
-                if self.verbose():
-                    print(f"Clearing memory for workspace: {workspace_id}")
+                self._logger.debug(f"Clearing memory for workspace: {workspace_id}")
                 self._workspace_memories[workspace_id].clear()
 
     def remove_object_from_workspace(self, workspace_id: str, object_label: str, coordinate: list) -> None:
@@ -826,8 +757,7 @@ class Environment:
                     and abs(obj.y_com() - coordinate[1]) <= 0.05
                 ):
                     del workspace_objects[i]
-                    if self.verbose():
-                        print(f"Removed {object_label} from workspace {workspace_id}")
+                    self._logger.debug(f"Removed {object_label} from workspace {workspace_id}")
                     break
 
     def update_object_in_workspace(
@@ -879,8 +809,7 @@ class Environment:
                         self._manual_memory_updates = {}
                     self._manual_memory_updates[object_label] = time.time()
 
-                    if self.verbose():
-                        print(f"Moved {object_label} from {source_workspace_id} " f"to {target_workspace_id}")
+                    self._logger.debug(f"Moved {object_label} from {source_workspace_id} to {target_workspace_id}")
 
     def _check_new_detections_multi_workspace(self, detected_objects: Objects) -> None:
         """
