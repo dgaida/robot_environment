@@ -1,0 +1,161 @@
+# Example robot_config.yaml - Niryo Ned2 Configuration
+# This configuration file centralizes all robot system settings
+
+# ============================================================================
+# ROBOT IDENTIFICATION
+# ============================================================================
+robot_id: niryo_lab_01
+robot_type: niryo
+
+# ============================================================================
+# CONNECTION SETTINGS
+# ============================================================================
+ip_address: 192.168.0.140
+simulation_ip_address: 192.168.247.128
+use_simulation: false
+
+# ============================================================================
+# WORKSPACES CONFIGURATION
+# ============================================================================
+workspaces:
+  niryo_ws:
+    id: niryo_ws
+    observation_pose:
+      x: 0.20
+      y: 0.0
+      z: 0.35
+      roll: 0.0
+      pitch: 1.57
+      yaw: 0.0
+    upper_left:
+      x: 0.35
+      y: 0.15
+    lower_right:
+      x: 0.15
+      y: -0.15
+    height_m: 0.0
+
+  niryo_ws_left:
+    id: niryo_ws_left
+    observation_pose:
+      x: 0.15
+      y: 0.20
+      z: 0.35
+      roll: 0.0
+      pitch: 1.57
+      yaw: 0.0
+    upper_left:
+      x: 0.28
+      y: 0.30
+    lower_right:
+      x: 0.10
+      y: 0.10
+    height_m: 0.0
+
+  niryo_ws_right:
+    id: niryo_ws_right
+    observation_pose:
+      x: 0.15
+      y: -0.20
+      z: 0.35
+      roll: 0.0
+      pitch: 1.57
+      yaw: 0.0
+    upper_left:
+      x: 0.28
+      y: -0.10
+    lower_right:
+      x: 0.10
+      y: -0.30
+    height_m: 0.0
+
+# ============================================================================
+# CAMERA CONFIGURATION
+# ============================================================================
+camera:
+  resolution: [640, 480]
+  fps: 30
+  camera_matrix: null  # Use robot-specific defaults
+  distortion_coeffs: null
+
+# ============================================================================
+# VISION SYSTEM CONFIGURATION
+# ============================================================================
+vision:
+  detection_model: yoloe-11l
+  confidence_threshold: 0.2
+  enable_segmentation: true
+  enable_tracking: true
+  object_labels:
+    - pen
+    - pencil
+    - cube
+    - cylinder
+    - box
+    - bottle
+    - phone
+    - cup
+    - scissors
+  redis_stream_name: robot_camera
+  redis_objects_channel: robot_objects
+  redis_labels_channel: robot_labels
+
+# ============================================================================
+# ROBOT CONTROL PARAMETERS
+# ============================================================================
+control:
+  # Pick and place offsets (meters)
+  pick_z_offset_m: 0.001
+  place_z_offset_m: 0.005
+  approach_height_m: 0.05
+
+  # Placement offsets relative to reference objects (meters)
+  placement_offset_x_m: 0.02
+  placement_offset_y_m: 0.02
+  stack_offset_z_m: 0.02
+
+  # Push operation parameters
+  push_speed_mm_s: 50.0
+
+  # Safety parameters
+  max_velocity: 0.1  # m/s
+  max_acceleration: 0.5  # m/s²
+
+  # Timeouts (seconds)
+  move_timeout_s: 30.0
+  pick_timeout_s: 15.0
+  place_timeout_s: 15.0
+
+# ============================================================================
+# MEMORY MANAGEMENT CONFIGURATION
+# ============================================================================
+memory:
+  position_tolerance_m: 0.05
+  manual_update_timeout_s: 5.0
+  enable_multi_workspace: true
+
+# ============================================================================
+# REDIS CONFIGURATION
+# ============================================================================
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+  password: null
+  socket_timeout: 5.0
+
+# ============================================================================
+# TEXT-TO-SPEECH CONFIGURATION
+# ============================================================================
+tts:
+  provider: elevenlabs  # or "kokoro"
+  api_key: null  # Set via environment variable
+  voice_id: null
+  enable_speech: true
+
+# ============================================================================
+# SYSTEM SETTINGS
+# ============================================================================
+verbose: false
+start_camera_thread: true
+camera_update_rate_hz: 10.0

@@ -49,21 +49,39 @@ def log_start_end_cls():
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             # Try to get logger from instance
-            if hasattr(self, "_logger"):
+            if hasattr(self, "_logger") and self._logger is not None:
                 logger = self._logger
             else:
-                # Fallback to module logger
+                # Fallback to module logger - ensure it's properly initialized
                 logger = logging.getLogger(self.__class__.__module__)
+                # Ensure logger has at least one handler to avoid issues
+                if not logger.handlers and not logger.parent.handlers:
+                    # Add a basic handler if none exists
+                    handler = logging.StreamHandler()
+                    handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+                    logger.addHandler(handler)
+                    logger.setLevel(logging.INFO)
 
             class_name = ""
 
-            # Only log if verbose or DEBUG level
-            should_log = (hasattr(self, "_verbose") and self._verbose) or logger.isEnabledFor(logging.DEBUG)
+            # Only log if verbose or DEBUG level - check logger is valid first
+            should_log = False
+            try:
+                should_log = (hasattr(self, "_verbose") and self._verbose) or (
+                    logger is not None and logger.isEnabledFor(logging.DEBUG)
+                )
+            except Exception:
+                # If logger check fails, just skip logging but continue execution
+                should_log = False
 
             if should_log:
                 class_name = self.__class__.__name__
-                func_line = inspect.getsourcelines(func)[1]
-                logger.debug(f"START {func.__name__} " f"(Class: {class_name}, Line: {func_line})")
+                try:
+                    func_line = inspect.getsourcelines(func)[1]
+                    logger.debug(f"START {func.__name__} (Class: {class_name}, Line: {func_line})")
+                except Exception:
+                    # If we can't get source lines, just log without line number
+                    logger.debug(f"START {func.__name__} (Class: {class_name})")
 
             try:
                 result = func(self, *args, **kwargs)
@@ -74,7 +92,8 @@ def log_start_end_cls():
                 return result
 
             except Exception as e:
-                logger.error(f"ERROR in {class_name}.{func.__name__}: {e}", exc_info=True)
+                if logger is not None:
+                    logger.error(f"ERROR in {class_name}.{func.__name__}: {e}", exc_info=True)
                 raise
 
         return wrapper
