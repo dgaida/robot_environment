@@ -376,6 +376,10 @@ class ObjectMemoryManager:
             self._workspace_was_lost[workspace_id] = True
             self._logger.debug(f"Workspace {workspace_id} lost - robot moved")
 
+        # Clear lost flag when workspace becomes visible again
+        if now_visible and self._workspace_was_lost.get(workspace_id, False):
+            self._logger.debug(f"Workspace {workspace_id} visible again - will clear memory on next update")
+
     def _cleanup_expired_manual_updates(self, workspace_id: str) -> None:
         """Remove expired manual updates."""
         if workspace_id not in self._manual_updates:

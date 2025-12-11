@@ -162,7 +162,11 @@ class Environment:
         """
         t1 = 0.0
 
-        self.robot_move2observation_pose(self._workspaces.get_workspace_home_id())
+        # FIX: Get home workspace ID and set it as current
+        home_workspace_id = self._workspaces.get_workspace_home_id()
+        self._current_workspace_id = home_workspace_id  # Set before moving
+
+        self.robot_move2observation_pose(home_workspace_id)
 
         while not self._stop_event.is_set():
             t0 = time.time()
@@ -180,7 +184,7 @@ class Environment:
             self._logger.debug(f"Get objects: {(t3 - t1) * 1000:.1f}ms")
 
             # Update memory using ObjectMemoryManager
-            if self._current_workspace_id:
+            if self._current_workspace_id:  # This should now always be True
                 at_observation = self.is_any_workspace_visible()
                 robot_moving = self.get_robot_in_motion()
 
@@ -190,6 +194,13 @@ class Environment:
                     at_observation_pose=at_observation,
                     robot_in_motion=robot_moving,
                 )
+
+                self._logger.debug(
+                    f"Memory update for '{self._current_workspace_id}': " f"added={objects_added}, updated={objects_updated}"
+                )
+            else:
+                # This should never happen now, but log it if it does
+                self._logger.error("Current workspace ID is None - memory not updated!")
 
             t5 = time.time()
             self._logger.debug(f"Total loop: {(t5 - t0) * 1000:.1f}ms")
@@ -732,6 +743,9 @@ class Environment:
             workspace_id: ID of workspace
         """
         self._robot.move2observation_pose(workspace_id)
+
+        self._current_workspace_id = workspace_id
+        self._logger.debug(f"Set current workspace to: {workspace_id}")
 
     # *** PUBLIC STATIC/CLASS GET methods ***
 
