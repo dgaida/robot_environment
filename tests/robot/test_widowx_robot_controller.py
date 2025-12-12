@@ -6,9 +6,44 @@ Fixed to properly handle the optional interbotix import and patching.
 """
 
 import pytest
+import sys
 import numpy as np
 from unittest.mock import Mock, patch, MagicMock
 from robot_workspace import PoseObjectPNP
+
+
+# Set up mock modules BEFORE any imports
+@pytest.fixture(scope="module", autouse=True)
+def setup_interbotix_mock():
+    """Set up interbotix mock at module level"""
+    # Create mock module structure
+    mock_module = MagicMock()
+    mock_xs_robot = MagicMock()
+    mock_arm_module = MagicMock()
+
+    # Create the mock InterbotixManipulatorXS class
+    mock_manipulator_class = MagicMock()
+    mock_arm_module.InterbotixManipulatorXS = mock_manipulator_class
+
+    mock_xs_robot.arm = mock_arm_module
+    mock_module.xs_robot = mock_xs_robot
+
+    # Patch sys.modules BEFORE importing the controller
+    sys.modules["interbotix_xs_modules"] = mock_module
+    sys.modules["interbotix_xs_modules.xs_robot"] = mock_xs_robot
+    sys.modules["interbotix_xs_modules.xs_robot.arm"] = mock_arm_module
+
+    # Now we need to reload the module to pick up the mock
+    # But first, remove it if it's already loaded
+    if "robot_environment.robot.widowx_robot_controller" in sys.modules:
+        del sys.modules["robot_environment.robot.widowx_robot_controller"]
+
+    yield mock_manipulator_class
+
+    # Cleanup
+    for module_name in ["interbotix_xs_modules", "interbotix_xs_modules.xs_robot", "interbotix_xs_modules.xs_robot.arm"]:
+        if module_name in sys.modules:
+            del sys.modules[module_name]
 
 
 @pytest.fixture
@@ -39,24 +74,21 @@ def mock_robot():
 
 
 @pytest.fixture
-def mock_interbotix_module():
-    """Create mock interbotix module before any imports"""
-    # Create a complete mock module structure
-    mock_module = MagicMock()
-    mock_xs_robot = MagicMock()
-    mock_arm = MagicMock()
+def mock_interbotix(setup_interbotix_mock):
+    """Create mock InterbotixManipulatorXS instance for each test"""
+    # Get the mock class from the module-level fixture
+    mock_class = setup_interbotix_mock
 
-    # Create the mock class
-    mock_manipulator_class = MagicMock()
+    # Create a fresh mock instance for this test
     mock_instance = MagicMock()
 
     # Mock arm interface
-    mock_arm_obj = MagicMock()
-    mock_arm_obj.go_to_home_pose = Mock()
-    mock_arm_obj.go_to_sleep_pose = Mock()
-    mock_arm_obj.set_ee_pose_components = Mock()
-    mock_arm_obj.set_ee_cartesian_trajectory = Mock()
-    mock_instance.arm = mock_arm_obj
+    mock_arm = MagicMock()
+    mock_arm.go_to_home_pose = Mock()
+    mock_arm.go_to_sleep_pose = Mock()
+    mock_arm.set_ee_pose_components = Mock()
+    mock_arm.set_ee_cartesian_trajectory = Mock()
+    mock_instance.arm = mock_arm
 
     # Mock gripper interface
     mock_gripper = MagicMock()
@@ -68,34 +100,20 @@ def mock_interbotix_module():
     mock_instance.shutdown = Mock()
 
     # Make the class return our instance
-    mock_manipulator_class.return_value = mock_instance
+    mock_class.return_value = mock_instance
 
-    # Build module structure
-    mock_arm.InterbotixManipulatorXS = mock_manipulator_class
-    mock_xs_robot.arm = mock_arm
-    mock_module.xs_robot = mock_xs_robot
+    # Import the controller (it will now find the mocked modules)
+    from robot_environment.robot.widowx_robot_controller import WidowXRobotController
 
-    # Patch sys.modules
-    with patch.dict(
-        "sys.modules",
-        {
-            "interbotix_xs_modules": mock_module,
-            "interbotix_xs_modules.xs_robot": mock_xs_robot,
-            "interbotix_xs_modules.xs_robot.arm": mock_arm,
-        },
-    ):
-        # Now import the controller with mocked dependencies
-        from robot_environment.robot.widowx_robot_controller import WidowXRobotController
-
-        yield mock_manipulator_class, WidowXRobotController
+    yield mock_class, WidowXRobotController
 
 
 class TestWidowXRobotControllerInitialization:
     """Test initialization of WidowX controller"""
 
-    def test_initialization_success(self, mock_robot, mock_interbotix_module):
+    def test_initialization_success(self, mock_robot, mock_interbotix):
         """Test successful initialization"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False, verbose=False)
 
@@ -103,9 +121,9 @@ class TestWidowXRobotControllerInitialization:
         assert controller.verbose() is False
         assert controller.lock() is not None
 
-    def test_initialization_creates_lock(self, mock_robot, mock_interbotix_module):
+    def test_initialization_creates_lock(self, mock_robot, mock_interbotix):
         """Test that thread lock is created"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -114,17 +132,17 @@ class TestWidowXRobotControllerInitialization:
         assert hasattr(lock, "acquire")
         assert hasattr(lock, "release")
 
-    def test_initialization_calls_go_to_home(self, mock_robot, mock_interbotix_module):
+    def test_initialization_calls_go_to_home(self, mock_robot, mock_interbotix):
         """Test that robot goes to home pose on init"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         WidowXRobotController(mock_robot, use_simulation=False)
 
         mock_class.return_value.arm.go_to_home_pose.assert_called_once()
 
-    def test_initialization_creates_interbotix_interface(self, mock_robot, mock_interbotix_module):
+    def test_initialization_creates_interbotix_interface(self, mock_robot, mock_interbotix):
         """Test InterbotixManipulatorXS is created with correct params"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -134,9 +152,9 @@ class TestWidowXRobotControllerInitialization:
             gripper_name="gripper",
         )
 
-    def test_initialization_sets_last_pose(self, mock_robot, mock_interbotix_module):
+    def test_initialization_sets_last_pose(self, mock_robot, mock_interbotix):
         """Test that initial last_pose is set"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -147,9 +165,9 @@ class TestWidowXRobotControllerInitialization:
 class TestWidowXRobotControllerGetters:
     """Test getter methods"""
 
-    def test_get_pose_returns_last_pose(self, mock_robot, mock_interbotix_module):
+    def test_get_pose_returns_last_pose(self, mock_robot, mock_interbotix):
         """Test getting current pose returns last commanded pose"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -158,9 +176,9 @@ class TestWidowXRobotControllerGetters:
         assert isinstance(pose, PoseObjectPNP)
         assert pose.x == 0.3
 
-    def test_get_pose_returns_default_if_no_last_pose(self, mock_robot, mock_interbotix_module):
+    def test_get_pose_returns_default_if_no_last_pose(self, mock_robot, mock_interbotix):
         """Test getting pose when no last pose exists"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
         delattr(controller, "_last_pose")
@@ -169,9 +187,9 @@ class TestWidowXRobotControllerGetters:
 
         assert isinstance(pose, PoseObjectPNP)
 
-    def test_get_pose_handles_exception(self, mock_robot, mock_interbotix_module):
+    def test_get_pose_handles_exception(self, mock_robot, mock_interbotix):
         """Test get_pose handles exceptions gracefully"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False, verbose=True)
 
@@ -183,9 +201,9 @@ class TestWidowXRobotControllerGetters:
             assert pose.x == 0.0
             assert pose.y == 0.0
 
-    def test_get_camera_intrinsics(self, mock_robot, mock_interbotix_module):
+    def test_get_camera_intrinsics(self, mock_robot, mock_interbotix):
         """Test getting camera intrinsics"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -200,9 +218,9 @@ class TestWidowXRobotControllerGetters:
 class TestWidowXRobotControllerPickOperations:
     """Test pick operations"""
 
-    def test_robot_pick_object_success(self, mock_robot, mock_interbotix_module):
+    def test_robot_pick_object_success(self, mock_robot, mock_interbotix):
         """Test successful pick operation with PoseObjectPNP"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -212,9 +230,9 @@ class TestWidowXRobotControllerPickOperations:
 
         assert result is True
 
-    def test_robot_pick_object_opens_gripper(self, mock_robot, mock_interbotix_module):
+    def test_robot_pick_object_opens_gripper(self, mock_robot, mock_interbotix):
         """Test that pick opens gripper first"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -224,9 +242,9 @@ class TestWidowXRobotControllerPickOperations:
 
         mock_class.return_value.gripper.release.assert_called()
 
-    def test_robot_pick_object_closes_gripper(self, mock_robot, mock_interbotix_module):
+    def test_robot_pick_object_closes_gripper(self, mock_robot, mock_interbotix):
         """Test that pick closes gripper to grasp"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -236,9 +254,9 @@ class TestWidowXRobotControllerPickOperations:
 
         mock_class.return_value.gripper.grasp.assert_called()
 
-    def test_robot_pick_object_with_z_offset(self, mock_robot, mock_interbotix_module):
+    def test_robot_pick_object_with_z_offset(self, mock_robot, mock_interbotix):
         """Test that pick uses z-offset for approach"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -249,9 +267,9 @@ class TestWidowXRobotControllerPickOperations:
         # Should call move_to_pose at least twice (approach and grasp)
         assert mock_class.return_value.arm.set_ee_pose_components.call_count >= 2
 
-    def test_robot_pick_object_handles_exception(self, mock_robot, mock_interbotix_module):
+    def test_robot_pick_object_handles_exception(self, mock_robot, mock_interbotix):
         """Test pick handles exceptions gracefully"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -268,9 +286,9 @@ class TestWidowXRobotControllerPickOperations:
 class TestWidowXRobotControllerPlaceOperations:
     """Test place operations"""
 
-    def test_robot_place_object_success(self, mock_robot, mock_interbotix_module):
+    def test_robot_place_object_success(self, mock_robot, mock_interbotix):
         """Test successful place operation"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -280,9 +298,9 @@ class TestWidowXRobotControllerPlaceOperations:
 
         assert result is True
 
-    def test_robot_place_object_releases_gripper(self, mock_robot, mock_interbotix_module):
+    def test_robot_place_object_releases_gripper(self, mock_robot, mock_interbotix):
         """Test that place releases gripper"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -292,9 +310,9 @@ class TestWidowXRobotControllerPlaceOperations:
 
         mock_class.return_value.gripper.release.assert_called()
 
-    def test_robot_place_object_with_z_offset(self, mock_robot, mock_interbotix_module):
+    def test_robot_place_object_with_z_offset(self, mock_robot, mock_interbotix):
         """Test that place uses z-offset for approach"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -305,9 +323,9 @@ class TestWidowXRobotControllerPlaceOperations:
         # Should move multiple times (approach, place, retract)
         assert mock_class.return_value.arm.set_ee_pose_components.call_count >= 3
 
-    def test_robot_place_object_handles_exception(self, mock_robot, mock_interbotix_module):
+    def test_robot_place_object_handles_exception(self, mock_robot, mock_interbotix):
         """Test place handles exceptions gracefully"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -324,9 +342,9 @@ class TestWidowXRobotControllerPlaceOperations:
 class TestWidowXRobotControllerPushOperations:
     """Test push operations"""
 
-    def test_robot_push_object_up(self, mock_robot, mock_interbotix_module):
+    def test_robot_push_object_up(self, mock_robot, mock_interbotix):
         """Test pushing object up (positive X)"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -342,9 +360,9 @@ class TestWidowXRobotControllerPushOperations:
         assert "x" in call_args[1]
         assert call_args[1]["x"] > 0
 
-    def test_robot_push_object_down(self, mock_robot, mock_interbotix_module):
+    def test_robot_push_object_down(self, mock_robot, mock_interbotix):
         """Test pushing object down (negative X)"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -355,9 +373,9 @@ class TestWidowXRobotControllerPushOperations:
         call_args = mock_class.return_value.arm.set_ee_cartesian_trajectory.call_args
         assert call_args[1]["x"] < 0
 
-    def test_robot_push_object_left(self, mock_robot, mock_interbotix_module):
+    def test_robot_push_object_left(self, mock_robot, mock_interbotix):
         """Test pushing object left (positive Y)"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -369,9 +387,9 @@ class TestWidowXRobotControllerPushOperations:
         assert "y" in call_args[1]
         assert call_args[1]["y"] > 0
 
-    def test_robot_push_object_right(self, mock_robot, mock_interbotix_module):
+    def test_robot_push_object_right(self, mock_robot, mock_interbotix):
         """Test pushing object right (negative Y)"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -382,9 +400,9 @@ class TestWidowXRobotControllerPushOperations:
         call_args = mock_class.return_value.arm.set_ee_cartesian_trajectory.call_args
         assert call_args[1]["y"] < 0
 
-    def test_robot_push_object_invalid_direction(self, mock_robot, mock_interbotix_module):
+    def test_robot_push_object_invalid_direction(self, mock_robot, mock_interbotix):
         """Test push with invalid direction"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -394,9 +412,9 @@ class TestWidowXRobotControllerPushOperations:
 
         assert result is False
 
-    def test_robot_push_object_converts_distance(self, mock_robot, mock_interbotix_module):
+    def test_robot_push_object_converts_distance(self, mock_robot, mock_interbotix):
         """Test that distance is converted from mm to m"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -407,9 +425,9 @@ class TestWidowXRobotControllerPushOperations:
         call_args = mock_class.return_value.arm.set_ee_cartesian_trajectory.call_args
         assert call_args[1]["x"] == pytest.approx(0.1, abs=0.001)  # Should be 0.1m
 
-    def test_robot_push_object_releases_gripper(self, mock_robot, mock_interbotix_module):
+    def test_robot_push_object_releases_gripper(self, mock_robot, mock_interbotix):
         """Test that push releases gripper first"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -419,9 +437,9 @@ class TestWidowXRobotControllerPushOperations:
 
         mock_class.return_value.gripper.release.assert_called()
 
-    def test_robot_push_object_handles_exception(self, mock_robot, mock_interbotix_module):
+    def test_robot_push_object_handles_exception(self, mock_robot, mock_interbotix):
         """Test push handles exceptions gracefully"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -437,9 +455,9 @@ class TestWidowXRobotControllerPushOperations:
 class TestWidowXRobotControllerPoseOperations:
     """Test pose-related operations"""
 
-    def test_get_target_pose_from_rel(self, mock_robot, mock_interbotix_module):
+    def test_get_target_pose_from_rel(self, mock_robot, mock_interbotix):
         """Test getting target pose from relative coordinates"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -449,9 +467,9 @@ class TestWidowXRobotControllerPoseOperations:
         assert pose.x > 0
         assert pose.y != 0
 
-    def test_get_target_pose_from_rel_clamps_coordinates(self, mock_robot, mock_interbotix_module):
+    def test_get_target_pose_from_rel_clamps_coordinates(self, mock_robot, mock_interbotix):
         """Test that coordinates are clamped to [0, 1]"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -461,9 +479,9 @@ class TestWidowXRobotControllerPoseOperations:
         # Should still work (clamped internally)
         assert isinstance(pose, PoseObjectPNP)
 
-    def test_get_target_pose_from_rel_with_yaw(self, mock_robot, mock_interbotix_module):
+    def test_get_target_pose_from_rel_with_yaw(self, mock_robot, mock_interbotix):
         """Test getting pose with specific yaw"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -471,9 +489,9 @@ class TestWidowXRobotControllerPoseOperations:
 
         assert pose.yaw == pytest.approx(1.57, abs=0.01)
 
-    def test_get_target_pose_from_rel_invalid_workspace(self, mock_robot, mock_interbotix_module):
+    def test_get_target_pose_from_rel_invalid_workspace(self, mock_robot, mock_interbotix):
         """Test with invalid workspace ID"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False, verbose=True)
 
@@ -486,9 +504,9 @@ class TestWidowXRobotControllerPoseOperations:
         assert pose.x == 0.0
         assert pose.y == 0.0
 
-    def test_get_target_pose_from_rel_handles_exception(self, mock_robot, mock_interbotix_module):
+    def test_get_target_pose_from_rel_handles_exception(self, mock_robot, mock_interbotix):
         """Test handling exceptions in coordinate transformation"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False, verbose=True)
 
@@ -506,9 +524,9 @@ class TestWidowXRobotControllerPoseOperations:
 class TestWidowXRobotControllerMovement:
     """Test movement operations"""
 
-    def test_move2observation_pose_success(self, mock_robot, mock_interbotix_module):
+    def test_move2observation_pose_success(self, mock_robot, mock_interbotix):
         """Test moving to observation pose"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -517,9 +535,9 @@ class TestWidowXRobotControllerMovement:
         # Should call set_ee_pose_components
         mock_class.return_value.arm.set_ee_pose_components.assert_called()
 
-    def test_move2observation_pose_with_none_pose(self, mock_robot, mock_interbotix_module):
+    def test_move2observation_pose_with_none_pose(self, mock_robot, mock_interbotix):
         """Test moving when observation pose is None"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False, verbose=True)
 
@@ -532,9 +550,9 @@ class TestWidowXRobotControllerMovement:
         # Count should be 1 from initialization only
         assert mock_class.return_value.arm.set_ee_pose_components.call_count <= 1
 
-    def test_move2observation_pose_handles_exception(self, mock_robot, mock_interbotix_module):
+    def test_move2observation_pose_handles_exception(self, mock_robot, mock_interbotix):
         """Test handling exceptions during move"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -543,9 +561,9 @@ class TestWidowXRobotControllerMovement:
         # Should not crash
         controller.move2observation_pose("test_ws")
 
-    def test_move_to_pose_updates_last_pose(self, mock_robot, mock_interbotix_module):
+    def test_move_to_pose_updates_last_pose(self, mock_robot, mock_interbotix):
         """Test that _move_to_pose updates last_pose"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
@@ -555,9 +573,9 @@ class TestWidowXRobotControllerMovement:
 
         assert controller._last_pose == new_pose
 
-    def test_move_to_pose_calls_set_ee_pose_components(self, mock_robot, mock_interbotix_module):
+    def test_move_to_pose_calls_set_ee_pose_components(self, mock_robot, mock_interbotix):
         """Test that _move_to_pose calls correct method"""
-        mock_class, WidowXRobotController = mock_interbotix_module
+        mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
