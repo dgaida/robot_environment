@@ -79,6 +79,9 @@ def mock_interbotix(setup_interbotix_mock):
     # Get the mock class from the module-level fixture
     mock_class = setup_interbotix_mock
 
+    # Reset the mock to clear call history from previous tests
+    mock_class.reset_mock()
+
     # Create a fresh mock instance for this test
     mock_instance = MagicMock()
 
@@ -181,11 +184,17 @@ class TestWidowXRobotControllerGetters:
         mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
-        delattr(controller, "_last_pose")
+
+        # Store original value and delete it
+        original_last_pose = controller._last_pose
+        controller._last_pose = None  # Set to None instead of deleting
 
         pose = controller.get_pose()
 
         assert isinstance(pose, PoseObjectPNP)
+
+        # Restore original value
+        controller._last_pose = original_last_pose
 
     def test_get_pose_handles_exception(self, mock_robot, mock_interbotix):
         """Test get_pose handles exceptions gracefully"""

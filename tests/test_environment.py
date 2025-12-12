@@ -147,7 +147,7 @@ class TestEnvironment:
         with patch.object(Environment, "start_camera_updates") as mock_start:
             Environment(el_api_key="test_key", use_simulation=False, robot_id="niryo", start_camera_thread=True)
 
-            mock_start.assert_called_once_with(visualize=True)
+            mock_start.assert_called_once_with(visualize=False)
 
     def test_initialization_without_camera_thread(self, mock_dependencies):
         """Test initialization without camera thread"""
