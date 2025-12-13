@@ -185,13 +185,16 @@ class TestWidowXRobotControllerGetters:
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
-        # Store original value and delete it
+        # Store original value and delete the attribute
         original_last_pose = controller._last_pose
-        controller._last_pose = None  # Set to None instead of deleting
+        delattr(controller, "_last_pose")  # Actually delete the attribute
 
         pose = controller.get_pose()
 
         assert isinstance(pose, PoseObjectPNP)
+        # Should return default home pose when _last_pose doesn't exist
+        assert pose.x == 0.3
+        assert pose.z == 0.2
 
         # Restore original value
         controller._last_pose = original_last_pose

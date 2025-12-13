@@ -112,7 +112,9 @@ class Environment:
                     self._memory_manager.initialize_workspace(default_ws_id)
 
         # Current workspace tracking
-        self._current_workspace_id: Optional[str] = None
+        # self._current_workspace_id: Optional[str] = None
+        self._current_workspace_id = self._workspaces.get_workspace_home_id()
+        self._logger.debug(f"Set initial workspace to: {self._current_workspace_id}")
 
         # Redis-based communication
         self._object_broker = RedisMessageBroker()
@@ -164,7 +166,9 @@ class Environment:
 
         # FIX: Get home workspace ID and set it as current
         home_workspace_id = self._workspaces.get_workspace_home_id()
-        self._current_workspace_id = home_workspace_id  # Set before moving
+
+        if self._current_workspace_id is None:
+            self._current_workspace_id = home_workspace_id  # Set before moving
 
         self.robot_move2observation_pose(home_workspace_id)
 
