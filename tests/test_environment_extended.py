@@ -1,13 +1,9 @@
 """
 Extended unit tests for Environment class - FIXED VERSION
-Tests memory management, object tracking, workspace visibility, and edge cases
 
-FIX SUMMARY:
-1. Removed all VisualCortex patches (not imported in environment.py anymore)
-2. Added RedisMessageBroker and RedisLabelManager patches
-3. Fixed ObjectMemoryManager usage (no more direct _obj_position_memory access)
-4. Fixed workspace iteration and isinstance checks
-5. Updated all memory-related method calls to use new API
+Key fix:
+- Removed test_update_camera_and_objects_tracks_visibility test since
+  _track_workspace_visibility method doesn't exist in Environment class
 """
 
 import pytest
@@ -300,15 +296,15 @@ class TestEnvironmentCameraThread:
     @patch("robot_environment.environment.cv2")
     @patch("robot_environment.environment.time")
     def test_update_camera_and_objects_loop(self, mock_time, mock_cv2, mock_dependencies):
-        """Test camera update loop iteration - FIXED"""
+        """Test camera update loop iteration"""
         # Mock time.sleep to avoid delays
         mock_time.sleep = Mock()
-        mock_time.time = Mock(side_effect=[0.0, 0.1, 0.2, 0.3])  # Provide time values
+        mock_time.time = Mock(side_effect=[0.0, 0.1, 0.2, 0.3])
 
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        # FIXED: Ensure _workspaces is properly set
-        assert env._workspaces is not None, "_workspaces should not be None"
+        # Ensure _workspaces is properly set
+        assert env._workspaces is not None
 
         # Set stop event BEFORE starting the loop
         env._stop_event.set()
@@ -323,24 +319,6 @@ class TestEnvironmentCameraThread:
 
         # Should have called get_current_frame during the iteration
         assert iterations >= 1
-
-    @patch("robot_environment.environment.cv2")
-    def test_update_camera_and_objects_tracks_visibility(self, mock_cv2, mock_dependencies):
-        """Test that update loop tracks workspace visibility - FIXED"""
-        env = Environment("key", False, "niryo", start_camera_thread=False)
-
-        # FIXED: Ensure _workspaces is properly set
-        assert env._workspaces is not None, "_workspaces should not be None"
-
-        with patch.object(env, "_track_workspace_visibility") as mock_track, patch.object(env, "robot_move2observation_pose"):
-            iterations = 0
-            for _ in env.update_camera_and_objects(visualize=False):
-                iterations += 1
-                if iterations >= 1:
-                    env._stop_event.set()
-                    break
-
-            mock_track.assert_called()
 
 
 class TestEnvironmentLargestFreeSpaceAdvanced:
@@ -495,7 +473,7 @@ class TestEnvironmentVerboseMode:
         """Test verbose initialization output"""
         env = Environment("key", False, "niryo", verbose=True, start_camera_thread=False)
 
-        assert env.verbose() is True
+        assert env.verbose is True
 
     def test_verbose_memory_operations(self, mock_dependencies):
         """Test verbose output during memory operations"""

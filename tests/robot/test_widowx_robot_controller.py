@@ -1,14 +1,16 @@
 """
 Unit tests for WidowXRobotController class - FIXED VERSION
 
-Tests the InterbotixManipulatorXS-based controller implementation for WidowX robot.
-Fixed to properly handle the optional interbotix import and patching.
+Key fixes:
+1. Fixed get_pose exception handling test - properly delete attribute instead of side_effect
+2. Fixed get_target_pose_from_rel test - ensure proper PoseObjectPNP return
+3. All other tests remain the same
 """
 
 import pytest
 import sys
 import numpy as np
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, MagicMock
 from robot_workspace import PoseObjectPNP
 
 
@@ -180,14 +182,14 @@ class TestWidowXRobotControllerGetters:
         assert pose.x == 0.3
 
     def test_get_pose_returns_default_if_no_last_pose(self, mock_robot, mock_interbotix):
-        """Test getting pose when no last pose exists"""
+        """Test getting pose when no last pose exists - FIXED"""
         mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
-        # Store original value and delete the attribute
-        original_last_pose = controller._last_pose
-        delattr(controller, "_last_pose")  # Actually delete the attribute
+        # Actually delete the attribute to test the hasattr check
+        if hasattr(controller, "_last_pose"):
+            delattr(controller, "_last_pose")
 
         pose = controller.get_pose()
 
@@ -196,22 +198,31 @@ class TestWidowXRobotControllerGetters:
         assert pose.x == 0.3
         assert pose.z == 0.2
 
-        # Restore original value
-        controller._last_pose = original_last_pose
-
     def test_get_pose_handles_exception(self, mock_robot, mock_interbotix):
-        """Test get_pose handles exceptions gracefully"""
+        """Test get_pose handles exceptions gracefully - FIXED"""
         mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False, verbose=True)
 
-        # Make accessing _last_pose raise an exception
-        with patch.object(controller, "_last_pose", side_effect=Exception("Test error")):
+        # Create a property that raises an exception when accessed
+        # We need to make _last_pose raise an exception when accessed
+        class ExceptionRaiser:
+            def __get__(self, obj, objtype=None):
+                raise Exception("Test error")
+
+        # Replace _last_pose with our exception raiser
+        type(controller)._last_pose = ExceptionRaiser()
+
+        try:
             pose = controller.get_pose()
 
             # Should return zero pose
             assert pose.x == 0.0
             assert pose.y == 0.0
+        finally:
+            # Clean up - restore normal attribute
+            if hasattr(type(controller), "_last_pose"):
+                delattr(type(controller), "_last_pose")
 
     def test_get_camera_intrinsics(self, mock_robot, mock_interbotix):
         """Test getting camera intrinsics"""
@@ -468,16 +479,19 @@ class TestWidowXRobotControllerPoseOperations:
     """Test pose-related operations"""
 
     def test_get_target_pose_from_rel(self, mock_robot, mock_interbotix):
-        """Test getting target pose from relative coordinates"""
+        """Test getting target pose from relative coordinates - FIXED"""
         mock_class, WidowXRobotController = mock_interbotix
 
         controller = WidowXRobotController(mock_robot, use_simulation=False)
 
         pose = controller.get_target_pose_from_rel("test_ws", 0.5, 0.5, 0.0)
 
+        # The mock_transform function in mock_robot returns PoseObjectPNP
         assert isinstance(pose, PoseObjectPNP)
-        assert pose.x > 0
-        assert pose.y != 0
+        # x = 0.2 + 0.5 * 0.2 = 0.3
+        assert pose.x == pytest.approx(0.3, abs=0.01)
+        # y = -0.1 + 0.5 * 0.2 = 0.0
+        assert pose.y == pytest.approx(0.0, abs=0.01)
 
     def test_get_target_pose_from_rel_clamps_coordinates(self, mock_robot, mock_interbotix):
         """Test that coordinates are clamped to [0, 1]"""
