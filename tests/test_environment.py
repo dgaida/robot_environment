@@ -126,7 +126,7 @@ class TestEnvironment:
         )
 
         assert env.use_simulation() is False
-        assert env.verbose() is False
+        assert env.verbose is False
 
     def test_initialization_with_simulation(self, mock_dependencies):
         """Test initialization with simulation"""

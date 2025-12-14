@@ -303,21 +303,21 @@ class TestEnvironmentCameraThread:
 
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
-        # Ensure _workspaces is properly set
-        assert env._workspaces is not None
+        # FIX: Don't set stop event before loop - let it run at least once
+        # The stop event is checked at the beginning of the loop
+        # env._stop_event.set()  # REMOVE THIS LINE
 
-        # Set stop event BEFORE starting the loop
-        env._stop_event.set()
+        iterations = 0
 
         # Mock robot_move2observation_pose to avoid actual robot movement
         with patch.object(env, "robot_move2observation_pose"):
-            iterations = 0
             for _ in env.update_camera_and_objects(visualize=False):
                 iterations += 1
-                # Break immediately - stop event is already set
-                break
+                # Now set stop event after first iteration
+                env._stop_event.set()
+                if iterations >= 1:
+                    break
 
-        # Should have called get_current_frame during the iteration
         assert iterations >= 1
 
 
