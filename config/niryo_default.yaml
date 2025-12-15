@@ -19,14 +19,14 @@ use_simulation: false
 # ============================================================================
 workspaces:
   niryo_ws:
-    id: niryo_ws
+    id: niryo_ws2
     observation_pose:
-      x: 0.20
-      y: 0.0
-      z: 0.35
-      roll: 0.0
-      pitch: 1.57
-      yaw: 0.0
+      x: 0.173
+      y: -0.002
+      z: 0.277
+      roll: -3.042
+      pitch: 1.327
+      yaw: -3.027
     upper_left:
       x: 0.35
       y: 0.15
