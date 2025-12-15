@@ -90,7 +90,13 @@ class Environment:
             self._logger.error(f"Unknown robot controller type: {self.get_robot_controller()}")
 
         # Initialize text-to-speech
-        self._oralcom = Text2Speech(el_api_key, verbose=verbose)
+        self._oralcom = Text2Speech(
+            el_api_key,
+            verbose=verbose,
+            enable_queue=True,  # Enable built-in audio queue
+            max_queue_size=50,
+            duplicate_timeout=2.0,
+        )
 
         # Thread control
         self._stop_event = threading.Event()
@@ -141,6 +147,9 @@ class Environment:
         if hasattr(self, "_stop_event"):
             self._logger.info("Shutting down environment...")
             self._stop_event.set()
+
+        if hasattr(self, "_oralcom"):
+            self._oralcom.shutdown(timeout=5.0)
 
     # *** PUBLIC METHODS ***
 
@@ -377,17 +386,18 @@ class Environment:
         """Stop camera update thread."""
         self._stop_event.set()
 
-    def oralcom_call_text2speech_async(self, text: str) -> threading.Thread:
+    def oralcom_call_text2speech_async(self, text: str, priority: int = 0) -> bool:
         """
         Asynchronously call text-to-speech API.
 
         Args:
             text: Message for text-to-speech
+            priority: Priority (0-10, higher = more urgent)
 
         Returns:
-            Thread object
+            True if queued successfully (or dummy thread for compatibility)
         """
-        return self._oralcom.call_text2speech_async(text)
+        return self._oralcom.speak(text, priority=priority, blocking=False)
 
     # *** PUBLIC GET METHODS ***
 

@@ -215,7 +215,7 @@ class Robot(RobotAPI):
         message = f"Going to pick {object_name} at coordinate {coords_str}."
         self._logger.info(message)
 
-        thread_oral = self.environment().oralcom_call_text2speech_async(message)
+        self.environment().oralcom_call_text2speech_async(message, priority=8)
 
         obj_to_pick = self._get_nearest_object(object_name, pick_coordinate)
 
@@ -230,7 +230,7 @@ class Robot(RobotAPI):
         else:
             success = False
 
-        thread_oral.join()
+        # thread_oral.join()
 
         return success
 
@@ -268,7 +268,7 @@ class Robot(RobotAPI):
 
         self._logger.info(message)
 
-        thread_oral = self.environment().oralcom_call_text2speech_async(message)
+        self.environment().oralcom_call_text2speech_async(message, priority=8)
         obj_where_to_place = None
 
         if location is not None and location is not Location.NONE:
@@ -336,7 +336,7 @@ class Robot(RobotAPI):
 
         self._object_last_picked = None
 
-        thread_oral.join()
+        # thread_oral.join()
 
         return success
 
@@ -363,7 +363,7 @@ class Robot(RobotAPI):
         message = f"Calling push with {object_name} and {direction}"
         self._logger.info(message)
 
-        thread_oral = self.environment().oralcom_call_text2speech_async(message)
+        self.environment().oralcom_call_text2speech_async(message, priority=8)
 
         obj_to_push = self._get_nearest_object(object_name, push_coordinate)
 
@@ -395,7 +395,7 @@ class Robot(RobotAPI):
         else:
             success = False
 
-        thread_oral.join()
+        # thread_oral.join()
 
         return success
 
@@ -490,7 +490,7 @@ class Robot(RobotAPI):
         message = f"Picking {object_name} from workspace {workspace_id} at {coords_str}."
         self._logger.info(message)
 
-        thread_oral = self.environment().oralcom_call_text2speech_async(message)
+        self.environment().oralcom_call_text2speech_async(message, priority=8)
 
         # Get object from specific workspace memory
         obj_to_pick = self._get_nearest_object_in_workspace(object_name, workspace_id, pick_coordinate)
@@ -507,7 +507,7 @@ class Robot(RobotAPI):
         else:
             success = False
 
-        thread_oral.join()
+        # thread_oral.join()
         return success
 
     def place_object_in_workspace(
@@ -539,13 +539,13 @@ class Robot(RobotAPI):
             )
 
         self._logger.info(message)
-        thread_oral = self.environment().oralcom_call_text2speech_async(message)
+        self.environment().oralcom_call_text2speech_async(message, priority=8)
 
         # Get workspace for coordinate transformation
         workspace = self.environment().get_workspace_by_id(workspace_id)
         if workspace is None:
             self._logger.error(f"Workspace {workspace_id} not found")
-            thread_oral.join()
+            # thread_oral.join()
             return False
 
         # Find reference object in target workspace if location specified
@@ -589,7 +589,7 @@ class Robot(RobotAPI):
         if hasattr(self, "_object_source_workspace"):
             del self._object_source_workspace
 
-        thread_oral.join()
+        # thread_oral.join()
         return success
 
     def _get_nearest_object_in_workspace(
