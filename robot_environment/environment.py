@@ -232,7 +232,7 @@ class Environment:
             yield img
 
             if self.get_robot_in_motion():
-                time.sleep(0.25)
+                time.sleep(0.05)
             else:
                 time.sleep(0.05)
 

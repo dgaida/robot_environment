@@ -744,7 +744,7 @@ class Robot(RobotAPI):
         False: robot is not in motion
         True: robot is in motion and therefore maybe cannot see the workspace markers
         """
-        return self._robot_in_motion
+        return self._robot.is_in_motion()
 
     def robot(self) -> "RobotController":
         """
@@ -767,7 +767,7 @@ class Robot(RobotAPI):
     _robot = None
 
     # True, if robot is in motion and therefore cannot see the workspace markers
-    _robot_in_motion = False
+    # _robot_in_motion = False
 
     _object_source_workspace: Optional[str] = None  # Track source workspace
 

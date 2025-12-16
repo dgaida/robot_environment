@@ -38,6 +38,7 @@ class RobotController(ABC):
 
         self._verbose = verbose
         self._robot = robot
+        self._in_motion = False
 
         self._init_robot(use_simulation)
 
@@ -174,7 +175,17 @@ class RobotController(ABC):
         """
         pass
 
+    def _set_in_motion(self, in_motion: bool):
+        """Set the robot motion state."""
+        self._in_motion = in_motion
+        if hasattr(self._robot, "_robot_in_motion"):
+            self._robot._robot_in_motion = in_motion
+
     # *** PUBLIC properties ***
+
+    def is_in_motion(self) -> bool:
+        """Check if robot is currently in motion."""
+        return self._in_motion
 
     def robot_ctrl(self):
         """
