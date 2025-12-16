@@ -72,7 +72,7 @@ class WidowXRobotController(RobotController):
 
                 # This is a simplified version - in practice you'd use the arm's FK
                 # or track the last commanded pose
-                if hasattr(self, "_last_pose"):
+                if hasattr(self, "_last_pose") and self._last_pose is not None:
                     return self._last_pose
                 else:
                     # Return home pose as default

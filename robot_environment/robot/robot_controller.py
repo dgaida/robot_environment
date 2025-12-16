@@ -178,8 +178,8 @@ class RobotController(ABC):
     def _set_in_motion(self, in_motion: bool):
         """Set the robot motion state."""
         self._in_motion = in_motion
-        if hasattr(self._robot, "_robot_in_motion"):
-            self._robot._robot_in_motion = in_motion
+        # if hasattr(self._robot, "_robot_in_motion"):
+        #     self._robot._robot_in_motion = in_motion
 
     # *** PUBLIC properties ***
 

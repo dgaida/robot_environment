@@ -543,6 +543,7 @@ class TestWidowXRobotControllerPoseOperations:
 
         pose = controller.get_target_pose_from_rel("test_ws", 0.5, 0.5, 0.0)
 
+        assert isinstance(pose, PoseObjectPNP)
         # Should return zero pose
         assert pose.x == 0.0
         assert pose.y == 0.0

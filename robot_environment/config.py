@@ -20,6 +20,15 @@ class RobotType(str, Enum):
     WIDOWX = "widowx"
 
 
+# Custom YAML representer for RobotType enum
+def represent_robot_type(dumper, data):
+    """Custom YAML representer for RobotType enum"""
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data.value)
+
+
+yaml.add_representer(RobotType, represent_robot_type)
+
+
 class DetectionModel(str, Enum):
     """Supported object detection models."""
 
@@ -223,6 +232,10 @@ class RobotConfig:
         data = asdict(self)
         # Convert workspace configs
         data["workspaces"] = {k: v.to_dict() if hasattr(v, "to_dict") else v for k, v in self.workspaces.items()}
+
+        if isinstance(data.get("robot_type"), RobotType):
+            data["robot_type"] = data["robot_type"].value
+
         return data
 
     def to_yaml(self, filepath: Path) -> None:

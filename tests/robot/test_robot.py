@@ -24,7 +24,7 @@ def mock_environment():
 
 @pytest.fixture
 def mock_robot_controller():
-    """Create mock robot controller"""
+    """Create mock robot controller - FIXED"""
     with patch("robot_environment.robot.robot.NiryoRobotController") as mock:
         controller = Mock()
         controller.get_pose.return_value = PoseObjectPNP(0.2, 0.0, 0.3)
@@ -33,6 +33,10 @@ def mock_robot_controller():
         controller.robot_pick_object.return_value = True
         controller.robot_place_object.return_value = True
         controller.robot_push_object.return_value = True
+
+        # FIX: Make is_in_motion() return False instead of Mock
+        controller.is_in_motion.return_value = False
+
         mock.return_value = controller
         yield mock
 
