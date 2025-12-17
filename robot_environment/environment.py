@@ -25,6 +25,7 @@ from redis_robot_comm import RedisMessageBroker
 from redis_robot_comm import RedisLabelManager
 
 from .object_memory_manager import ObjectMemoryManager
+from .performance_metrics import PerformanceMetrics, PerformanceMonitor
 
 from .common.logger_config import get_package_logger
 import logging
@@ -53,7 +54,14 @@ class Environment:
 
     # *** CONSTRUCTORS ***
     def __init__(
-        self, el_api_key: str, use_simulation: bool, robot_id: str, verbose: bool = False, start_camera_thread: bool = True
+        self,
+        el_api_key: str,
+        use_simulation: bool,
+        robot_id: str,
+        verbose: bool = False,
+        start_camera_thread: bool = True,
+        enable_performance_monitoring: bool = True,
+        performance_log_interval: float = 60.0,
     ):
         """
         Creates environment object.
@@ -65,6 +73,8 @@ class Environment:
             verbose: Enable verbose logging
             start_camera_thread: If True, start camera update thread
                                 Set to False for MCP server!
+            enable_performance_monitoring: Enable performance metrics tracking
+            performance_log_interval: Interval in seconds for performance logging
         """
         self._use_simulation = use_simulation
         self._verbose = verbose
@@ -72,8 +82,19 @@ class Environment:
 
         self._logger.info("Initializing Environment")
         self._logger.debug(
-            f"Configuration: simulation={use_simulation}, " f"robot_id={robot_id}, camera_thread={start_camera_thread}"
+            f"Configuration: simulation={use_simulation}, "
+            f"robot_id={robot_id}, camera_thread={start_camera_thread}, "
+            f"metrics={enable_performance_monitoring}"
         )
+
+        # Initialize performance metrics
+        self._metrics = PerformanceMetrics(history_size=100, verbose=verbose) if enable_performance_monitoring else None
+
+        self._performance_monitor: Optional[PerformanceMonitor] = None
+        if enable_performance_monitoring:
+            self._performance_monitor = PerformanceMonitor(
+                self._metrics, interval_seconds=performance_log_interval, verbose=verbose
+            )
 
         # Initialize robot (must come before framegrabber and workspaces)
         self._robot = Robot(self, use_simulation, robot_id, verbose)
@@ -126,6 +147,11 @@ class Environment:
         self._object_broker = RedisMessageBroker()
         self._label_manager = RedisLabelManager()
 
+        # Start performance monitor if enabled
+        if self._performance_monitor:
+            self._performance_monitor.start()
+            self._logger.info("Performance monitoring started")
+
         # Start camera thread if requested
         if start_camera_thread:
             self._logger.info("Starting camera update thread...")
@@ -139,6 +165,9 @@ class Environment:
             self._logger.debug("Shutting down environment in destructor...")
             self._stop_event.set()
 
+        if hasattr(self, "_performance_monitor") and self._performance_monitor:
+            self._performance_monitor.stop()
+
     def cleanup(self):
         """
         Explicit cleanup method - call when done with the object.
@@ -147,6 +176,9 @@ class Environment:
         if hasattr(self, "_stop_event"):
             self._logger.info("Shutting down environment...")
             self._stop_event.set()
+
+        if hasattr(self, "_performance_monitor") and self._performance_monitor:
+            self._performance_monitor.stop()
 
         if hasattr(self, "_oralcom"):
             self._oralcom.shutdown(timeout=5.0)
@@ -171,8 +203,6 @@ class Environment:
         Args:
             visualize: If True, displays the updated camera feed
         """
-        t1 = 0.0
-
         # FIX: Get home workspace ID and set it as current
         home_workspace_id = self._workspaces.get_workspace_home_id()
 
@@ -182,24 +212,35 @@ class Environment:
         self.robot_move2observation_pose(home_workspace_id)
 
         while not self._stop_event.is_set():
-            t0 = time.time()
+            loop_start = time.perf_counter()
 
-            # Get current frame (publishes to Redis)
-            img = self.get_current_frame()
-            t1 = time.time()
-            self._logger.debug(f"Frame capture: {(t1 - t0) * 1000:.1f}ms")
+            # Get current frame with timing
+            if self._metrics:
+                with self._metrics.timer("frame_capture"):
+                    img = self.get_current_frame()
+            else:
+                img = self.get_current_frame()
 
             time.sleep(0.1)
 
             # Get detected objects from Redis
-            detected_objects = self.get_detected_objects()
-            t3 = time.time()
-            self._logger.debug(f"Get objects: {(t3 - t1) * 1000:.1f}ms")
+            # Get detected objects from Redis with timing
+            if self._metrics:
+                with self._metrics.timer("object_fetch_redis"):
+                    detected_objects = self.get_detected_objects()
+
+                # Record object count
+                self._metrics.increment_counter("objects_detected", len(detected_objects))
+            else:
+                detected_objects = self.get_detected_objects()
 
             # Update memory using ObjectMemoryManager
             if self._current_workspace_id:  # This should now always be True
                 at_observation = self.is_any_workspace_visible()
                 robot_moving = self.get_robot_in_motion()
+
+                if self._metrics:
+                    mem_start = time.perf_counter()
 
                 objects_added, objects_updated = self._memory_manager.update(
                     workspace_id=self._current_workspace_id,
@@ -208,6 +249,10 @@ class Environment:
                     robot_in_motion=robot_moving,
                 )
 
+                if self._metrics:
+                    mem_duration = (time.perf_counter() - mem_start) * 1000
+                    self._metrics.record_memory_update(mem_duration, objects_added, objects_updated)
+
                 self._logger.debug(
                     f"Memory update for '{self._current_workspace_id}': " f"added={objects_added}, updated={objects_updated}"
                 )
@@ -215,8 +260,10 @@ class Environment:
                 # This should never happen now, but log it if it does
                 self._logger.error("Current workspace ID is None - memory not updated!")
 
-            t5 = time.time()
-            self._logger.debug(f"Total loop: {(t5 - t0) * 1000:.1f}ms")
+            # Record loop iteration time
+            if self._metrics:
+                loop_duration = (time.perf_counter() - loop_start) * 1000
+                self._metrics.record_timing("camera_loop_iteration", loop_duration)
 
             # Log memory stats
             if self._verbose:
@@ -242,20 +289,33 @@ class Environment:
         Useful when workspace has changed significantly.
         """
         self._logger.warning("Clearing memory of all objects")
-        self._memory_manager.clear()
+
+        if self._metrics:
+            with self._metrics.timer("memory_clear"):
+                self._memory_manager.clear()
+            self._metrics.increment_counter("memory_clears")
+        else:
+            self._memory_manager.clear()
 
     def get_detected_objects_from_memory(self) -> "Objects":
         """
         Get a copy of the object memory for current workspace.
-        Thread-safe access to memory.
 
         Returns:
             Objects: Copy of objects currently in memory
         """
+        if self._metrics:
+            with self._metrics.timer("memory_get"):
+                result = self._get_memory_internal()
+            return result
+        else:
+            return self._get_memory_internal()
+
+    def _get_memory_internal(self) -> "Objects":
+        """Internal method for getting memory."""
         if self._current_workspace_id:
             return self._memory_manager.get(self._current_workspace_id)
 
-        # Fallback: return home workspace memory
         home_ws_id = self._workspaces.get_workspace_home_id()
         return self._memory_manager.get(home_ws_id)
 
@@ -294,6 +354,54 @@ class Environment:
             old_coordinate=old_coordinate,
             new_pose=new_pose,
         )
+
+    # Performance metrics methods
+
+    def get_performance_metrics(self) -> Optional[PerformanceMetrics]:
+        """
+        Get the performance metrics tracker.
+
+        Returns:
+            PerformanceMetrics instance or None if disabled
+        """
+        return self._metrics
+
+    def get_performance_stats(self) -> Optional[Dict]:
+        """
+        Get current performance statistics.
+
+        Returns:
+            Dictionary with performance stats or None if disabled
+        """
+        if self._metrics:
+            return self._metrics.get_stats()
+        return None
+
+    def print_performance_summary(self) -> None:
+        """Print a human-readable performance summary."""
+        if self._metrics:
+            print(self._metrics.get_summary())
+        else:
+            print("Performance monitoring is disabled")
+
+    def export_performance_metrics(self, filepath: str) -> None:
+        """
+        Export performance metrics to JSON file.
+
+        Args:
+            filepath: Path to output file
+        """
+        if self._metrics:
+            self._metrics.export_json(filepath)
+            self._logger.info(f"Performance metrics exported to {filepath}")
+        else:
+            self._logger.warning("Performance monitoring is disabled")
+
+    def reset_performance_metrics(self) -> None:
+        """Reset all performance metrics."""
+        if self._metrics:
+            self._metrics.reset()
+            self._logger.info("Performance metrics reset")
 
     # Multi-workspace memory methods
 
@@ -631,7 +739,12 @@ class Environment:
         Returns:
             numpy.ndarray: Camera image
         """
-        return self._framegrabber.get_current_frame()
+        frame = self._framegrabber.get_current_frame()
+
+        if self._metrics and frame is not None:
+            self._metrics.increment_counter("frames_captured")
+
+        return frame
 
     def get_current_frame_width_height(self) -> tuple[int, int]:
         """
@@ -669,7 +782,11 @@ class Environment:
         Returns:
             current pose of gripper of robot.
         """
-        return self._robot.get_pose()
+        if self._metrics:
+            with self._metrics.timer("robot_get_pose"):
+                return self._robot.get_pose()
+        else:
+            return self._robot.get_pose()
 
     @log_start_end_cls()
     def get_robot_target_pose_from_rel(self, workspace_id: str, u_rel: float, v_rel: float, yaw: float) -> "PoseObjectPNP":
@@ -756,7 +873,11 @@ class Environment:
         Args:
             workspace_id: ID of workspace
         """
-        self._robot.move2observation_pose(workspace_id)
+        if self._metrics:
+            with self._metrics.timer("robot_move_observation"):
+                self._robot.move2observation_pose(workspace_id)
+        else:
+            self._robot.move2observation_pose(workspace_id)
 
         self._current_workspace_id = workspace_id
         self._logger.debug(f"Set current workspace to: {workspace_id}")
@@ -782,6 +903,10 @@ class Environment:
     def use_simulation(self) -> bool:
         """Check if using simulation."""
         return self._use_simulation
+
+    def metrics(self) -> Optional[PerformanceMetrics]:
+        """Get performance metrics tracker."""
+        return self._metrics
 
     @property
     def verbose(self) -> bool:
