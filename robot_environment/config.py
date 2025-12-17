@@ -39,6 +39,15 @@ class DetectionModel(str, Enum):
     GROUNDING_DINO = "grounding_dino"
 
 
+# Custom YAML representer for DetectionModel enum
+def represent_detection_model(dumper, data):
+    """Custom YAML representer for DetectionModel enum"""
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data.value)
+
+
+yaml.add_representer(DetectionModel, represent_detection_model)
+
+
 @dataclass
 class WorkspaceConfig:
     """Configuration for a single workspace."""
