@@ -96,20 +96,20 @@ class NiryoRobotController(RobotController):
 
     def get_camera_intrinsics(self):
         # all calls of methods of the _robot (NiryoRobot) object are locked, because they are not safe thread
-        # with self._lock:
-        if pyniryo_v == "pyniryo2":
-            mtx, dist = self._robot_ctrl.vision.get_camera_intrinsics()
-        else:
-            mtx, dist = self._robot_ctrl.get_camera_intrinsics()
+        with self._lock:
+            if pyniryo_v == "pyniryo2":
+                mtx, dist = self._robot_ctrl.vision.get_camera_intrinsics()
+            else:
+                mtx, dist = self._robot_ctrl.get_camera_intrinsics()
 
         return mtx, dist
 
     def get_img_compressed(self) -> np.ndarray:
-        # with self._lock:
-        if pyniryo_v == "pyniryo2":
-            img_compressed = self._robot_ctrl.vision.get_img_compressed()
-        else:
-            img_compressed = self._robot_ctrl.get_img_compressed()
+        with self._lock:
+            if pyniryo_v == "pyniryo2":
+                img_compressed = self._robot_ctrl.vision.get_img_compressed()
+            else:
+                img_compressed = self._robot_ctrl.get_img_compressed()
 
         return img_compressed
 
