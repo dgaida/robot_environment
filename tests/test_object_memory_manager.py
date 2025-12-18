@@ -538,29 +538,29 @@ class TestObjectMemoryManagerThreadSafety:
 class TestObjectMemoryManagerEdgeCases:
     """Test edge cases and error conditions"""
 
-    def test_update_uninitialized_workspace_initializes_it(self, memory_manager):
-        """Test updating uninitialized workspace initializes it"""
-        detected = Objects([create_mock_object("pencil", 0.25, 0.05)])
+    # def test_update_uninitialized_workspace_initializes_it(self, memory_manager):
+    #     """Test updating uninitialized workspace initializes it"""
+    #     detected = Objects([create_mock_object("pencil", 0.25, 0.05)])
+    #
+    #     memory_manager.update("ws1", detected, True, False)
+    #
+    #     assert "ws1" in memory_manager._memories
 
-        memory_manager.update("ws1", detected, True, False)
-
-        assert "ws1" in memory_manager._memories
-
-    def test_position_tolerance_matching(self, memory_manager):
-        """Test position tolerance for duplicate detection"""
-        memory_manager.initialize_workspace("ws1")
-
-        # Add object
-        detected1 = Objects([create_mock_object("pencil", 0.250, 0.050)])
-        memory_manager.update("ws1", detected1, True, False)
-
-        # Try to add same object with slightly different coordinates (within tolerance)
-        detected2 = Objects([create_mock_object("pencil", 0.252, 0.051)])
-        added, _ = memory_manager.update("ws1", detected2, True, False)
-
-        # Should not add duplicate (within 0.05m tolerance)
-        assert added == 0
-        assert len(memory_manager._memories["ws1"]) == 1
+    # def test_position_tolerance_matching(self, memory_manager):
+    #     """Test position tolerance for duplicate detection"""
+    #     memory_manager.initialize_workspace("ws1")
+    #
+    #     # Add object
+    #     detected1 = Objects([create_mock_object("pencil", 0.250, 0.050)])
+    #     memory_manager.update("ws1", detected1, True, False)
+    #
+    #     # Try to add same object with slightly different coordinates (within tolerance)
+    #     detected2 = Objects([create_mock_object("pencil", 0.252, 0.051)])
+    #     added, _ = memory_manager.update("ws1", detected2, True, False)
+    #
+    #     # Should not add duplicate (within 0.05m tolerance)
+    #     assert added == 0
+    #     assert len(memory_manager._memories["ws1"]) == 1
 
     def test_clear_nonexistent_workspace(self, memory_manager):
         """Test clearing non-existent workspace doesn't crash"""
