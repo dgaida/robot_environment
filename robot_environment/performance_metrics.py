@@ -217,7 +217,11 @@ class PerformanceMetrics:
                         f"{metric_name}: {duration_ms:.1f}ms " f"(avg: {stats.mean:.1f}ms, p95: {stats.p95:.1f}ms)"
                     )
             else:
-                self._logger.warning(f"Unknown metric: {metric_name}")
+                # FIX: Create the metric on-the-fly if it doesn't exist
+                from collections import deque
+
+                self._timings[metric_name] = deque([duration_ms], maxlen=self._history_size)
+                self._logger.debug(f"Created new timing metric: {metric_name}")
 
     def increment_counter(self, counter_name: str, amount: int = 1) -> None:
         """

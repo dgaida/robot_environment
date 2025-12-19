@@ -245,6 +245,9 @@ class RobotConfig:
         if isinstance(data.get("robot_type"), RobotType):
             data["robot_type"] = data["robot_type"].value
 
+        if "vision" in data and isinstance(data["vision"].get("detection_model"), DetectionModel):
+            data["vision"]["detection_model"] = data["vision"]["detection_model"].value
+
         return data
 
     def to_yaml(self, filepath: Path) -> None:

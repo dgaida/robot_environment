@@ -362,7 +362,13 @@ class ObjectMemoryManager:
         was_lost = self._workspace_was_lost.get(workspace_id, False)
         now_visible = at_observation_pose and not robot_in_motion
 
-        return was_lost and now_visible
+        # Clear memory when workspace becomes visible again after being lost
+        should_clear = was_lost and now_visible
+
+        if should_clear:
+            self._workspace_was_lost[workspace_id] = False
+
+        return should_clear
 
     def _update_visibility_state(self, workspace_id: str, at_observation_pose: bool, robot_in_motion: bool) -> None:
         """Update workspace visibility tracking."""
