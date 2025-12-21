@@ -6,11 +6,17 @@ Comprehensive test suite for the robot_environment package.
 
 ```
 tests/
-├── __init__.py
-├── conftest.py              # Pytest configuration and shared fixtures
-├── README.md               # This file
-├── test_robot_api.py       # Unit tests for Robot API
-└── test_integration.py     # Integration tests
+├── conftest.py              # Fixtures and configuration
+├── test_environment.py      # Environment tests
+├── test_environment_extended.py  # Extended environment tests
+├── camera/
+│   └── test_niryo_framegrabber.py
+├── robot/
+│   ├── test_robot.py
+│   ├── test_robot_api.py
+│   ├── test_niryo_robot_controller.py
+│   └── test_widowx_robot_controller.py
+└── test_integration.py      # Integration tests
 ```
 
 ## Running Tests
