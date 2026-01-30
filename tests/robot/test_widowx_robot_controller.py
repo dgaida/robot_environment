@@ -67,7 +67,7 @@ def mock_robot():
         y = -0.1 + v_rel * 0.2
         return PoseObjectPNP(x, y, 0.05, 0.0, 1.57, yaw)
 
-    mock_workspace.transform_camera2world_coords = mock_transform
+    mock_workspace.transform_camera2world_coords.side_effect = mock_transform
     mock_env.get_workspace_by_id.return_value = mock_workspace
 
     robot.environment.return_value = mock_env

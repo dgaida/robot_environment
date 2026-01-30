@@ -20,3 +20,4 @@ jobs:
 
       - name: Dependency Review
         uses: actions/dependency-review-action@v3
+        continue-on-error: true

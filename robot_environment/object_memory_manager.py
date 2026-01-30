@@ -117,13 +117,13 @@ class ObjectMemoryManager:
             if self._should_clear_memory(workspace_id, at_observation_pose, robot_in_motion):
                 self._clear_workspace_internal(workspace_id)
 
+            # Update visibility tracking
+            self._update_visibility_state(workspace_id, at_observation_pose, robot_in_motion)
+
             # Only update when at observation pose
             if not self._should_update_memory(at_observation_pose, robot_in_motion):
                 self._logger.debug(f"Skipping memory update for {workspace_id} - conditions not met")
                 return 0, 0
-
-            # Update visibility tracking
-            self._update_visibility_state(workspace_id, at_observation_pose, robot_in_motion)
 
             # Clean up expired manual updates
             self._cleanup_expired_manual_updates(workspace_id)

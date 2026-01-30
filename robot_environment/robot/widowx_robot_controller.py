@@ -75,8 +75,8 @@ class WidowXRobotController(RobotController):
                 if hasattr(self, "_last_pose") and self._last_pose is not None:
                     return self._last_pose
                 else:
-                    # Return home pose as default
-                    return PoseObjectPNP(0.3, 0.0, 0.2, 0.0, 1.57, 0.0)
+                    # Return zero pose as default
+                    return PoseObjectPNP(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
             except Exception as e:
                 if self.verbose():
                     print(f"Error getting pose: {e}")

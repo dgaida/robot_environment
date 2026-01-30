@@ -2,7 +2,6 @@ from robot_environment.config import ConfigManager, WorkspaceConfig
 from pathlib import Path
 from robot_environment import Environment
 
-
 # Load and customize
 manager = ConfigManager()
 config = manager.load(robot_type="niryo")
