@@ -1,11 +1,11 @@
 # environment class in which a robot for smart pick and place exists
 # Refactored to use ObjectMemoryManager for cleaner memory management
+from __future__ import annotations
 
 import threading
 from .common.logger import log_start_end_cls
 import numpy as np
 import time
-import cv2
 
 from robot_workspace import Workspaces
 from robot_workspace import NiryoWorkspaces
@@ -26,11 +26,12 @@ from redis_robot_comm import RedisLabelManager
 
 from .object_memory_manager import ObjectMemoryManager
 from .performance_metrics import PerformanceMetrics, PerformanceMonitor
+from .utils.workspace_utils import calculate_largest_free_space
 
 from .common.logger_config import get_package_logger
 import logging
 
-from typing import TYPE_CHECKING, List, Optional, Dict
+from typing import TYPE_CHECKING, List, Optional, Dict, Tuple
 
 if TYPE_CHECKING:
     from robot_workspace import Workspace
@@ -185,11 +186,19 @@ class Environment:
 
     # *** PUBLIC METHODS ***
 
-    def start_camera_updates(self, visualize=False):
-        """Start camera update thread."""
+    def start_camera_updates(self, visualize: bool = False) -> threading.Thread:
+        """
+        Start the background camera update thread.
+
+        Args:
+            visualize: If True, show the camera feed (requires GUI).
+
+        Returns:
+            The started threading.Thread object.
+        """
 
         def loop():
-            for img in self.update_camera_and_objects(visualize=visualize):
+            for _ in self.update_camera_and_objects(visualize=visualize):
                 pass
 
         t = threading.Thread(target=loop, daemon=True)
@@ -297,7 +306,7 @@ class Environment:
         else:
             self._memory_manager.clear()
 
-    def get_detected_objects_from_memory(self) -> "Objects":
+    def get_detected_objects_from_memory(self) -> Objects:
         """
         Get a copy of the object memory for current workspace.
 
@@ -311,7 +320,7 @@ class Environment:
         else:
             return self._get_memory_internal()
 
-    def _get_memory_internal(self) -> "Objects":
+    def _get_memory_internal(self) -> Objects:
         """Internal method for getting memory."""
         if self._current_workspace_id:
             return self._memory_manager.get(self._current_workspace_id)
@@ -490,7 +499,7 @@ class Environment:
 
         return mymessage
 
-    def stop_camera_updates(self):
+    def stop_camera_updates(self) -> None:
         """Stop camera update thread."""
         self._stop_event.set()
 
@@ -509,127 +518,34 @@ class Environment:
 
     # *** PUBLIC GET METHODS ***
 
-    def get_largest_free_space_with_center(self) -> tuple[float, float, float]:
+    def get_largest_free_space_with_center(self, workspace_id: Optional[str] = None) -> Tuple[float, float, float]:
         """
         Determines the largest free space in the workspace in square metres and its center coordinate in metres.
         This method can be used to determine at which location an object can be placed safely.
 
-        Example call:
-        To pick a 'chocolate bar' and place it at the center of the largest free space of the workspace, call:
-
-        largest_free_area_m2, center_x, center_y = agent.get_largest_free_space_with_center()
-
-        robot.pick_place_object(
-            object_name='chocolate bar',
-            pick_coordinate=[-0.1, 0.01],
-            place_coordinate=[center_x, center_y],
-            location=Location.RIGHT_NEXT_TO
-        )
+        Args:
+            workspace_id: Optional ID of the workspace to analyze. If None, the home workspace is used.
 
         Returns:
             tuple: (largest_free_area_m2, center_x, center_y) where:
-                - largest_free_area_m2 (float): Largest free area in square meters.
+                - largest_area_m2 (float): Largest free area in square meters.
                 - center_x (float): X-coordinate of the center of the largest free area in meters.
                 - center_y (float): Y-coordinate of the center of the largest free area in meters.
         """
-        # grid_resolution (int): Resolution of the workspace grid (e.g., 100x100 cells).
-        grid_resolution = 100
+        if workspace_id:
+            workspace = self.get_workspace_by_id(workspace_id)
+        else:
+            workspace = self.get_workspace(0)
+
+        if workspace is None:
+            self._logger.error(f"Workspace not found: {workspace_id}")
+            return 0.0, 0.0, 0.0
 
         detected_objects = self.get_detected_objects()
-        # TODO: using workspace 0 here
-        workspace_top_left = self.get_workspace(0).xy_ul_wc()
-        workspace_bottom_right = self.get_workspace(0).xy_lr_wc()
 
-        x_max, y_max = workspace_top_left.x, workspace_top_left.y
-        x_min, y_min = workspace_bottom_right.x, workspace_bottom_right.y
-
-        self._logger.debug(f"Workspace bounds: x=[{x_min}, {x_max}], y=[{y_min}, {y_max}]")
-        self._logger.debug(f"Detected objects:\n{chr(10).join(obj.as_string_for_llm_lbl() for obj in detected_objects)}")
-
-        workspace_width = abs(y_max - y_min)
-        workspace_height = abs(x_max - x_min)
-
-        # Create a grid to represent the workspace
-        grid = np.zeros((grid_resolution, grid_resolution), dtype=int)
-
-        # Map world coordinates to grid indices
-        def to_grid_coords(x, y):
-            v = int((x_max - x) / workspace_height * grid_resolution)
-            u = int((y_max - y) / workspace_width * grid_resolution)
-            return u, v
-
-        # Map grid indices back to world coordinates
-        def to_world_coords(u, v):
-            x = x_max - (v + 0.5) * (workspace_height / grid_resolution)
-            y = y_max - (u + 0.5) * (workspace_width / grid_resolution)
-            return x, y
-
-        # Mark the grid cells occupied by objects
-        for obj in detected_objects:
-            x_start = obj.x_com() - obj.height_m() / 2
-            x_end = obj.x_com() + obj.height_m() / 2
-            y_start = obj.y_com() - obj.width_m() / 2
-            y_end = obj.y_com() + obj.width_m() / 2
-
-            # Convert object bounds to grid indices
-            u_end, v_end = to_grid_coords(x_start, y_start)
-            u_start, v_start = to_grid_coords(x_end, y_end)
-
-            self._logger.debug(f"Object bounds: x=[{x_start}, {x_end}], y=[{y_start}, {y_end}]")
-            self._logger.debug(f"Grid coords: u=[{u_start}, {u_end}], v=[{v_start}, {v_end}]")
-
-            # Mark grid cells as occupied
-            grid[v_start : v_end + 1, u_start : u_end + 1] = 1
-
-        # Find the largest rectangle of zeros in the grid
-        def max_rectangle_area(matrix):
-            max_area = 0
-            top_left = (0, 0)
-            bottom_right = (0, 0)
-            dp = [0] * len(matrix[0])  # DP array for heights
-
-            for v, row in enumerate(matrix):  # Iterate over rows (v-axis)
-                for u in range(len(row)):  # Iterate over columns (u-axis)
-                    dp[u] = dp[u] + 1 if row[u] == 0 else 0  # Update heights
-
-                # Compute the maximum area with the updated histogram
-                stack = []
-                for k in range(len(dp) + 1):
-                    while stack and (k == len(dp) or dp[k] < dp[stack[-1]]):
-                        h = dp[stack.pop()]
-                        w = k if not stack else k - stack[-1] - 1
-                        area = h * w
-                        if area > max_area:
-                            max_area = area
-                            top_left = (v - h + 1, stack[-1] + 1 if stack else 0)
-                            bottom_right = (v, k - 1)
-                    stack.append(k)
-
-            return max_area, top_left, bottom_right
-
-        largest_area_cells, (v_start, u_start), (v_end, u_end) = max_rectangle_area(grid)
-        largest_area_m2 = (largest_area_cells / (grid_resolution**2)) * (workspace_width * workspace_height)
-
-        # Calculate the center of the largest rectangle in grid coordinates
-        v_center = (v_start + v_end) // 2
-        u_center = (u_start + u_end) // 2
-
-        # Map the center to world coordinates
-        center_x, center_y = to_world_coords(u_center, v_center)
-
-        if self.verbose:
-            grid[v_center : v_center + 1, u_center : u_center + 1] = 2
-
-            # Normalize grid to 0–255 for visualization
-            grid_visual = (grid * 255 // 2).astype(np.uint8)
-
-            cv2.imshow("grid", grid_visual)
-            cv2.waitKey(0)
-
-        self._logger.info(f"Largest free area: {largest_area_m2:.4f} square meters")
-        self._logger.info(f"Center: ({center_x:.4f}, {center_y:.4f}) meters")
-
-        return largest_area_m2, center_x, center_y
+        return calculate_largest_free_space(
+            workspace=workspace, detected_objects=detected_objects, visualize=self.verbose, logger=self._logger
+        )
 
     def get_workspace_coordinate_from_point(self, workspace_id: str, point: str) -> Optional[List[float]]:
         """
@@ -663,7 +579,7 @@ class Environment:
 
     # GET methods from Workspaces
 
-    def get_workspace(self, index: int = 0) -> "Workspace":
+    def get_workspace(self, index: int = 0) -> Workspace:
         """
         Return the workspace at the given position index in the list of workspaces.
 
@@ -675,7 +591,7 @@ class Environment:
         """
         return self._workspaces.get_workspace(index)
 
-    def get_workspace_by_id(self, workspace_id: str) -> "Workspace":
+    def get_workspace_by_id(self, workspace_id: str) -> Optional[Workspace]:
         """
         Return the Workspace object with the given id, if existent, else None is returned.
 
@@ -709,7 +625,7 @@ class Environment:
         return self._workspaces.get_workspace_id(index)
 
     @log_start_end_cls()
-    def get_visible_workspace(self, camera_pose: "PoseObjectPNP") -> "Workspace":
+    def get_visible_workspace(self, camera_pose: PoseObjectPNP) -> Workspace:
         """Get visible workspace from camera pose."""
         return self._workspaces.get_visible_workspace(camera_pose)
 
@@ -718,7 +634,7 @@ class Environment:
         pose = self.get_robot_pose()
         return self.get_visible_workspace(pose) is not None
 
-    def get_observation_pose(self, workspace_id: str) -> "PoseObjectPNP":
+    def get_observation_pose(self, workspace_id: str) -> PoseObjectPNP:
         """
         Return the observation pose of the given workspace id
 
@@ -757,7 +673,7 @@ class Environment:
 
     # Robot-related GET methods
 
-    def get_robot_controller(self) -> "RobotController":
+    def get_robot_controller(self) -> RobotController:
         """
 
         Returns:
@@ -775,7 +691,7 @@ class Environment:
         """
         return self._robot.robot_in_motion()
 
-    def get_robot_pose(self) -> "PoseObjectPNP":
+    def get_robot_pose(self) -> PoseObjectPNP:
         """
         Get current pose of gripper of robot.
 
@@ -789,7 +705,7 @@ class Environment:
             return self._robot.get_pose()
 
     @log_start_end_cls()
-    def get_robot_target_pose_from_rel(self, workspace_id: str, u_rel: float, v_rel: float, yaw: float) -> "PoseObjectPNP":
+    def get_robot_target_pose_from_rel(self, workspace_id: str, u_rel: float, v_rel: float, yaw: float) -> PoseObjectPNP:
         """
         Given relative image coordinates [u_rel, v_rel] and optionally an orientation of the point (yaw),
         calculate the corresponding pose in world coordinates. The parameter yaw is useful, if we want to pick at the
@@ -824,7 +740,7 @@ class Environment:
 
         return f"I can recognize these objects: {', '.join(object_labels[0])}"
 
-    def get_detected_objects(self) -> "Objects":
+    def get_detected_objects(self) -> Objects:
         """
         Get detected objects from Redis stream.
 
@@ -888,15 +804,15 @@ class Environment:
 
     # *** PUBLIC properties ***
 
-    def workspaces(self) -> "Workspaces":
+    def workspaces(self) -> Workspaces:
         """Return workspaces object."""
         return self._workspaces
 
-    def framegrabber(self) -> "FrameGrabber":
+    def framegrabber(self) -> FrameGrabber:
         """Return framegrabber object."""
         return self._framegrabber
 
-    def robot(self) -> "Robot":
+    def robot(self) -> Robot:
         """Return robot object."""
         return self._robot
 
