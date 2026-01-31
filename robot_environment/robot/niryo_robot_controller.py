@@ -1,5 +1,6 @@
 # robot class around Niryo robot for smart pick and place
 # Updated with proper logging
+from __future__ import annotations
 
 import numpy as np
 from ..common.logger import log_start_end_cls, pyniryo_v
@@ -79,7 +80,7 @@ class NiryoRobotController(RobotController):
 
     # *** PUBLIC GET methods ***
 
-    def get_pose(self) -> "PoseObjectPNP":
+    def get_pose(self) -> PoseObjectPNP:
         """
         Get current pose of gripper of robot.
 

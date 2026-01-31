@@ -324,7 +324,7 @@ class TestEnvironmentCameraThread:
 class TestEnvironmentLargestFreeSpaceAdvanced:
     """Advanced tests for largest free space calculation"""
 
-    @patch("robot_environment.environment.cv2")
+    @patch("robot_environment.utils.workspace_utils.cv2")
     def test_largest_free_space_empty_workspace(self, mock_cv2, mock_dependencies):
         """Test free space with empty workspace"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
@@ -336,7 +336,7 @@ class TestEnvironmentLargestFreeSpaceAdvanced:
         assert isinstance(cx, float)
         assert isinstance(cy, float)
 
-    @patch("robot_environment.environment.cv2")
+    @patch("robot_environment.utils.workspace_utils.cv2")
     def test_largest_free_space_verbose_output(self, mock_cv2, mock_dependencies):
         """Test verbose output during calculation"""
         env = Environment("key", False, "niryo", verbose=True, start_camera_thread=False)

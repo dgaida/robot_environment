@@ -1,10 +1,12 @@
 # robot class around Niryo robot for smart pick and place
 # Updated with proper logging throughout
+from __future__ import annotations
 
 from ..common.logger import log_start_end_cls
 from ..common.logger_config import get_package_logger
 
 from .robot_api import RobotAPI, Location
+from .command_processor import parse_robot_command
 
 from .niryo_robot_controller import NiryoRobotController
 
@@ -12,7 +14,7 @@ from robot_workspace import PoseObjectPNP
 from robot_workspace import Object
 from robot_workspace import Objects
 
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union, Tuple, Any, Dict
 
 if TYPE_CHECKING:
     from ..environment import Environment
@@ -20,10 +22,8 @@ if TYPE_CHECKING:
     from robot_workspace import Object
 
 import math
-import re
 
 # import json
-import ast
 
 
 class Robot(RobotAPI):
@@ -56,7 +56,7 @@ class Robot(RobotAPI):
         else:
             self._robot = None
 
-    def handle_object_detection(self, objects_dict_list):
+    def handle_object_detection(self, objects_dict_list: List[Dict[str, Any]]) -> None:
         """Process incoming object detections from Redis"""
         # Convert dictionaries back to Object instances
         objects = Objects.dict_list_to_objects(objects_dict_list, self.environment().get_workspace(0))
@@ -65,7 +65,7 @@ class Robot(RobotAPI):
         for obj in objects:
             self._logger.debug(f"Received object: {obj.label()} at {obj.xy_com()}")
 
-    def get_pose(self) -> "PoseObjectPNP":
+    def get_pose(self) -> PoseObjectPNP:
         """
         Get current pose of gripper of robot.
 
@@ -75,7 +75,7 @@ class Robot(RobotAPI):
         return self._robot.get_pose()
 
     @log_start_end_cls()
-    def get_target_pose_from_rel(self, workspace_id: str, u_rel: float, v_rel: float, yaw: float) -> "PoseObjectPNP":
+    def get_target_pose_from_rel(self, workspace_id: str, u_rel: float, v_rel: float, yaw: float) -> PoseObjectPNP:
         """
         Given relative image coordinates [u_rel, v_rel] and optionally an orientation of the point (yaw),
         calculate the corresponding pose in world coordinates. The parameter yaw is useful, if we want to pick at the
@@ -127,8 +127,8 @@ class Robot(RobotAPI):
     def pick_place_object(
         self,
         object_name: str,
-        pick_coordinate: List,
-        place_coordinate: List,
+        pick_coordinate: List[float],
+        place_coordinate: List[float],
         location: Union["Location", str, None] = None,
         z_offset: float = 0.001,
     ) -> bool:
@@ -188,7 +188,7 @@ class Robot(RobotAPI):
             return False
 
     @log_start_end_cls()
-    def pick_object(self, object_name: str, pick_coordinate: List, z_offset: float = 0.001) -> bool:
+    def pick_object(self, object_name: str, pick_coordinate: List[float], z_offset: float = 0.001) -> bool:
         """
         Command the pick-and-place robot arm to pick up a specific object using its gripper. The gripper will move to
         the specified 'pick_coordinate' and pick the named object.
@@ -235,7 +235,7 @@ class Robot(RobotAPI):
         return success
 
     @log_start_end_cls()
-    def place_object(self, place_coordinate: List, location: Union["Location", str, None] = None) -> bool:
+    def place_object(self, place_coordinate: List[float], location: Union["Location", str, None] = None) -> bool:
         """
         Instruct the pick-and-place robot arm to place a picked object at the specified 'place_coordinate'. The
         function moves the gripper to the specified 'place_coordinate' and calculates the exact placement position from
@@ -341,7 +341,7 @@ class Robot(RobotAPI):
         return success
 
     @log_start_end_cls()
-    def push_object(self, object_name: str, push_coordinate: List, direction: str, distance: float) -> bool:
+    def push_object(self, object_name: str, push_coordinate: List[float], direction: str, distance: float) -> bool:
         """
         Instruct the pick-and-place robot arm to push a specific object to a new position.
         This function should only be called if it is not possible to pick the object.
@@ -403,9 +403,9 @@ class Robot(RobotAPI):
         self,
         object_name: str,
         pick_workspace_id: str,
-        pick_coordinate: List,
+        pick_coordinate: List[float],
         place_workspace_id: str,
-        place_coordinate: List,
+        place_coordinate: List[float],
         location: Union["Location", str, None] = None,
         z_offset: float = 0.001,
     ) -> bool:
@@ -472,7 +472,7 @@ class Robot(RobotAPI):
         return place_success
 
     def pick_object_from_workspace(
-        self, object_name: str, workspace_id: str, pick_coordinate: List, z_offset: float = 0.001
+        self, object_name: str, workspace_id: str, pick_coordinate: List[float], z_offset: float = 0.001
     ) -> bool:
         """
         Pick an object from a specific workspace.
@@ -511,7 +511,7 @@ class Robot(RobotAPI):
         return success
 
     def place_object_in_workspace(
-        self, workspace_id: str, place_coordinate: List, location: Union["Location", str, None] = None
+        self, workspace_id: str, place_coordinate: List[float], location: Union["Location", str, None] = None
     ) -> bool:
         """
         Place a picked object in a specific workspace.
@@ -593,8 +593,8 @@ class Robot(RobotAPI):
         return success
 
     def _get_nearest_object_in_workspace(
-        self, label: Union[str, None], workspace_id: str, target_coords: List
-    ) -> Optional["Object"]:
+        self, label: Union[str, None], workspace_id: str, target_coords: List[float]
+    ) -> Optional[Object]:
         """
         Find the nearest object in a specific workspace.
 
@@ -626,64 +626,19 @@ class Robot(RobotAPI):
         return nearest_object
 
     @staticmethod
-    def _parse_command(line: str) -> tuple[str, str, list, dict]:
+    def _parse_command(line: str) -> Tuple[Optional[str], Optional[str], List[Any], Dict[str, Any]]:
         """
         Parse a single line of the input into the target object, method, positional arguments, and keyword arguments.
-
-        Args:
-            line (str): The command string
-            (e.g., 'robot.pick_place_object(object_name="pencil", location="right next to")').
-
-        Returns:
-            tuple[str, str, list, dict]: The target object ('robot' or 'agent'), the method name, positional arguments,
-            and keyword arguments as a dictionary.
+        Deprecated: Use robot_environment.robot.command_processor.parse_robot_command instead.
         """
-        try:
-            # Match the object, method, and arguments
-            match = re.match(r"(\w+)\.(\w+)\((.*)\)", line.strip())
-            if not match:
-                raise ValueError(f"Invalid command format: {line}")
-
-            target_object, method, args_str = match.groups()
-
-            # Use AST to safely parse the arguments
-            positional_args = []
-            keyword_args = {}
-
-            if args_str:
-                # Parse the argument string using AST
-                args_list = ast.parse(f"func({args_str})").body[0].value.args
-                keywords = ast.parse(f"func({args_str})").body[0].value.keywords
-
-                # Convert AST nodes to Python objects
-                positional_args = [ast.literal_eval(arg) for arg in args_list]
-                keyword_args = {kw.arg: ast.literal_eval(kw.value) for kw in keywords}
-
-            # Replace location string with corresponding Location enum
-            if "location" in keyword_args:
-                location_value = keyword_args["location"]
-                if isinstance(location_value, str):  # Ensure it's a string
-                    # Map the string to the corresponding Location enum
-                    keyword_args["location"] = next(
-                        (loc for loc in Location if loc.value == location_value),
-                        Location.NONE,  # Default to Location.NONE if no match
-                    )
-
-            return target_object, method, positional_args, keyword_args
-        except Exception as e:
-            # Using a module logger since this is a static method
-            import logging
-
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error parsing command: {e}", exc_info=True)
-            return None, None, [], {}
+        return parse_robot_command(line)
 
     def get_detected_objects(self):
         """Get latest detected objects from memory."""
         latest_objects = self._environment.get_detected_objects_from_memory()
         return latest_objects
 
-    def _get_nearest_object(self, label: Union[str, None], target_coords: List) -> Optional["Object"]:
+    def _get_nearest_object(self, label: Union[str, None], target_coords: List[float]) -> Optional[Object]:
         """
         Find the nearest object with the specified label.
 
@@ -735,7 +690,7 @@ class Robot(RobotAPI):
 
     # *** PUBLIC properties ***
 
-    def environment(self) -> "Environment":
+    def environment(self) -> Environment:
         return self._environment
 
     def robot_in_motion(self) -> bool:
@@ -746,7 +701,7 @@ class Robot(RobotAPI):
         """
         return self._robot.is_in_motion()
 
-    def robot(self) -> "RobotController":
+    def robot(self) -> RobotController:
         """
         Returns:
             RobotController: object that controls the robot.

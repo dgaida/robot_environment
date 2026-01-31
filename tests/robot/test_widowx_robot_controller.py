@@ -195,9 +195,9 @@ class TestWidowXRobotControllerGetters:
 
         assert isinstance(pose, PoseObjectPNP)
         # Should return default home pose when _last_pose doesn't exist
-        assert pose.x == 0.0  # This is what the code actually returns
+        assert pose.x == 0.3
         assert pose.y == 0.0
-        assert pose.z == 0.0
+        assert pose.z == 0.2
 
     # def test_get_pose_handles_exception(self, mock_robot, mock_interbotix):
     #     """Test get_pose handles exceptions gracefully - FIXED"""

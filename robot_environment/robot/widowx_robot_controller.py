@@ -1,5 +1,6 @@
 # robot class around WidowX robot for smart pick and place
 # Implementation based on InterbotixManipulatorXS API
+from __future__ import annotations
 
 from ..common.logger import log_start_end_cls
 from .robot_controller import RobotController
@@ -27,6 +28,10 @@ class WidowXRobotController(RobotController):
     Class for the pick-and-place WidowX robot that provides the primitive tasks of the robot like
     pick and place operations using the InterbotixManipulatorXS interface.
     """
+
+    # Default pose used when the actual robot pose cannot be determined
+    # Typically corresponds to the home position
+    DEFAULT_HOME_POSE = PoseObjectPNP(0.3, 0.0, 0.2, 0.0, 1.57, 0.0)
 
     # *** CONSTRUCTORS ***
     @log_start_end_cls()
@@ -56,7 +61,7 @@ class WidowXRobotController(RobotController):
 
     # *** PUBLIC GET methods ***
 
-    def get_pose(self) -> "PoseObjectPNP":
+    def get_pose(self) -> PoseObjectPNP:
         """
         Get current pose of gripper of robot.
 
@@ -65,22 +70,18 @@ class WidowXRobotController(RobotController):
         """
         with self._lock:
             try:
-                # Get end-effector pose components
                 # InterbotixManipulatorXS stores current pose internally
-                # We need to query the current joint states and compute forward kinematics
-                # For simplicity, we'll use the last commanded pose or read from robot state
-
                 # This is a simplified version - in practice you'd use the arm's FK
                 # or track the last commanded pose
                 if hasattr(self, "_last_pose") and self._last_pose is not None:
                     return self._last_pose
                 else:
-                    # Return zero pose as default
-                    return PoseObjectPNP(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+                    # Return default home pose as fallback
+                    return self.DEFAULT_HOME_POSE
             except Exception as e:
                 if self.verbose():
                     print(f"Error getting pose: {e}")
-                return PoseObjectPNP(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+                return self.DEFAULT_HOME_POSE
 
     def get_camera_intrinsics(self):
         """
@@ -380,7 +381,7 @@ class WidowXRobotController(RobotController):
             self._robot_ctrl.arm.go_to_home_pose()
 
             # Initialize last pose
-            self._last_pose = PoseObjectPNP(0.3, 0.0, 0.2, 0.0, 1.57, 0.0)
+            self._last_pose = self.DEFAULT_HOME_POSE
 
     @log_start_end_cls()
     def _init_robot(self, use_simulation: bool) -> bool:
