@@ -4,7 +4,7 @@ Unit tests for logger decorators
 
 import pytest
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from robot_environment.common.logger import log_start_end, log_start_end_cls
 from robot_environment.common.logger_config import setup_logger, set_verbose, get_package_logger
 
@@ -42,6 +42,7 @@ class TestLogger:
 
     def test_log_start_end_cls(self):
         """Test log_start_end_cls decorator"""
+
         class TestCls:
             def __init__(self):
                 self._logger = Mock(spec=logging.Logger)
@@ -58,6 +59,7 @@ class TestLogger:
 
     def test_log_start_end_cls_fallback(self):
         """Test log_start_end_cls fallback to module logger (lines 60-63)"""
+
         class FallbackCls:
             # No _logger attribute
             @log_start_end_cls()
@@ -70,6 +72,7 @@ class TestLogger:
 
     def test_log_start_end_cls_error(self):
         """Test log_start_end_cls with exception"""
+
         class ErrorCls:
             def __init__(self):
                 self._logger = Mock(spec=logging.Logger)

@@ -313,9 +313,9 @@ class TestEnvironmentCameraThread:
         iterations = 0
 
         # Mock robot methods to avoid actual side effects
-        with patch.object(env, "robot_move2observation_pose"), \
-             patch.object(env, "get_current_frame", return_value=np.zeros((480, 640, 3), dtype=np.uint8)), \
-             patch.object(env, "get_detected_objects", return_value=Objects()):
+        with patch.object(env, "robot_move2observation_pose"), patch.object(
+            env, "get_current_frame", return_value=np.zeros((480, 640, 3), dtype=np.uint8)
+        ), patch.object(env, "get_detected_objects", return_value=Objects()):
 
             for _ in env.update_camera_and_objects(visualize=False):
                 iterations += 1
@@ -695,13 +695,7 @@ class TestEnvironmentRobotControl:
     def test_get_workspace_coordinate_all_branches(self, mock_dependencies):
         """Test all branches of get_workspace_coordinate_from_point (lines 566-578)"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
-        points = [
-            "upper left corner",
-            "upper right corner",
-            "lower left corner",
-            "lower right corner",
-            "center point"
-        ]
+        points = ["upper left corner", "upper right corner", "lower left corner", "lower right corner", "center point"]
         for point in points:
             result = env.get_workspace_coordinate_from_point("test_ws", point)
             assert result is not None

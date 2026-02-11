@@ -5,11 +5,18 @@ Extended unit tests for config.py
 import pytest
 import yaml
 import json
-from pathlib import Path
 from robot_environment.config import (
-    RobotConfig, ConfigManager, RobotType, DetectionModel,
-    WorkspaceConfig, CameraConfig, VisionConfig, RobotControlConfig,
-    MemoryConfig, RedisConfig, TTSConfig
+    RobotConfig,
+    ConfigManager,
+    RobotType,
+    DetectionModel,
+    WorkspaceConfig,
+    CameraConfig,
+    VisionConfig,
+    RobotControlConfig,
+    MemoryConfig,
+    RedisConfig,
+    TTSConfig,
 )
 
 
@@ -18,10 +25,7 @@ class TestConfigExtended:
 
     def test_yaml_representers(self):
         """Test custom YAML representers for enums (lines 26, 45)"""
-        data = {
-            "robot": RobotType.NIRYO,
-            "model": DetectionModel.YOLOE_11L
-        }
+        data = {"robot": RobotType.NIRYO, "model": DetectionModel.YOLOE_11L}
         yaml_str = yaml.dump(data)
         assert "niryo" in yaml_str
         assert "yoloe-11l" in yaml_str
@@ -32,7 +36,7 @@ class TestConfigExtended:
             "id": "test",
             "observation_pose": {"x": 1, "y": 2, "z": 3, "roll": 0, "pitch": 0, "yaw": 0},
             "upper_left": {"x": 10, "y": 10},
-            "lower_right": {"x": 0, "y": 0}
+            "lower_right": {"x": 0, "y": 0},
         }
         config = WorkspaceConfig.from_dict(data)
         assert config.id == "test"

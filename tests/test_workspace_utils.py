@@ -3,10 +3,9 @@ Unit tests for workspace_utils.py
 """
 
 import pytest
-import numpy as np
 from unittest.mock import Mock, patch
 from robot_environment.utils.workspace_utils import calculate_largest_free_space
-from robot_workspace import Objects, Object, PoseObjectPNP
+from robot_workspace import Objects, Object
 
 
 @pytest.fixture
@@ -53,14 +52,14 @@ class TestWorkspaceUtils:
         """Test with multiple objects to exercise lines 65-82"""
         # Place objects in corners
         obj1 = create_mock_object(0.35, 0.1)  # Top left-ish
-        obj2 = create_mock_object(0.15, -0.1) # Bottom right-ish
+        obj2 = create_mock_object(0.15, -0.1)  # Bottom right-ish
 
         detected_objects = Objects([obj1, obj2])
 
         area, cx, cy = calculate_largest_free_space(mock_workspace, detected_objects)
 
         assert area > 0
-        assert area < (0.3 * 0.3) # Total area is 0.3 * 0.3
+        assert area < (0.3 * 0.3)  # Total area is 0.3 * 0.3
 
     @patch("robot_environment.utils.workspace_utils.cv2")
     def test_calculate_largest_free_space_visualize(self, mock_cv2, mock_workspace):

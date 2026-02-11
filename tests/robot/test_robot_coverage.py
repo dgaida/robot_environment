@@ -67,7 +67,7 @@ class TestRobotCoverage:
         # Mock environment methods for multi-workspace
         mock_environment.get_detected_objects_from_workspace.side_effect = [
             Objects([mock_pick_obj]),
-            Objects([mock_place_ref_obj])
+            Objects([mock_place_ref_obj]),
         ]
         mock_environment.get_workspace_by_id.return_value = Mock()
 
@@ -77,7 +77,7 @@ class TestRobotCoverage:
             pick_coordinate=[0.1, 0.1],
             place_workspace_id="ws_right",
             place_coordinate=[0.3, 0.3],
-            location=Location.RIGHT_NEXT_TO
+            location=Location.RIGHT_NEXT_TO,
         )
 
         assert success is True
@@ -114,7 +114,7 @@ class TestRobotCoverage:
 
             # Test invalid direction
             success = robot.push_object("large_box", [0.25, 0.05], "invalid", 50.0)
-            assert success is True # Still returns True because it falls through to robot_push_object
+            assert success is True  # Still returns True because it falls through to robot_push_object
 
     def test_get_nearest_object_in_workspace_no_coords(self, mock_environment, mock_robot_controller):
         """Test _get_nearest_object_in_workspace without target coordinates"""
@@ -131,9 +131,7 @@ class TestRobotCoverage:
         robot = Robot(mock_environment, robot_id="niryo")
         mock_environment.get_workspace.return_value = Mock()
 
-        objects_dict_list = [
-            {"label": "cube", "x": 0.2, "y": 0.1, "width": 0.05, "height": 0.05, "yaw": 0.0}
-        ]
+        objects_dict_list = [{"label": "cube", "x": 0.2, "y": 0.1, "width": 0.05, "height": 0.05, "yaw": 0.0}]
 
         with patch("robot_workspace.Objects.dict_list_to_objects") as mock_conv:
             mock_conv.return_value = [create_mock_object()]
@@ -164,7 +162,7 @@ class TestRobotCoverage:
         robot = Robot(mock_environment, robot_id="niryo")
         robot._object_last_picked = None
         success = robot.place_object([0.3, 0.1], location=Location.NONE)
-        assert success is True # Still returns True if robot_place_object succeeds
+        assert success is True  # Still returns True if robot_place_object succeeds
 
     def test_place_object_in_workspace_with_reference(self, mock_environment, mock_robot_controller):
         """Test place_object_in_workspace with a reference object for relative placement"""
@@ -202,9 +200,7 @@ class TestRobotCoverage:
         robot = Robot(mock_environment, robot_id="niryo")
         mock_environment.get_detected_objects_from_workspace.return_value = Objects()
 
-        success = robot.pick_place_object_across_workspaces(
-            "cube", "ws_pick", [0.1, 0.1], "ws_place", [0.2, 0.2]
-        )
+        success = robot.pick_place_object_across_workspaces("cube", "ws_pick", [0.1, 0.1], "ws_place", [0.2, 0.2])
         assert success is False
 
     def test_get_nearest_object_empty_coords(self, mock_environment, mock_robot_controller):

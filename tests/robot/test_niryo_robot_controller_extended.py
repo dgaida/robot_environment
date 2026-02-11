@@ -54,8 +54,7 @@ class TestNiryoRobotControllerExtended:
             controller = NiryoRobotController(mock_robot, False)
             controller._robot_ctrl = MagicMock()
 
-            with patch.object(controller, "_shutdown") as mock_shut, \
-                 patch.object(controller, "_create_robot") as mock_create:
+            with patch.object(controller, "_shutdown") as mock_shut, patch.object(controller, "_create_robot") as mock_create:
                 controller.reset_connection()
                 mock_shut.assert_called_once()
                 mock_create.assert_called_once()
@@ -68,7 +67,7 @@ class TestNiryoRobotControllerExtended:
             controller._robot_ctrl = MagicMock()
 
             with patch.object(controller, "_shutdown", side_effect=Exception("Shut error")):
-                controller.reset_connection() # Should log error but continue
+                controller.reset_connection()  # Should log error but continue
 
     @patch("robot_environment.robot.niryo_robot_controller.NiryoRobot")
     def test_robot_pick_object_error(self, mock_niryo, mock_robot):
@@ -100,7 +99,7 @@ class TestNiryoRobotControllerExtended:
                 controller = NiryoRobotController(mock_robot, False)
                 controller._robot_ctrl = MagicMock()
 
-                success = controller.robot_push_object(PoseObjectPNP(0,0,0), "up", 10.0)
+                success = controller.robot_push_object(PoseObjectPNP(0, 0, 0), "up", 10.0)
                 assert success is True
                 controller._robot_ctrl.tool.close_gripper.assert_called_once()
 
@@ -108,6 +107,7 @@ class TestNiryoRobotControllerExtended:
     def test_get_target_pose_from_rel_error(self, mock_niryo, mock_robot):
         """Test get_target_pose_from_rel error handling (lines 335-341)"""
         from pyniryo.api.exceptions import NiryoRobotException
+
         with patch.object(NiryoRobotController, "_init_robot"):
             controller = NiryoRobotController(mock_robot, False)
             controller._robot_ctrl = MagicMock()
