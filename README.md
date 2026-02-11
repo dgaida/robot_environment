@@ -1,5 +1,7 @@
 # Robot Environment
 
+![Infografik](docs/infografik.png)
+
 **A comprehensive Python framework for robotic pick-and-place operations with vision-based object detection and manipulation capabilities**
 
 ![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
