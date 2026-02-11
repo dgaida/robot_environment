@@ -7,7 +7,34 @@ Common issues and solutions for the Robot Environment system.
 - [Object Detection Problems](#object-detection-problems)
 - [Robot Movement Issues](#robot-movement-issues)
 - [Hardware Problems](#hardware-problems)
+- [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
 - [Getting Help](#getting-help)
+
+---
+
+## Frequently Asked Questions (FAQ)
+
+### 1. Why do I get a `ModuleNotFoundError: No module named 'text2speech'`?
+This usually means the `text2speech` package was not installed correctly or is not in your Python path.
+Ensure you ran:
+```bash
+pip install git+https://github.com/dgaida/text2speech.git
+```
+If you are running in a virtual environment, make sure it is activated.
+
+### 2. The robot moves to the wrong place or misses the object. What should I do?
+First, check if the workspace is correctly calibrated. Use `env.get_workspace_by_id("your_ws_id").get_bounds()` to see the world coordinates the system is using.
+Second, ensure you are using **fresh** detections. Always move to an observation pose and wait a second before calling `get_detected_objects()`.
+
+### 3. How do I switch between simulation and real robot?
+When initializing the `Environment` class, set `use_simulation=True` for Gazebo and `use_simulation=False` for the real hardware.
+Note that the real Niryo robot requires a specific IP address (default is `192.168.0.140`).
+
+### 4. Can I use this without a GPU?
+Yes! While object detection is faster on a GPU, models like `yolo-world` or `yoloe-11s` can run on a standard CPU with reasonable performance for pick-and-place tasks.
+
+### 5. Why is the camera feed delayed?
+The camera feed is streamed via Redis. If you notice a lag, it might be due to network congestion (if using a real robot over Wi-Fi) or high CPU usage by the vision models. Try a lighter model or reduce the camera update frequency in the configuration.
 
 ---
 

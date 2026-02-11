@@ -5,7 +5,13 @@ Pytest configuration and shared fixtures for robot_environment tests
 import pytest
 import sys
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
+
+# Mock text2speech to avoid import errors if not properly installed
+mock_t2s = MagicMock()
+sys.modules["text2speech"] = mock_t2s
+sys.modules["text2speech.text2speech"] = mock_t2s
+sys.modules["text2speech.engines"] = mock_t2s
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent

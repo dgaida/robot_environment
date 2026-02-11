@@ -1,23 +1,39 @@
 # Testing
 
-## Run Tests
+We use `pytest` for unit and integration testing. Our goal is to maintain >95% code coverage to ensure system reliability across various robot configurations.
 
+## Running Tests
+
+### Standard Execution
 ```bash
-# Run all tests
-pytest
+# Run all unit tests (skipping integration and slow tests by default)
+python3 -m pytest
 
-# Run with coverage
-pytest --cov=robot_environment --cov-report=html --cov-report=term
+# Run with coverage report
+python3 -m pytest --cov=robot_environment --cov-report=term-missing
 
+### Advanced Options
+```bash
 # Run specific test file
-pytest tests/test_environment.py
+python3 -m pytest tests/test_environment.py
 
-# Run integration tests
-pytest -m integration
+# Run integration tests (these require specific setup)
+python3 -m pytest -m integration
 
-# Skip slow tests
-pytest -m "not slow"
+# Run everything EXCEPT slow tests
+python3 -m pytest -m "not slow"
+
+# Run tests that require a real robot
+python3 -m pytest -m requires_robot
 ```
+
+## Test Markers
+
+We use markers to categorize tests:
+- `integration`: Tests that verify interaction between multiple components.
+- `slow`: Tests that take a long time to run (e.g. complex simulations).
+- `requires_robot`: Tests that can only run when connected to actual hardware.
+- `requires_redis`: Tests that require a running Redis server.
 
 ## Test Organization
 

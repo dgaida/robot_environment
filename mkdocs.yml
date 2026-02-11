@@ -1,0 +1,55 @@
+site_name: Robot Environment
+site_description: A comprehensive Python framework for robotic pick-and-place operations with vision-based object detection
+site_url: https://dgaida.github.io/robot_environment/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          setup_commands:
+            - import sys
+            - sys.path.append(".")
+          options:
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: index.md#installation
+    - Architecture: architecture.md
+  - API Reference:
+    - Environment: api/environment.md
+    - Robot: api/robot.md
+    - Camera: api/camera.md
+    - Utils: api/utils.md
+  - Development:
+    - Contributing: contributing.md
+    - Testing: TESTING.md
+    - Troubleshooting: troubleshooting.md
