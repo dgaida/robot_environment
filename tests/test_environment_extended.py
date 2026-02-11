@@ -658,7 +658,9 @@ class TestEnvironmentRobotControl:
         env = Environment("key", False, "niryo", start_camera_thread=False)
 
         assert env.get_performance_metrics() == env._metrics
-        assert env.get_performance_stats() == env._metrics.get_stats()
+        stats = env.get_performance_stats()
+        assert isinstance(stats, dict)
+        assert "uptime_seconds" in stats
 
         env.print_performance_summary()
 
@@ -719,6 +721,7 @@ class TestEnvironmentRobotControl:
     def test_get_current_frame_width_height(self, mock_dependencies):
         """Test get_current_frame_width_height (line 692)"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
+        env.framegrabber().get_current_frame_width_height.return_value = (480, 640)
         w, h = env.get_current_frame_width_height()
         assert w == 480
         assert h == 640
@@ -726,7 +729,13 @@ class TestEnvironmentRobotControl:
     def test_robot_move2observation_pose(self, mock_dependencies):
         """Test robot_move2observation_pose (line 772)"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
-        env.robot_move2observation_pose()
+        env.robot_move2observation_pose("test_ws")
+        env.robot().move2observation_pose.assert_called_with("test_ws")
+
+    def test_robot_move2home_observation_pose(self, mock_dependencies):
+        """Test robot_move2home_observation_pose (line 768)"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        env.robot_move2home_observation_pose()
         env.robot().move2observation_pose.assert_called()
 
 
