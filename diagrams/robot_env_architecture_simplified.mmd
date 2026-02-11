@@ -1,0 +1,49 @@
+graph TB
+    subgraph "robot_environment"
+        Environment["<b>Environment</b><br/>Main Orchestrator"]
+        Robot["<b>Robot</b><br/>High-Level Control"]
+        Camera["<b>Camera System</b><br/>Frame Grabbing"]
+        Memory["<b>Object Memory</b><br/>Tracking & State"]
+    end
+
+    subgraph "External Repositories"
+        Workspace["<b>robot_workspace</b><br/>Coordinate Transforms<br/>Object Representation"]
+
+        Redis["<b>redis_robot_comm</b><br/>Image Streaming<br/>Object Messaging"]
+
+        Vision["<b>vision_detect_segment</b><br/>Object Detection<br/>Segmentation"]
+
+        Speech["<b>text2speech</b><br/>Audio Feedback"]
+    end
+
+    subgraph "Hardware/Services"
+        RobotHW["🤖 Robot Hardware<br/>Niryo / WidowX"]
+        RedisServer["📦 Redis Server"]
+    end
+
+    %% Main flow
+    Environment -->|manages| Robot
+    Environment -->|manages| Camera
+    Environment -->|manages| Memory
+
+    %% External integrations
+    Environment <-->|coordinates & transforms| Workspace
+    Environment <-->|pub/sub objects & images| Redis
+    Environment -->|audio output| Speech
+
+    Camera -->|publishes frames| Redis
+    Redis -->|streams images| Vision
+    Vision -->|publishes detections| Redis
+    Redis -->|retrieves objects| Memory
+
+    Robot -->|commands| RobotHW
+    Redis <-->|streams & messages| RedisServer
+
+    %% Styling
+    classDef coreClass fill:#bbdefb,stroke:#1976d2,stroke-width:4px,font-size:14px
+    classDef repoClass fill:#c8e6c9,stroke:#388e3c,stroke-width:3px,font-size:13px
+    classDef hwClass fill:#ffccbc,stroke:#d84315,stroke-width:3px,font-size:13px
+
+    class Environment,Robot,Camera,Memory coreClass
+    class Workspace,Redis,Vision,Speech repoClass
+    class RobotHW,RedisServer hwClass

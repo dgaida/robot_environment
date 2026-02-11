@@ -1,0 +1,144 @@
+graph TB
+    subgraph "robot_environment Repository"
+        subgraph "Core Classes"
+            Environment["<b>Environment</b><br/>Main orchestrator<br/>- Coordinates subsystems<br/>- Manages object memory<br/>- Provides high-level API"]
+
+            Robot["<b>Robot</b><br/>High-level robot API<br/>- pick_place_object()<br/>- pick_object()<br/>- place_object()<br/>- push_object()"]
+
+            RobotController["<b>RobotController</b><br/>Abstract base<br/>- robot_pick_object()<br/>- robot_place_object()<br/>- get_pose()"]
+
+            NiryoController["<b>NiryoRobotController</b><br/>Niryo implementation<br/>- Connects to NiryoRobot<br/>- Calibration<br/>- Movement control"]
+
+            WidowXController["<b>WidowXRobotController</b><br/>WidowX implementation<br/>- ROS integration<br/>- InterbotixManipulatorXS"]
+        end
+
+        subgraph "Vision Components"
+            FrameGrabber["<b>FrameGrabber</b><br/>Abstract base<br/>- get_current_frame()"]
+
+            NiryoFG["<b>NiryoFrameGrabber</b><br/>- Captures from Niryo camera<br/>- Undistorts images<br/>- Publishes to Redis"]
+
+            WidowXFG["<b>WidowXFrameGrabber</b><br/>- Intel RealSense<br/>- External camera"]
+        end
+
+        subgraph "Memory Management"
+            ObjectMemory["<b>ObjectMemoryManager</b><br/>- Multi-workspace memory<br/>- Manual update tracking<br/>- Position tolerance<br/>- Thread-safe operations"]
+        end
+
+        subgraph "Performance Monitoring"
+            PerfMetrics["<b>PerformanceMetrics</b><br/>- Timing statistics<br/>- FPS tracking<br/>- Success rates"]
+
+            PerfMonitor["<b>PerformanceMonitor</b><br/>- Background logging<br/>- Periodic summaries"]
+        end
+
+        subgraph "Configuration"
+            ConfigMgr["<b>ConfigManager</b><br/>- YAML/JSON config<br/>- Robot-specific defaults<br/>- Workspace definitions"]
+
+            RobotConfig["<b>RobotConfig</b><br/>- Camera settings<br/>- Control parameters<br/>- Vision config"]
+        end
+    end
+
+    subgraph "robot_workspace Repository"
+        Workspaces["<b>Workspaces</b><br/>Collection of workspaces"]
+        Workspace["<b>Workspace</b><br/>- Coordinate transforms<br/>- Observation poses<br/>- Boundaries"]
+        Objects["<b>Objects</b><br/>Collection with queries<br/>- Spatial filtering<br/>- Nearest neighbor"]
+        Object["<b>Object</b><br/>- Bounding box<br/>- Position<br/>- Dimensions<br/>- Segmentation mask"]
+        PoseObjectPNP["<b>PoseObjectPNP</b><br/>6-DOF pose<br/>x, y, z, roll, pitch, yaw"]
+    end
+
+    subgraph "redis_robot_comm Repository"
+        RedisImageStreamer["<b>RedisImageStreamer</b><br/>- Publish frames<br/>- Variable size images<br/>- JPEG compression"]
+
+        RedisMessageBroker["<b>RedisMessageBroker</b><br/>- Publish detections<br/>- Get latest objects<br/>- Time-based queries"]
+
+        RedisLabelManager["<b>RedisLabelManager</b><br/>- Manage object labels<br/>- Add/remove labels<br/>- Dynamic updates"]
+    end
+
+    subgraph "vision_detect_segment Repository"
+        VisualCortex["<b>VisualCortex</b><br/>- Object detection<br/>- Segmentation<br/>- Tracking<br/>Models: OwlV2, YOLO,<br/>Grounding-DINO"]
+    end
+
+    subgraph "text2speech Repository"
+        Text2Speech["<b>Text2Speech</b><br/>- ElevenLabs API<br/>- Kokoro TTS<br/>- Audio feedback"]
+    end
+
+    subgraph "External Libraries"
+        PyNiryo["<b>pyniryo</b><br/>Niryo SDK"]
+        Interbotix["<b>interbotix_xs_modules</b><br/>WidowX SDK"]
+        Redis["<b>Redis Server</b><br/>Streams & Messages"]
+    end
+
+    %% Environment relationships
+    Environment -->|creates & manages| Robot
+    Environment -->|creates & manages| FrameGrabber
+    Environment -->|uses| ObjectMemory
+    Environment -->|monitors with| PerfMetrics
+    Environment -->|uses| Text2Speech
+    Environment -->|configures from| ConfigMgr
+
+    %% Robot relationships
+    Robot -->|delegates to| RobotController
+    RobotController -->|implemented by| NiryoController
+    RobotController -->|implemented by| WidowXController
+
+    %% FrameGrabber relationships
+    FrameGrabber -->|implemented by| NiryoFG
+    FrameGrabber -->|implemented by| WidowXFG
+
+    %% External library connections
+    NiryoController -->|uses| PyNiryo
+    WidowXController -->|uses| Interbotix
+
+    %% Redis communication
+    NiryoFG -->|publishes frames| RedisImageStreamer
+    RedisImageStreamer -->|streams to| Redis
+    Redis -->|retrieves from| VisualCortex
+    VisualCortex -->|publishes detections| RedisMessageBroker
+    RedisMessageBroker -->|publishes to| Redis
+    Redis -->|retrieves objects| Environment
+
+    %% Label management
+    Environment -->|manages labels| RedisLabelManager
+    RedisLabelManager <-->|sync with| Redis
+    Redis <-->|label updates| VisualCortex
+
+    %% Workspace integration
+    Environment -->|manages| Workspaces
+    Workspaces -->|contains| Workspace
+    Workspace -->|used by| NiryoFG
+    Workspace -->|used by| WidowXFG
+
+    %% Object management
+    Environment -->|receives| Objects
+    Objects -->|contains| Object
+    Object -->|has| PoseObjectPNP
+    Robot -->|manipulates| Object
+    ObjectMemory -->|stores| Objects
+
+    %% Configuration
+    ConfigMgr -->|loads| RobotConfig
+    RobotConfig -->|configures| Environment
+    RobotConfig -->|defines| Workspace
+
+    %% Performance monitoring
+    PerfMetrics -->|monitored by| PerfMonitor
+    PerfMonitor -->|logs metrics| Environment
+
+    %% Styling
+    classDef envClass fill:#bbdefb,stroke:#1976d2,stroke-width:3px
+    classDef robotClass fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    classDef visionClass fill:#fff9c4,stroke:#f57c00,stroke-width:2px
+    classDef memoryClass fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
+    classDef configClass fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px
+    classDef externalClass fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    classDef redisClass fill:#b2ebf2,stroke:#0097a7,stroke-width:2px
+    classDef workspaceClass fill:#dcedc8,stroke:#689f38,stroke-width:2px
+
+    class Environment envClass
+    class Robot,RobotController,NiryoController,WidowXController robotClass
+    class FrameGrabber,NiryoFG,WidowXFG,VisualCortex visionClass
+    class ObjectMemory,PerfMetrics,PerfMonitor memoryClass
+    class ConfigMgr,RobotConfig configClass
+    class PyNiryo,Interbotix,Redis externalClass
+    class RedisImageStreamer,RedisMessageBroker,RedisLabelManager redisClass
+    class Workspaces,Workspace,Objects,Object,PoseObjectPNP workspaceClass
+    class Text2Speech visionClass

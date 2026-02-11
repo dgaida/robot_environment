@@ -1,0 +1,1830 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A comprehensive Python framework for robotic pick-and-place operations with vision-based object detection">
+      
+      
+      
+        <link rel="canonical" href="https://dgaida.github.io/robot_environment/troubleshooting/">
+      
+      
+        <link rel="prev" href="../TESTING/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Troubleshooting - Robot Environment</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#robot-environment-troubleshooting" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Robot Environment" class="md-header__button md-logo" aria-label="Robot Environment" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Robot Environment
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Troubleshooting
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../index.md#installation" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/environment/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../contributing/" class="md-tabs__link">
+          
+  
+  
+  Development
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Robot Environment" class="md-nav__button md-logo" aria-label="Robot Environment" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Robot Environment
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.md#installation" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/robot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Robot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/camera/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Camera
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../TESTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#frequently-asked-questions-faq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frequently Asked Questions (FAQ)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Frequently Asked Questions (FAQ)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-why-do-i-get-a-modulenotfounderror-no-module-named-text2speech" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Why do I get a ModuleNotFoundError: No module named 'text2speech'?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-the-robot-moves-to-the-wrong-place-or-misses-the-object-what-should-i-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The robot moves to the wrong place or misses the object. What should I do?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-how-do-i-switch-between-simulation-and-real-robot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. How do I switch between simulation and real robot?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-can-i-use-this-without-a-gpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Can I use this without a GPU?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-why-is-the-camera-feed-delayed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Why is the camera feed delayed?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#object-detection-problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Object Detection Problems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Object Detection Problems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#no-objects-detected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No Objects Detected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objects-detected-at-wrong-positions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objects Detected at Wrong Positions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detection-is-too-slow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection is Too Slow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#robot-movement-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot Movement Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Robot Movement Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#robot-wont-move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot Won't Move
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#collision-detection-triggered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Collision Detection Triggered
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gripper-problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gripper Problems
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hardware-problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardware Problems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hardware Problems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#niryo-robot-specific" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Niryo Robot Specific
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#widowx-robot-specific" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WidowX Robot Specific
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#camera-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Camera Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting Help
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Getting Help">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resources
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-diagnostic-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Diagnostic Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#frequently-asked-questions-faq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frequently Asked Questions (FAQ)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Frequently Asked Questions (FAQ)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-why-do-i-get-a-modulenotfounderror-no-module-named-text2speech" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Why do I get a ModuleNotFoundError: No module named 'text2speech'?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-the-robot-moves-to-the-wrong-place-or-misses-the-object-what-should-i-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The robot moves to the wrong place or misses the object. What should I do?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-how-do-i-switch-between-simulation-and-real-robot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. How do I switch between simulation and real robot?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-can-i-use-this-without-a-gpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Can I use this without a GPU?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-why-is-the-camera-feed-delayed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Why is the camera feed delayed?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#object-detection-problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Object Detection Problems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Object Detection Problems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#no-objects-detected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No Objects Detected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objects-detected-at-wrong-positions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objects Detected at Wrong Positions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detection-is-too-slow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection is Too Slow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#robot-movement-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot Movement Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Robot Movement Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#robot-wont-move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot Won't Move
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#collision-detection-triggered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Collision Detection Triggered
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gripper-problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gripper Problems
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hardware-problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardware Problems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hardware Problems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#niryo-robot-specific" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Niryo Robot Specific
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#widowx-robot-specific" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WidowX Robot Specific
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#camera-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Camera Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting Help
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Getting Help">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resources
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-diagnostic-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Diagnostic Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="robot-environment-troubleshooting">Robot Environment - Troubleshooting</h1>
+<p>Common issues and solutions for the Robot Environment system.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#object-detection-problems">Object Detection Problems</a></li>
+<li><a href="#robot-movement-issues">Robot Movement Issues</a></li>
+<li><a href="#hardware-problems">Hardware Problems</a></li>
+<li><a href="#frequently-asked-questions-faq">Frequently Asked Questions (FAQ)</a></li>
+<li><a href="#getting-help">Getting Help</a></li>
+</ul>
+<hr />
+<h2 id="frequently-asked-questions-faq">Frequently Asked Questions (FAQ)</h2>
+<h3 id="1-why-do-i-get-a-modulenotfounderror-no-module-named-text2speech">1. Why do I get a <code>ModuleNotFoundError: No module named 'text2speech'</code>?</h3>
+<p>This usually means the <code>text2speech</code> package was not installed correctly or is not in your Python path.
+Ensure you ran:</p>
+<pre><code class="language-bash">pip install git+https://github.com/dgaida/text2speech.git
+</code></pre>
+<p>If you are running in a virtual environment, make sure it is activated.</p>
+<h3 id="2-the-robot-moves-to-the-wrong-place-or-misses-the-object-what-should-i-do">2. The robot moves to the wrong place or misses the object. What should I do?</h3>
+<p>First, check if the workspace is correctly calibrated. Use <code>env.get_workspace_by_id("your_ws_id").get_bounds()</code> to see the world coordinates the system is using.
+Second, ensure you are using <strong>fresh</strong> detections. Always move to an observation pose and wait a second before calling <code>get_detected_objects()</code>.</p>
+<h3 id="3-how-do-i-switch-between-simulation-and-real-robot">3. How do I switch between simulation and real robot?</h3>
+<p>When initializing the <code>Environment</code> class, set <code>use_simulation=True</code> for Gazebo and <code>use_simulation=False</code> for the real hardware.
+Note that the real Niryo robot requires a specific IP address (default is <code>192.168.0.140</code>).</p>
+<h3 id="4-can-i-use-this-without-a-gpu">4. Can I use this without a GPU?</h3>
+<p>Yes! While object detection is faster on a GPU, models like <code>yolo-world</code> or <code>yoloe-11s</code> can run on a standard CPU with reasonable performance for pick-and-place tasks.</p>
+<h3 id="5-why-is-the-camera-feed-delayed">5. Why is the camera feed delayed?</h3>
+<p>The camera feed is streamed via Redis. If you notice a lag, it might be due to network congestion (if using a real robot over Wi-Fi) or high CPU usage by the vision models. Try a lighter model or reduce the camera update frequency in the configuration.</p>
+<hr />
+<h2 id="object-detection-problems">Object Detection Problems</h2>
+<h3 id="no-objects-detected">No Objects Detected</h3>
+<p><strong>Symptoms:</strong>
+- <code>get_detected_objects()</code> returns empty list
+- Camera shows black screen
+- "No objects detected" messages</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li><strong>Verify camera is working:</strong></li>
+</ol>
+<pre><code class="language-python">from redis_robot_comm import RedisImageStreamer
+streamer = RedisImageStreamer(stream_name=&quot;robot_camera&quot;)
+img, metadata = streamer.get_latest_image()
+print(f&quot;Image shape: {img.shape}&quot;)  # Should be (480, 640, 3)
+</code></pre>
+<ol>
+<li><strong>Check Redis is running:</strong></li>
+</ol>
+<pre><code class="language-bash">docker ps | grep redis
+
+# If not running:
+docker run -p 6379:6379 redis:alpine
+</code></pre>
+<ol>
+<li><strong>Verify camera thread is started:</strong></li>
+</ol>
+<pre><code class="language-python"># In server initialization
+env = Environment(
+    ...
+    start_camera_thread=True  # Must be True!
+)
+</code></pre>
+<ol>
+<li><strong>Check lighting conditions:</strong></li>
+<li>Ensure workspace is well-lit</li>
+<li>Avoid shadows and glare</li>
+<li>
+<p>Use consistent lighting</p>
+</li>
+<li>
+<p><strong>Verify object labels:</strong></p>
+</li>
+</ol>
+<pre><code class="language-python">labels = env.get_object_labels_as_string()
+print(f&quot;Recognizable objects: {labels}&quot;)
+
+# Add custom labels if needed
+env.add_object_name2object_labels(&quot;your_object&quot;)
+</code></pre>
+<hr />
+<h3 id="objects-detected-at-wrong-positions">Objects Detected at Wrong Positions</h3>
+<p><strong>Symptoms:</strong>
+- Robot misses objects when picking
+- Coordinates don't match visual position
+- Objects appear shifted in camera view</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li><strong>Recalibrate camera transformation:</strong></li>
+</ol>
+<pre><code class="language-python"># Check workspace calibration
+workspace = env.get_workspace_by_id(&quot;niryo_ws&quot;)
+print(f&quot;Workspace bounds: {workspace.get_bounds()}&quot;)
+
+# Verify transformation parameters
+# May need to recalibrate camera-to-world transform
+</code></pre>
+<ol>
+<li><strong>Check workspace is level:</strong></li>
+<li>Ensure robot base is stable</li>
+<li>Workspace surface should be flat</li>
+<li>
+<p>Check for tilting or movement</p>
+</li>
+<li>
+<p><strong>Update detection immediately before pick:</strong></p>
+</li>
+</ol>
+<pre><code class="language-python"># ✅ Good: Fresh detection
+objects = get_detected_objects()
+obj = objects[0]
+pick_object(obj['label'], [obj['x'], obj['y']])
+
+# ❌ Bad: Stale coordinates
+pick_object(&quot;pencil&quot;, [0.15, -0.05])  # May have moved!
+</code></pre>
+<ol>
+<li><strong>Verify coordinate system understanding:</strong></li>
+</ol>
+<pre><code>Niryo workspace (top view):
+    Y-axis →
+    ┌─────────┐
+    │         │
+X ↓ │ Center  │
+    │  (0,0)  │
+    │         │
+    └─────────┘
+</code></pre>
+<hr />
+<h3 id="detection-is-too-slow">Detection is Too Slow</h3>
+<p><strong>Symptoms:</strong>
+- Long delays before robot responds
+- Camera updates lag behind
+- Low FPS (&lt; 1 frame/second)</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li><strong>Use faster detection model:</strong></li>
+</ol>
+<pre><code class="language-python"># In Environment initialization
+visual_cortex = VisualCortex(
+    objdetect_model_id=&quot;yoloworld&quot;,  # Faster than owlv2
+    device=&quot;cuda&quot;  # Use GPU if available
+)
+</code></pre>
+<ol>
+<li><strong>Reduce camera update rate:</strong></li>
+</ol>
+<pre><code class="language-python"># In camera thread
+time.sleep(0.5)  # Update every 0.5s instead of 0.1s
+</code></pre>
+<ol>
+<li><strong>Check GPU availability:</strong></li>
+</ol>
+<pre><code class="language-python">import torch
+print(f&quot;CUDA available: {torch.cuda.is_available()}&quot;)
+print(f&quot;GPU: {torch.cuda.get_device_name(0)}&quot;)
+
+# If no GPU:
+# - Use CPU with yoloworld model
+# - Or add GPU to system
+</code></pre>
+<ol>
+<li><strong>Optimize detection parameters:</strong></li>
+</ol>
+<pre><code class="language-python">config = {
+    'confidence_threshold': 0.20,  # Higher = fewer false positives
+    'iou_threshold': 0.5,
+    'max_detections': 50  # Lower = faster
+}
+</code></pre>
+<hr />
+<h2 id="robot-movement-issues">Robot Movement Issues</h2>
+<h3 id="robot-wont-move">Robot Won't Move</h3>
+<p><strong>Symptoms:</strong>
+- Commands accepted but no movement
+- Robot stays in same position
+- "Movement failed" errors</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li><strong>Check robot connection:</strong></li>
+</ol>
+<pre><code class="language-python"># For Niryo
+robot = env.robot()
+status = robot.robot_ctrl().get_hardware_status()
+print(f&quot;Robot connected: {status}&quot;)
+</code></pre>
+<ol>
+<li><strong>Verify simulation vs. real mode:</strong></li>
+</ol>
+<pre><code class="language-bash"># TODO
+
+# --no-simulation flag for real robot
+# Without flag = simulation mode
+</code></pre>
+<ol>
+<li><strong>Check robot power and calibration:</strong></li>
+<li>Ensure robot is powered on</li>
+<li>Run calibration routine if needed</li>
+<li>
+<p>Check for error LEDs on robot</p>
+</li>
+<li>
+<p><strong>Verify coordinates are reachable:</strong></p>
+</li>
+</ol>
+<pre><code class="language-python"># Check workspace bounds
+upper_left = get_workspace_coordinate_from_point(&quot;niryo_ws&quot;, &quot;upper left corner&quot;)
+lower_right = get_workspace_coordinate_from_point(&quot;niryo_ws&quot;, &quot;lower right corner&quot;)
+
+print(f&quot;Valid X range: [{lower_right[0]}, {upper_left[0]}]&quot;)
+print(f&quot;Valid Y range: [{lower_right[1]}, {upper_left[1]}]&quot;)
+
+# Niryo: X=[0.163, 0.337], Y=[-0.087, 0.087]
+</code></pre>
+<hr />
+<h3 id="collision-detection-triggered">Collision Detection Triggered</h3>
+<p><strong>Symptoms:</strong>
+- Robot stops suddenly
+- "Collision detected" messages
+- Robot needs reset before continuing</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li><strong>Clear collision flag:</strong></li>
+</ol>
+<pre><code class="language-python">clear_collision_detected()
+</code></pre>
+<ol>
+<li><strong>Check workspace for obstacles:</strong></li>
+<li>Remove objects outside workspace</li>
+<li>Ensure cables aren't blocking movement</li>
+<li>
+<p>Check gripper clearance</p>
+</li>
+<li>
+<p><strong>Adjust movement parameters:</strong></p>
+</li>
+</ol>
+<pre><code class="language-python"># In robot controller (if accessible)
+robot_ctrl.set_collision_threshold(higher_value)
+</code></pre>
+<ol>
+<li><strong>Move to safe observation pose:</strong></li>
+</ol>
+<pre><code class="language-python">move2observation_pose(&quot;niryo_ws&quot;)
+clear_collision_detected()
+</code></pre>
+<hr />
+<h3 id="gripper-problems">Gripper Problems</h3>
+<p><strong>Symptoms:</strong>
+- Objects slip out of gripper
+- Gripper doesn't close/open
+- "Failed to grasp" errors</p>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li><strong>Check object size:</strong></li>
+</ol>
+<pre><code class="language-python">obj = get_detected_object([x, y])
+if obj['width_m'] &gt; 0.05:
+    print(&quot;Object too large for gripper!&quot;)
+    # Use push_object() instead
+</code></pre>
+<ol>
+<li><strong>Verify gripper calibration:</strong></li>
+</ol>
+<pre><code class="language-python"># Test gripper
+robot.robot_ctrl().open_gripper()
+time.sleep(2)
+robot.robot_ctrl().close_gripper()
+</code></pre>
+<ol>
+<li><strong>Check object graspability:</strong></li>
+<li>Objects should have flat surfaces</li>
+<li>Avoid round or irregular shapes</li>
+<li>
+<p>Ensure objects aren't too heavy (&lt; 500g)</p>
+</li>
+<li>
+<p><strong>Adjust grasp approach angle:</strong></p>
+</li>
+</ol>
+<pre><code class="language-python"># Object rotation affects grasp success
+obj = get_detected_object([x, y])
+print(f&quot;Object rotation: {obj['rotation_rad']} rad&quot;)
+
+# Robot adjusts approach automatically
+</code></pre>
+<hr />
+<h2 id="hardware-problems">Hardware Problems</h2>
+<h3 id="niryo-robot-specific">Niryo Robot Specific</h3>
+<p><strong>Issue: Robot not responding</strong></p>
+<pre><code class="language-bash"># Check Niryo connection
+ping &lt;robot_ip&gt;
+
+# Default: 192.168.1.xxx
+</code></pre>
+<p><strong>Issue: Calibration needed</strong></p>
+<pre><code class="language-python"># Run calibration
+robot.robot_ctrl().calibrate()
+</code></pre>
+<p><strong>Issue: Learning mode activated</strong>
+- Manually disable learning mode on robot
+- Robot will be stiff when learning mode is off</p>
+<hr />
+<h3 id="widowx-robot-specific">WidowX Robot Specific</h3>
+<p><strong>Issue: Joint limits</strong></p>
+<pre><code class="language-python"># WidowX has different workspace
+# Adjust coordinates accordingly
+</code></pre>
+<p><strong>Issue: Power supply</strong>
+- Ensure adequate power (12V)
+- Check for voltage drops during operation</p>
+<hr />
+<h3 id="camera-issues">Camera Issues</h3>
+<p><strong>Issue: Poor image quality</strong></p>
+<pre><code class="language-python"># Adjust camera settings
+camera.set(cv2.CAP_PROP_EXPOSURE, -7)
+camera.set(cv2.CAP_PROP_BRIGHTNESS, 130)
+</code></pre>
+<p><strong>Issue: Wrong camera selected</strong></p>
+<pre><code class="language-python"># List available cameras
+for i in range(4):
+    cap = cv2.VideoCapture(i)
+    if cap.isOpened():
+        print(f&quot;Camera {i} available&quot;)
+    cap.release()
+</code></pre>
+<hr />
+<h2 id="getting-help">Getting Help</h2>
+<h3 id="resources">Resources</h3>
+<ul>
+<li><strong>GitHub Issues:</strong> https://github.com/dgaida/robot_environment/issues</li>
+<li><strong>Documentation:</strong> <a href="../README.md">README.md</a></li>
+</ul>
+<hr />
+<h2 id="quick-diagnostic-checklist">Quick Diagnostic Checklist</h2>
+<p>Before opening an issue, check:</p>
+<ul>
+<li>[ ] Redis is running</li>
+<li>[ ] Robot is powered on (if using real robot)</li>
+<li>[ ] Camera is working (check Redis stream)</li>
+<li>[ ] Object detection is running (check for detections)</li>
+<li>[ ] Coordinates are within workspace bounds</li>
+<li>[ ] Object names match detected labels exactly</li>
+<li>[ ] All dependencies are installed</li>
+<li>[ ] Log files checked for errors</li>
+</ul>
+<p>If all checked and still having issues, please open a GitHub issue with the information above!</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

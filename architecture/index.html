@@ -1,0 +1,2440 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A comprehensive Python framework for robotic pick-and-place operations with vision-based object detection">
+      
+      
+      
+        <link rel="canonical" href="https://dgaida.github.io/robot_environment/architecture/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../api/environment/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Architecture - Robot Environment</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#robot-environment-architecture-documentation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Robot Environment" class="md-header__button md-logo" aria-label="Robot Environment" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Robot Environment
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../index.md#installation" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/environment/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../contributing/" class="md-tabs__link">
+          
+  
+  
+  Development
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Robot Environment" class="md-nav__button md-logo" aria-label="Robot Environment" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Robot Environment
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.md#installation" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Components
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Components">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot-control-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot Control Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#camera-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Camera Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workspace-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workspace Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-representation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Object Representation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#communication-layer-redis-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Communication Layer (Redis-based)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Flow Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#complete-pick-and-place-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Pick-and-Place Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#continuous-camera-update-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continuous Camera Update Loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thread-safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thread Safety
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Thread Safety">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#critical-sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critical Sections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-thread-safe-robot-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example - Thread-Safe Robot Access
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#external-package-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Package Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="External Package Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-vision_detect_segment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. vision_detect_segment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-redis_robot_comm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. redis_robot_comm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-text2speech" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. text2speech
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-pyniryo-pyniryo2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. pyniryo / pyniryo2
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coordinate-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coordinate Systems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coordinate Systems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#three-coordinate-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three Coordinate Systems
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transformation-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transformation Chain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-transformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Transformation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#robot-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot Selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workspace-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workspace Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#robot-connection-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot Connection Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Object Not Found
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thread-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thread Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detection-speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection Speed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extension-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension Points
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extension Points">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-new-robot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding New Robot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-new-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding New Workspace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-object-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Object Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/robot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Robot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/camera/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Camera
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../TESTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Components
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Components">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot-control-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot Control Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#camera-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Camera Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workspace-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workspace Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-representation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Object Representation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#communication-layer-redis-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Communication Layer (Redis-based)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Flow Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#complete-pick-and-place-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Pick-and-Place Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#continuous-camera-update-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continuous Camera Update Loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thread-safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thread Safety
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Thread Safety">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#critical-sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critical Sections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-thread-safe-robot-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example - Thread-Safe Robot Access
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#external-package-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Package Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="External Package Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-vision_detect_segment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. vision_detect_segment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-redis_robot_comm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. redis_robot_comm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-text2speech" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. text2speech
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-pyniryo-pyniryo2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. pyniryo / pyniryo2
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coordinate-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coordinate Systems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coordinate Systems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#three-coordinate-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three Coordinate Systems
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transformation-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transformation Chain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-transformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Transformation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#robot-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot Selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workspace-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workspace Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#robot-connection-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot Connection Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Object Not Found
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thread-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thread Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detection-speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection Speed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extension-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension Points
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extension Points">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-new-robot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding New Robot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-new-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding New Workspace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-object-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Object Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="robot-environment-architecture-documentation">Robot Environment Architecture Documentation</h1>
+<p>This document describes the architectural design of the <code>robot_environment</code> package, detailing component interactions, data flows, and integration with external packages.</p>
+<h2 id="overview">Overview</h2>
+<p>The <code>robot_environment</code> package provides a comprehensive framework for robotic pick-and-place operations with vision-based object detection. The architecture follows a layered design with clear separation of concerns:</p>
+<ol>
+<li><strong>Environment Layer</strong> - Central orchestrator</li>
+<li><strong>Robot Control Layer</strong> - Hardware abstraction and motion control</li>
+<li><strong>Camera Layer</strong> - Image acquisition and streaming</li>
+<li><strong>Workspace Layer</strong> - Coordinate transformation and workspace management</li>
+<li><strong>Communication Layer</strong> - Redis-based data streaming</li>
+<li><strong>Interaction Layer</strong> - Text-to-speech feedback</li>
+</ol>
+<p><strong>Note:</strong> Object detection is handled by a <strong>separate process</strong> (<code>vision_detect_segment</code>) that communicates via Redis streams.</p>
+<h2 id="system-architecture">System Architecture</h2>
+<p><img alt="System Architecture" src="../architecture_package.png" /></p>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                    Environment Layer                        │
+│  (Central orchestrator coordinating all subsystems)         │
+└─────────────────────────────────────────────────────────────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+┌───────▼────────┐   ┌──────▼──────┐   ┌────────▼─────────┐
+│  Robot Control │   │   Camera    │   │    Workspace     │
+│     Layer      │   │    Layer    │   │      Layer       │
+└────────────────┘   └─────────────┘   └──────────────────┘
+        │                   │                   │
+┌───────▼────────┐   ┌──────▼──────┐   ┌────────▼─────────┐
+│ RobotController│   │FrameGrabber │   │    Workspace     │
+│   (Abstract)   │   │  (Abstract) │   │   (Abstract)     │
+└────────────────┘   └─────────────┘   └──────────────────┘
+        │                   │                   │
+┌───────▼────────┐   ┌──────▼──────┐   ┌────────▼─────────┐
+│ NiryoRobot     │   │ NiryoFrame  │   │ NiryoWorkspace   │
+│  Controller    │   │   Grabber   │   │                  │
+└────────────────┘   └─────────────┘   └──────────────────┘
+                            │
+                    ┌───────▼───────┐
+                    │ Redis Streams │
+                    │  (Images +    │
+                    │   Objects)    │
+                    └───────┬───────┘
+                            │
+                    ┌───────▼───────┐
+                    │ vision_detect │
+                    │   _segment    │
+                    │ (Separate     │
+                    │  Process)     │
+                    └───────────────┘
+</code></pre>
+<h2 id="core-components">Core Components</h2>
+<h3 id="environment-layer">Environment Layer</h3>
+<ul>
+<li><code>Environment</code> - Central orchestrator managing all subsystems</li>
+<li>Coordinates camera updates, object retrieval, and robot control</li>
+<li>Manages object memory with workspace-aware tracking</li>
+<li>Handles thread-safe operations with proper locking</li>
+</ul>
+<h3 id="robot-control-layer">Robot Control Layer</h3>
+<ul>
+<li><code>Robot</code> - High-level robot API implementing pick-and-place operations</li>
+<li><code>RobotController</code> - Abstract base class for hardware control</li>
+<li><code>NiryoRobotController</code> - Niryo Ned2 implementation with pyniryo</li>
+<li><code>WidowXRobotController</code> - WidowX implementation with InterbotixManipulatorXS</li>
+</ul>
+<h3 id="camera-layer">Camera Layer</h3>
+<ul>
+<li><code>FrameGrabber</code> - Abstract camera interface with Redis streaming</li>
+<li><code>NiryoFrameGrabber</code> - Niryo-mounted camera with undistortion</li>
+<li><code>WidowXFrameGrabber</code> - Intel RealSense integration (stub)</li>
+<li><strong>External</strong>: Object detection via <code>vision_detect_segment</code> package (separate process)</li>
+</ul>
+<h3 id="workspace-layer">Workspace Layer</h3>
+<ul>
+<li><code>Workspace</code> - Abstract workspace with coordinate transformation</li>
+<li><code>NiryoWorkspace</code> - Niryo-specific workspace implementation</li>
+<li><code>Workspaces</code> - Collection managing multiple workspaces</li>
+</ul>
+<h3 id="object-representation">Object Representation</h3>
+<ul>
+<li><code>Object</code> - Detected object with full spatial information</li>
+<li><code>Objects</code> - Collection with spatial queries and filtering</li>
+<li><code>PoseObjectPNP</code> - 6-DOF pose representation</li>
+</ul>
+<h3 id="communication-layer-redis-based">Communication Layer (Redis-based)</h3>
+<ul>
+<li><code>RedisImageStreamer</code> - Variable-size image streaming (from <code>redis_robot_comm</code>)</li>
+<li><code>RedisMessageBroker</code> - Object detection results consumption (from <code>redis_robot_comm</code>)</li>
+<li><code>RedisLabelManager</code> - Dynamic object label configuration (from <code>redis_robot_comm</code>)</li>
+</ul>
+<p>For detailed architecture documentation, see <strong><a href="docs/README.md">docs/README.md</a></strong></p>
+<hr />
+<h2 id="data-flow-architecture">Data Flow Architecture</h2>
+<h3 id="complete-pick-and-place-workflow">Complete Pick-and-Place Workflow</h3>
+<pre><code>1. INITIALIZATION
+   Environment (robot_environment process)
+      ├─→ Robot → RobotController (connects to hardware)
+      ├─→ FrameGrabber (initializes camera)
+      ├─→ Workspaces (loads workspace definitions)
+      └─→ Redis Communication (RedisMessageBroker, RedisLabelManager)
+
+   Separate Process: vision_detect_segment
+      └─→ VisualCortex (loads detection models)
+
+2. OBSERVATION
+   Robot.move2observation_pose(workspace_id)
+      └─→ RobotController.move2observation_pose()
+          └─→ Gripper moves to hover above workspace
+
+3. IMAGE CAPTURE &amp; STREAMING
+   FrameGrabber.get_current_frame()
+      ├─→ Capture image from camera
+      ├─→ Undistort image
+      ├─→ Extract workspace region
+      └─→ RedisImageStreamer.publish_image()
+              └─→ Redis: 'robot_camera' stream
+
+4. OBJECT DETECTION (SEPARATE PROCESS)
+   vision_detect_segment VisualCortex
+      ├─→ Read from Redis stream 'robot_camera'
+      ├─→ Run detection model (OWL-V2, YOLO-World, YOLOE, etc.)
+      ├─→ Optional: Track objects with persistent IDs
+      ├─→ Optional: Segment objects (SAM2, FastSAM)
+      └─→ Publish results to Redis 'detected_objects' stream
+
+5. OBJECT RETRIEVAL
+   Environment.get_detected_objects()
+      ├─→ RedisMessageBroker.get_latest_objects()
+      ├─→ Read from Redis stream 'detected_objects'
+      ├─→ Deserialize JSON
+      └─→ Convert to Object instances
+              ├─→ Calculate world coordinates
+              ├─→ Determine object orientation (for gripper rotation)
+              └─→ Store in Objects collection
+
+6. PICK OPERATION
+   Robot.pick_object(label, coordinate)
+      ├─→ Find nearest object with label
+      ├─→ Text2Speech: &quot;Going to pick {label}&quot;
+      └─→ RobotController.robot_pick_object(pose)
+              ├─→ Lock acquired
+              ├─→ Move to pre-grasp pose
+              ├─→ Move to grasp pose (z_offset applied)
+              ├─→ Close gripper
+              ├─→ Lift object
+              └─→ Lock released
+
+7. PLACE OPERATION
+   Robot.place_object(coordinate, location)
+      ├─→ Calculate placement pose
+      │   └─→ Apply location offset (LEFT_NEXT_TO, ABOVE, etc.)
+      ├─→ Text2Speech: &quot;Going to place at {coordinate}&quot;
+      └─→ RobotController.robot_place_object(pose)
+              ├─→ Lock acquired
+              ├─→ Move to pre-place pose
+              ├─→ Move to place pose (z_offset=0.005m)
+              ├─→ Open gripper
+              ├─→ Retract
+              └─→ Lock released
+</code></pre>
+<h3 id="continuous-camera-update-loop">Continuous Camera Update Loop</h3>
+<pre><code>Background Thread (daemon) in robot_environment:
+    Loop:
+        1. Move to observation pose (if not in motion)
+        2. Capture frame → Redis stream 'robot_camera'
+        3. Wait 0.1s
+        4. (vision_detect_segment detects in parallel)
+        5. Get detected objects from Redis 'detected_objects'
+        6. Update memory
+        7. Sleep (0.25s or 0.5s depending on robot motion)
+</code></pre>
+<p><strong>Note:</strong> Object detection happens in a <strong>separate process</strong> (<code>vision_detect_segment</code>), which continuously monitors the <code>robot_camera</code> Redis stream and publishes results to <code>detected_objects</code>.</p>
+<h2 id="thread-safety">Thread Safety</h2>
+<h3 id="critical-sections">Critical Sections</h3>
+<ol>
+<li><strong>Robot Operations</strong></li>
+<li>All <code>RobotController</code> methods use <code>self._lock</code></li>
+<li>Prevents concurrent hardware commands</li>
+<li>
+<p>Essential for Niryo robot (not thread-safe API)</p>
+</li>
+<li>
+<p><strong>Camera Updates</strong></p>
+</li>
+<li>Background thread for continuous updates</li>
+<li>Daemon thread (terminates with main program)</li>
+<li>
+<p>Uses <code>_stop_event</code> for clean shutdown</p>
+</li>
+<li>
+<p><strong>Text-to-Speech</strong></p>
+</li>
+<li>Asynchronous threads for non-blocking speech</li>
+<li>Thread returned for synchronization if needed</li>
+</ol>
+<h3 id="example-thread-safe-robot-access">Example - Thread-Safe Robot Access</h3>
+<pre><code class="language-python">def get_target_pose_from_rel(self, ws_id, u_rel, v_rel, yaw):
+    with self._lock:  # Thread-safe section
+        try:
+            obj_coords = self._robot_ctrl.get_target_pose_from_rel(
+                ws_id, 0.0, u_rel, v_rel, yaw
+            )
+        except (NiryoRobotException, UnicodeDecodeError) as e:
+            print(f&quot;Error: {e}&quot;)
+            obj_coords = PoseObject(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+    return PoseObjectPNP.convert_niryo_pose_object2pose_object(obj_coords)
+</code></pre>
+<h2 id="external-package-integration">External Package Integration</h2>
+<h3 id="1-vision_detect_segment">1. vision_detect_segment</h3>
+<p><strong>Purpose:</strong> Object detection and segmentation (runs as <strong>separate process</strong>)</p>
+<p><strong>Integration Points:</strong>
+- Reads images from Redis stream <code>robot_camera</code> (published by <code>FrameGrabber</code>)
+- Publishes detection results to Redis stream <code>detected_objects</code>
+- Subscribes to Redis channel <code>object_labels</code> for dynamic label configuration
+- <strong>Completely decoupled</strong> from <code>robot_environment</code> - communicates only via Redis</p>
+<p><strong>How to Run:</strong>
+The vision system is configured and run independently as a separate process:</p>
+<pre><code class="language-python"># External process (vision_detect_segment)
+from vision_detect_segment import VisualCortex, get_default_config
+
+config = get_default_config(&quot;owlv2&quot;)
+cortex = VisualCortex(
+    objdetect_model_id=&quot;owlv2&quot;,  # or &quot;yolo-world&quot;, &quot;yoloe-11l&quot;, etc.
+    device=&quot;auto&quot;,
+    verbose=True,
+    config=config
+)
+
+# Continuously detect from Redis
+cortex.detect_objects_from_redis(stream_name=&quot;robot_camera&quot;)
+</code></pre>
+<p><strong>Models Supported:</strong>
+- <strong>OWL-V2</strong>: Open-vocabulary detection
+- <strong>YOLO-World</strong>: Fast real-time detection
+- <strong>YOLOE-11L</strong>: Fast with built-in segmentation
+- <strong>Grounding-DINO</strong>: Text-guided detection</p>
+<p><strong>Data Flow:</strong>
+1. <code>robot_environment</code> publishes images → Redis stream <code>robot_camera</code>
+2. <code>vision_detect_segment</code> reads from Redis → detects objects
+3. <code>vision_detect_segment</code> publishes results → Redis stream <code>detected_objects</code>
+4. <code>robot_environment</code> reads detections from Redis</p>
+<h3 id="2-redis_robot_comm">2. redis_robot_comm</h3>
+<p><strong>Purpose:</strong> Redis-based communication infrastructure</p>
+<p><strong>Components Used:</strong>
+- <code>RedisImageStreamer</code> - Variable-size image streaming (used by <code>FrameGrabber</code>)
+- <code>RedisMessageBroker</code> - Object data consumption (used by <code>Environment</code>)
+- <code>RedisLabelManager</code> - Dynamic label configuration (used by <code>Environment</code>)</p>
+<p><strong>Integration:</strong></p>
+<pre><code class="language-python"># In FrameGrabber - publish images
+self.streamer = RedisImageStreamer(stream_name='robot_camera')
+self.streamer.publish_image(image, metadata={...}, compress_jpeg=True)
+
+# In Environment - consume detections
+self._object_broker = RedisMessageBroker()
+objects_dict_list = self._object_broker.get_latest_objects(max_age_seconds=2.0)
+
+# In Environment - manage labels
+self._label_manager = RedisLabelManager()
+self._label_manager.add_label(&quot;new_object&quot;)
+labels = self._label_manager.get_latest_labels()
+</code></pre>
+<p><strong>Data Streams:</strong>
+- <code>robot_camera</code> - Compressed images with metadata (published by <code>robot_environment</code>)
+- <code>detected_objects</code> - Object detection results (published by <code>vision_detect_segment</code>, consumed by <code>robot_environment</code>)
+- <code>object_labels</code> - Dynamic label configuration (published by <code>robot_environment</code> via <code>RedisLabelManager</code>)</p>
+<h3 id="3-text2speech">3. text2speech</h3>
+<p><strong>Purpose:</strong> Natural language feedback</p>
+<p><strong>Integration:</strong></p>
+<pre><code class="language-python">self._oralcom = Text2Speech(el_api_key, verbose=verbose)
+
+# Asynchronous usage
+thread = self._oralcom.call_text2speech_async(
+    &quot;I have detected a pencil at position 0.25, 0.05&quot;
+)
+thread.join()  # Optional: wait for completion
+</code></pre>
+<p><strong>TTS Engines:</strong>
+- <strong>ElevenLabs API</strong> (primary)
+- <strong>Kokoro TTS</strong> (local alternative)</p>
+<h3 id="4-pyniryo-pyniryo2">4. pyniryo / pyniryo2</h3>
+<p><strong>Purpose:</strong> Niryo robot hardware control</p>
+<p><strong>Integration:</strong></p>
+<pre><code class="language-python"># In NiryoRobotController
+self._robot_ctrl = NiryoRobot(robot_ip_address)
+self._robot_ctrl.calibrate_auto()
+self._robot_ctrl.update_tool()
+
+# Pick operation
+self._robot_ctrl.pick_from_pose(pick_pose)
+
+# Place operation
+self._robot_ctrl.place_from_pose(place_pose)
+</code></pre>
+<h2 id="coordinate-systems">Coordinate Systems</h2>
+<h3 id="three-coordinate-systems">Three Coordinate Systems</h3>
+<ol>
+<li><strong>Image Coordinates (Pixels)</strong></li>
+<li>Origin: Top-left corner</li>
+<li>Units: Pixels</li>
+<li>
+<p>Range: <code>u ∈ [0, width]</code>, <code>v ∈ [0, height]</code></p>
+</li>
+<li>
+<p><strong>Relative Coordinates</strong></p>
+</li>
+<li>Origin: Top-left corner</li>
+<li>Units: Normalized [0, 1]</li>
+<li>Range: <code>u_rel, v_rel ∈ [0, 1]</code></li>
+<li>
+<p>Used for workspace-independent calculations</p>
+</li>
+<li>
+<p><strong>World Coordinates (Robot Base Frame)</strong></p>
+</li>
+<li>Origin: Robot base</li>
+<li>Units: Meters</li>
+<li>Niryo axes:<ul>
+<li><code>x</code>: Forward (away from base)</li>
+<li><code>y</code>: Right (when facing robot)</li>
+<li><code>z</code>: Up</li>
+</ul>
+</li>
+</ol>
+<p>Camera Coordinate System:</p>
+<pre><code>  (u_min, v_min)
+         ────────────
+        │            │
+  v_rel │            │
+        │            │
+        └──────────── (u_max, v_max)
+            → u_rel
+
+</code></pre>
+<p>World Coordinate System:</p>
+<pre><code>        Y (left)
+        ↑
+        │
+0.087 ──┼──────────── Upper workspace boundary
+        │
+    0 ──┼────────────  Center line (Y=0)
+        │
+-0.087 ─┼──────────── Lower workspace boundary
+        │
+        └────────────→ X (forward)
+      0.163        0.337
+     (closer)     (farther)
+</code></pre>
+<h3 id="transformation-chain">Transformation Chain</h3>
+<pre><code>Image (u, v)
+    ↓ divide by image dimensions
+Relative (u_rel, v_rel)
+    ↓ Workspace.transform_camera2world_coords()
+    ↓ (uses Niryo's get_target_pose_from_rel())
+World (x, y, z) + orientation (roll, pitch, yaw)
+</code></pre>
+<h3 id="example-transformation">Example Transformation</h3>
+<pre><code class="language-python"># Object at pixel (320, 240) in 640x480 image
+u, v = 320, 240
+u_rel = 320 / 640 = 0.5  # Center horizontally
+v_rel = 240 / 480 = 0.5  # Center vertically
+
+# Transform to world coordinates
+pose = workspace.transform_camera2world_coords(
+    &quot;niryo_ws&quot;, u_rel=0.5, v_rel=0.5, yaw=0.0
+)
+# Result: pose.x ≈ 0.25, pose.y ≈ 0.0, pose.z ≈ 0.01
+</code></pre>
+<h2 id="configuration">Configuration</h2>
+<h3 id="robot-selection">Robot Selection</h3>
+<pre><code class="language-python"># Niryo Ned2 (real robot)
+env = Environment(
+    el_api_key=&quot;key&quot;,
+    use_simulation=False,
+    robot_id=&quot;niryo&quot;
+)
+
+# Niryo in Gazebo simulation
+env = Environment(
+    el_api_key=&quot;key&quot;,
+    use_simulation=True,
+    robot_id=&quot;niryo&quot;
+)
+</code></pre>
+<h3 id="workspace-configuration">Workspace Configuration</h3>
+<p>Workspaces are defined in <code>niryo_workspace.py</code>:</p>
+<pre><code class="language-python">def _set_observation_pose(self):
+    if self._id == &quot;niryo_ws&quot;:
+        self._observation_pose = PoseObjectPNP(
+            x=0.173, y=-0.002, z=0.277,
+            roll=-3.042, pitch=1.327, yaw=-3.027
+        )
+    elif self._id == &quot;gazebo_1&quot;:
+        self._observation_pose = PoseObjectPNP(
+            x=0.18, y=0, z=0.36,
+            roll=2.4, pitch=π/2, yaw=2.4
+        )
+</code></pre>
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="robot-connection-issues">Robot Connection Issues</h3>
+<pre><code class="language-python">try:
+    success = robot.pick_place_object(&quot;cube&quot;, [0.2, 0.0], [0.3, 0.0])
+    if not success:
+        print(&quot;Pick and place operation failed&quot;)
+except (NiryoRobotException, UnicodeDecodeError) as e:
+    print(f&quot;Error: {e}&quot;)
+    # Optionally: reset connection
+    robot_controller.reset_connection()
+</code></pre>
+<h3 id="object-not-found">Object Not Found</h3>
+<pre><code class="language-python">obj = objects.get_detected_object([0.2, 0.0], label=&quot;nonexistent&quot;)
+if obj is None:
+    print(&quot;Object not found&quot;)
+    # Handle missing object
+</code></pre>
+<h3 id="thread-cleanup">Thread Cleanup</h3>
+<pre><code class="language-python"># Proper cleanup
+env = Environment(...)
+try:
+    # Use environment
+    pass
+finally:
+    env.cleanup()  # Stops threads, closes connections
+</code></pre>
+<h2 id="performance-considerations">Performance Considerations</h2>
+<h3 id="detection-speed">Detection Speed</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Detection</th>
+<th>Segmentation</th>
+<th>Total FPS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>YOLOE-11L</td>
+<td>6-10ms</td>
+<td>Built-in</td>
+<td>100-160 FPS</td>
+</tr>
+<tr>
+<td>YOLO-World</td>
+<td>20-50ms</td>
+<td>50-100ms (FastSAM)</td>
+<td>10-25 FPS</td>
+</tr>
+<tr>
+<td>OWL-V2</td>
+<td>100-200ms</td>
+<td>200-500ms (SAM2)</td>
+<td>1-3 FPS</td>
+</tr>
+<tr>
+<td>Grounding-DINO</td>
+<td>200-400ms</td>
+<td>200-500ms (SAM2)</td>
+<td>1-2 FPS</td>
+</tr>
+</tbody>
+</table>
+<h3 id="recommendations">Recommendations</h3>
+<ul>
+<li><strong>Real-time</strong>: Use YOLOE-11L or YOLO-World</li>
+<li><strong>Accuracy</strong>: Use OWL-V2 or Grounding-DINO + SAM2</li>
+<li><strong>Camera rate</strong>: 5-10 FPS sufficient for pick-and-place</li>
+</ul>
+<h3 id="memory-management">Memory Management</h3>
+<ul>
+<li>Object memory stores detection history</li>
+<li>Background thread continuously updates</li>
+<li>Old detections persist until new scan</li>
+<li>Manual updates from pick/place operations override detections temporarily</li>
+</ul>
+<h2 id="extension-points">Extension Points</h2>
+<h3 id="adding-new-robot">Adding New Robot</h3>
+<ol>
+<li>Create <code>MyRobotController(RobotController)</code></li>
+<li>Implement abstract methods</li>
+<li>Create <code>MyRobotWorkspace(Workspace)</code></li>
+<li>Add to <code>Robot.__init__()</code> selection</li>
+</ol>
+<h3 id="adding-new-workspace">Adding New Workspace</h3>
+<ol>
+<li>Add ID to <code>NiryoWorkspace._set_observation_pose()</code></li>
+<li>Define observation pose</li>
+<li>No code changes needed elsewhere</li>
+</ol>
+<h3 id="custom-object-queries">Custom Object Queries</h3>
+<pre><code class="language-python">class MyObjects(Objects):
+    def get_objects_in_region(self, x_min, x_max, y_min, y_max):
+        return Objects(
+            obj for obj in self
+            if x_min &lt;= obj.x_com() &lt;= x_max
+            and y_min &lt;= obj.y_com() &lt;= y_max
+        )
+</code></pre>
+<h2 id="summary">Summary</h2>
+<p>The <code>robot_environment</code> architecture provides:</p>
+<p>✅ <strong>Modular Design</strong> - Clear separation of concerns
+✅ <strong>Hardware Abstraction</strong> - Easy to add new robots
+✅ <strong>Thread Safety</strong> - Concurrent camera and control
+✅ <strong>External Integration</strong> - Clean package boundaries
+✅ <strong>Redis Communication</strong> - Decoupled data flow via separate processes
+✅ <strong>Flexible Workspaces</strong> - Multiple workspace support
+✅ <strong>Rich Object Representation</strong> - Full spatial information
+✅ <strong>Natural Interaction</strong> - Text-to-speech feedback</p>
+<p>This architecture enables robust pick-and-place operations with vision-based object detection while maintaining extensibility and clean code organization. The key innovation is the <strong>decoupled vision system</strong> running as a separate process, communicating via Redis streams, which allows for independent scaling and development of vision capabilities.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
