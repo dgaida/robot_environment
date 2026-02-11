@@ -20,8 +20,13 @@ def integrated_workspace():
     mock_env.verbose.return_value = False
 
     def mock_get_target_pose(ws_id, u_rel, v_rel, yaw):
-        x = 0.1 + u_rel * 0.3
-        y = -0.15 + v_rel * 0.3
+        # Realistic Niryo coordinate mapping:
+        # u_rel is horizontal (y-axis in world, left is positive)
+        # v_rel is vertical (x-axis in world, away is positive)
+        # Top-left of image (0,0) -> Furthest Left (max X, max Y)
+        # Bottom-right (1,1) -> Closest Right (min X, min Y)
+        x = 0.4 - v_rel * 0.3  # Range [0.1, 0.4]
+        y = 0.15 - u_rel * 0.3  # Range [-0.15, 0.15]
         return PoseObjectPNP(x, y, 0.05, 0.0, 1.57, yaw)
 
     mock_env.get_robot_target_pose_from_rel = mock_get_target_pose

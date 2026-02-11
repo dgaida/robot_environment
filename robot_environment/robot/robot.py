@@ -586,7 +586,7 @@ class Robot(RobotAPI):
 
         # Clear last picked object
         self._object_last_picked = None
-        if hasattr(self, "_object_source_workspace"):
+        if "_object_source_workspace" in self.__dict__:
             del self._object_source_workspace
 
         # thread_oral.join()

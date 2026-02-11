@@ -93,7 +93,7 @@
 - `RedisMessageBroker` - Object detection results publishing
 - `RedisLabelManager` - Dynamic object label configuration
 
-For detailed architecture documentation, see **[docs/README.md](docs/README.md)**
+For detailed architecture documentation, see **[architecture.md](architecture.md)**
 
 ---
 
@@ -148,65 +148,61 @@ brew install redis
 
 ---
 
-## Quick Start Guide
+## Quick Start
 
-Welcome to the **Robot Environment**! This guide will help you get your first pick-and-place operation running in minutes.
-
-### 1. Initialization
-
-First, initialize the environment. You'll need an ElevenLabs API key if you want voice feedback.
+### Basic Pick and Place
 
 ```python
 from robot_environment.environment import Environment
+from robot_workspace import Location
+import threading
 import time
 
-# Initialize environment for Niryo robot (real or simulation)
+# Initialize environment
 env = Environment(
-    el_api_key="your_elevenlabs_key",
-    use_simulation=False,
-    robot_id="niryo",
-    verbose=True
+    el_api_key="your_elevenlabs_key",  # For text-to-speech
+    use_simulation=False,               # Set True for Gazebo
+    robot_id="niryo",                   # or "widowx"
+    verbose=True,
+    start_camera_thread=True            # Auto-start camera updates
 )
-```
 
-### 2. Locate Objects
+# Alternative: Manual camera thread control
+def start_camera_updates(environment, visualize=False):
+    def loop():
+        for img in environment.update_camera_and_objects(visualize=visualize):
+            pass
+    t = threading.Thread(target=loop, daemon=True)
+    t.start()
+    return t
 
-Move the robot to a position where it can see the workspace and wait for the vision system to detect objects.
+# Move to observation pose
+env.robot_move2observation_pose(env.get_workspace_home_id())
 
-```python
-# Move to home workspace observation pose
-env.robot_move2home_observation_pose()
-
-# Wait briefly for object detection results to arrive via Redis
+# Wait for object detection
 time.sleep(2)
 
-# See what we found!
+# Get detected objects
 detected_objects = env.get_detected_objects_from_memory()
+print(f"Detected {len(detected_objects)} objects:")
 for obj in detected_objects:
-    print(f"Found {obj.label()} at {obj.xy_com()}")
-```
+    print(f"  - {obj.label()} at [{obj.x_com():.2f}, {obj.y_com():.2f}]")
 
-### 3. Perform a Pick and Place
-
-Use the high-level `robot` interface to move objects with a single command.
-
-```python
-from robot_workspace import Location
-
+# Pick and place an object
 robot = env.robot()
-
-# Find a pencil and place it right next to a target coordinate
 success = robot.pick_place_object(
     object_name="pencil",
-    pick_coordinate=[-0.1, 0.01],    # Current position
-    place_coordinate=[0.1, 0.11],    # Target position
-    location=Location.RIGHT_NEXT_TO  # Relative placement
+    pick_coordinate=[-0.1, 0.01],
+    place_coordinate=[0.1, 0.11],
+    location=Location.RIGHT_NEXT_TO
 )
 
 if success:
-    print("Task completed!")
+    print("✓ Object successfully picked and placed")
+else:
+    print("✗ Pick and place operation failed")
 
-# Always cleanup when done
+# Cleanup
 env.cleanup()
 ```
 
@@ -444,7 +440,7 @@ self._visual_cortex = VisualCortex(
 
 ## API Reference
 
-See **[docs/api.md](docs/api.md)**.
+See **[api.md](api.md)**.
 
 ---
 
@@ -489,7 +485,7 @@ cortex = VisualCortex("yoloe-11l", device="cuda")
 
 ## Testing
 
-See **[tests/README.md](tests/README.md)**
+See **[TESTING.md](TESTING.md)**
 
 ---
 
@@ -551,7 +547,7 @@ memory = env.get_detected_objects_from_memory()
 print(f"Objects in memory: {len(memory)}")
 ```
 
-For comprehensive troubleshooting, see **[docs/troubleshooting.md](docs/troubleshooting.md)**.
+For comprehensive troubleshooting, see **[troubleshooting.md](troubleshooting.md)**.
 
 ---
 
@@ -580,11 +576,11 @@ python multi_workspace_example.py
 
 ## Documentation
 
-- **[Architecture Documentation](docs/README.md)** - Detailed system architecture
-- **[API Reference](docs/api.md)** - Complete API documentation
-- **[Multi-Workspace Guide](docs/multi_workspace.md)** - Multi-workspace operations
-- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
-- **[Testing Guide](tests/README.md)** - Testing documentation
+- **[Architecture Documentation](architecture.md)** - Detailed system architecture
+- **[API Reference](api.md)** - Complete API documentation
+- **[Multi-Workspace Guide](multi_workspace.md)** - Multi-workspace operations
+- **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
+- **[Testing Guide](TESTING.md)** - Testing documentation
 
 ---
 
@@ -632,7 +628,7 @@ The project includes comprehensive GitHub Actions workflows:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+See [contributing.md](contributing.md) for details.
 
 ---
 
@@ -685,15 +681,15 @@ This package builds upon:
 ## Support
 
 - **GitHub Issues:** [https://github.com/dgaida/robot_environment/issues](https://github.com/dgaida/robot_environment/issues)
-- **Documentation:** [docs/README.md](docs/README.md)
+- **Documentation:** [architecture.md](architecture.md)
 - **Examples:** [examples/](examples/)
 
 ---
 
 ## Author
 
-**Daniel Gaida**  
-Email: daniel.gaida@th-koeln.de  
+**Daniel Gaida**
+Email: daniel.gaida@th-koeln.de
 GitHub: [@dgaida](https://github.com/dgaida)
 
 Project Link: [https://github.com/dgaida/robot_environment](https://github.com/dgaida/robot_environment)

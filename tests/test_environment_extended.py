@@ -175,6 +175,14 @@ class TestEnvironmentMemoryManagement:
 
         assert True
 
+    def test_verbose_setter(self, mock_dependencies):
+        """Test verbose property setter (lines 835-837)"""
+        env = Environment("key", False, "niryo", verbose=False, start_camera_thread=False)
+        env.verbose = True
+        assert env.verbose is True
+        env.verbose = False
+        assert env.verbose is False
+
     def test_remove_object_from_memory_with_tolerance(self, mock_dependencies):
         """Test removing object with coordinate tolerance"""
         env = Environment("key", False, "niryo", start_camera_thread=False)
@@ -293,32 +301,30 @@ class TestEnvironmentCameraThread:
 
         assert env._stop_event.is_set()
 
-    # @patch("robot_environment.environment.cv2")
-    # @patch("robot_environment.environment.time")
-    # def test_update_camera_and_objects_loop(self, mock_time, mock_cv2, mock_dependencies):
-    #     """Test camera update loop iteration"""
-    #     # Mock time.sleep to avoid delays
-    #     mock_time.sleep = Mock()
-    #     mock_time.time = Mock(side_effect=[0.0, 0.1, 0.2, 0.3])
-    #
-    #     env = Environment("key", False, "niryo", start_camera_thread=False)
-    #
-    #     # FIX: Don't set stop event before loop - let it run at least once
-    #     # The stop event is checked at the beginning of the loop
-    #     # env._stop_event.set()  # REMOVE THIS LINE
-    #
-    #     iterations = 0
-    #
-    #     # Mock robot_move2observation_pose to avoid actual robot movement
-    #     with patch.object(env, "robot_move2observation_pose"):
-    #         for _ in env.update_camera_and_objects(visualize=False):
-    #             iterations += 1
-    #             # Now set stop event after first iteration
-    #             env._stop_event.set()
-    #             if iterations >= 1:
-    #                 break
-    #
-    #     assert iterations >= 1
+    @patch("robot_environment.environment.time")
+    def test_update_camera_and_objects_loop(self, mock_time, mock_dependencies):
+        """Test camera update loop iteration"""
+        # Mock time.sleep to avoid delays
+        mock_time.sleep = Mock()
+        mock_time.perf_counter = Mock(side_effect=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+
+        iterations = 0
+
+        # Mock robot methods to avoid actual side effects
+        with patch.object(env, "robot_move2observation_pose"), \
+             patch.object(env, "get_current_frame", return_value=np.zeros((480, 640, 3), dtype=np.uint8)), \
+             patch.object(env, "get_detected_objects", return_value=Objects()):
+
+            for _ in env.update_camera_and_objects(visualize=False):
+                iterations += 1
+                # Now set stop event after first iteration
+                env._stop_event.set()
+                if iterations >= 1:
+                    break
+
+        assert iterations >= 1
 
 
 class TestEnvironmentLargestFreeSpaceAdvanced:
@@ -614,6 +620,120 @@ class TestEnvironmentRobotControl:
         pose = env.get_robot_target_pose_from_rel("test_ws", 0.5, 0.5, 0.0)
 
         assert isinstance(pose, PoseObjectPNP)
+
+    def test_update_object_in_workspace(self, mock_dependencies):
+        """Test moving object between workspaces in memory (line 455)"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        with patch.object(env._memory_manager, "move_object") as mock_move:
+            env.update_object_in_workspace("ws1", "ws2", "cube", [0.1, 0.1], [0.2, 0.2])
+            mock_move.assert_called_once()
+
+    def test_get_largest_free_space_no_workspace(self, mock_dependencies):
+        """Test get_largest_free_space_with_center when workspace is not found"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        env._workspaces.get_workspace_by_id.return_value = None
+
+        area, cx, cy = env.get_largest_free_space_with_center("invalid_ws")
+        assert area == 0.0
+
+    def test_init_exception_workspace_iteration(self, mock_dependencies):
+        """Test exception handling during workspace initialization in __init__ (lines 136-140)"""
+        # Force exception during iteration
+        mock_ws = mock_dependencies["workspaces"].return_value
+        mock_ws.__iter__.side_effect = Exception("Iteration failed")
+        mock_ws.get_workspace_home_id.return_value = "home_ws"
+
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        # Should have called initialize_workspace for home_ws as fallback
+        assert env._memory_manager.get("home_ws") is not None
+
+    def test_cleanup_with_tts_shutdown(self, mock_dependencies):
+        """Test cleanup calls oralcom.shutdown (lines 200-206)"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        env.cleanup()
+        env._oralcom.shutdown.assert_called_once()
+
+    def test_performance_metrics_methods(self, mock_dependencies):
+        """Test performance metrics related methods in Environment"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+
+        assert env.get_performance_metrics() == env._metrics
+        assert env.get_performance_stats() == env._metrics.get_stats()
+
+        env.print_performance_summary()
+
+        with patch.object(env._metrics, "export_json") as mock_export:
+            env.export_performance_metrics("test.json")
+            mock_export.assert_called_once_with("test.json")
+
+        env.reset_performance_metrics()
+
+        # Test when metrics are disabled
+        env._metrics = None
+        assert env.get_performance_metrics() is None
+        assert env.get_performance_stats() is None
+        env.print_performance_summary()
+        env.export_performance_metrics("test.json")
+        env.reset_performance_metrics()
+
+    def test_get_visible_workspace(self, mock_dependencies):
+        """Test get_visible_workspace (line 647)"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        pose = PoseObjectPNP(0.2, 0, 0.3)
+        ws = env.get_visible_workspace(pose)
+        assert ws is not None
+
+    def test_properties(self, mock_dependencies):
+        """Test remaining properties in Environment (lines 796-830)"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        assert env.workspaces() == env._workspaces
+        assert env.framegrabber() == env._framegrabber
+        assert env.robot() == env._robot
+        assert env.use_simulation() == env._use_simulation
+        assert env.metrics() == env._metrics
+
+    def test_get_workspace_coordinate_all_branches(self, mock_dependencies):
+        """Test all branches of get_workspace_coordinate_from_point (lines 566-578)"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        points = [
+            "upper left corner",
+            "upper right corner",
+            "lower left corner",
+            "lower right corner",
+            "center point"
+        ]
+        for point in points:
+            result = env.get_workspace_coordinate_from_point("test_ws", point)
+            assert result is not None
+            assert len(result) == 2
+
+    def test_get_largest_free_space_with_center_basic(self, mock_dependencies):
+        """Test get_largest_free_space_with_center (line 521)"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        # Mock get_workspace to return index 0 workspace
+        env._workspaces.get_workspace.return_value = env.get_workspace_by_id("test_ws")
+
+        area, cx, cy = env.get_largest_free_space_with_center()
+        assert area >= 0
+
+    def test_get_observation_pose(self, mock_dependencies):
+        """Test get_observation_pose (line 658)"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        pose = env.get_observation_pose("test_ws")
+        assert isinstance(pose, PoseObjectPNP)
+
+    def test_get_current_frame_width_height(self, mock_dependencies):
+        """Test get_current_frame_width_height (line 692)"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        w, h = env.get_current_frame_width_height()
+        assert w == 480
+        assert h == 640
+
+    def test_robot_move2observation_pose(self, mock_dependencies):
+        """Test robot_move2observation_pose (line 772)"""
+        env = Environment("key", False, "niryo", start_camera_thread=False)
+        env.robot_move2observation_pose()
+        env.robot().move2observation_pose.assert_called()
 
 
 if __name__ == "__main__":
