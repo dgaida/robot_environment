@@ -54,8 +54,8 @@ class ObjectMemoryManager:
         # Workspace memories
         self._memories: Dict[str, Objects] = {}
 
-        # Thread safety
-        self._lock = threading.Lock()
+        # Thread safety (using RLock to allow reentrant calls from update/move_object to initialize_workspace)
+        self._lock = threading.RLock()
 
         # Manual updates tracking: {workspace_id: {object_label: timestamp}}
         self._manual_updates: Dict[str, Dict[str, float]] = {}
