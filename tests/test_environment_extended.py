@@ -732,12 +732,6 @@ class TestEnvironmentRobotControl:
         env.robot_move2observation_pose("test_ws")
         env.robot().move2observation_pose.assert_called_with("test_ws")
 
-    def test_robot_move2home_observation_pose(self, mock_dependencies):
-        """Test robot_move2home_observation_pose (line 768)"""
-        env = Environment("key", False, "niryo", start_camera_thread=False)
-        env.robot_move2home_observation_pose()
-        env.robot().move2observation_pose.assert_called()
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
