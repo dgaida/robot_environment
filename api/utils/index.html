@@ -2923,8 +2923,8 @@ manager.initialize_workspace("niryo_ws_left")</p>
         <span class="c1"># Workspace memories</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_memories</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Objects</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="c1"># Thread safety</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="c1"># Thread safety (using RLock to allow reentrant calls from update/move_object to initialize_workspace)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
 
         <span class="c1"># Manual updates tracking: {workspace_id: {object_label: timestamp}}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_manual_updates</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
@@ -3482,8 +3482,8 @@ manager.initialize_workspace("niryo_ws_left")</p>
     <span class="c1"># Workspace memories</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_memories</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Objects</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
-    <span class="c1"># Thread safety</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+    <span class="c1"># Thread safety (using RLock to allow reentrant calls from update/move_object to initialize_workspace)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
 
     <span class="c1"># Manual updates tracking: {workspace_id: {object_label: timestamp}}</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_manual_updates</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
