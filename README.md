@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="docs/assets/logo2.png" width="250" alt="Robot Environment Logo">
+  <a href="https://dgaida.github.io/robot_environment/">
+    <img src="docs/assets/logo2.png" width="250" alt="Robot Environment Logo">
+  </a>
 </p>
 
 ![Infografik](docs/assets/infografik.png)
