@@ -1,4 +1,8 @@
-# Robot Environment
+<p align="center">
+  <img src="assets/logo2.png" width="250" alt="Robot Environment Logo">
+</p>
+
+![Infografik](assets/infografik.png)
 
 **A comprehensive Python framework for robotic pick-and-place operations with vision-based object detection and manipulation capabilities**
 
@@ -15,7 +19,7 @@
 
 ## Overview
 
-`robot_environment` provides a complete software stack for controlling robotic arms with integrated computer vision for object detection, workspace management, and intelligent manipulation. The system combines real-time camera processing, Redis-based communication, and natural language interaction capabilities to enable robust pick-and-place operations.
+The Robot Environment is a modular Python framework that automates the control of robotic arms for precise **pick-and-place tasks**. By integrating **AI-based object detection** and advanced workspace management, robots such as the Niryo Ned2 or WidowX can independently identify and manipulate objects. A key feature is the decoupled architecture, in which image processing and robot control communicate efficiently with each other via **Redis interfaces**. The system also supports real-time data streaming, thread safety for simultaneous processes, and natural interaction through **text-to-speech** functions. Thanks to its support for simulations and physical hardware, the software provides a flexible basis for complex robotic applications.
 
 ### Key Features
 
