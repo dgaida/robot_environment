@@ -1,0 +1,184 @@
+\documentclass[border=10pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows.meta,positioning,shadows,fit,backgrounds}
+
+\begin{document}
+
+	\tikzset{
+		layer/.style={
+			rectangle,
+			draw=black,
+			very thick,
+			fill=blue!10,
+			text width=16cm,
+			minimum height=4cm,
+			rounded corners=5pt,
+			drop shadow
+		},
+		component/.style={
+			rectangle,
+			draw,
+			fill=green!20,
+			text width=2.8cm,
+			text centered,
+			minimum height=1cm,
+			rounded corners=3pt,
+			font=\small
+		},
+		external/.style={
+			rectangle,
+			draw,
+			fill=orange!20,
+			text width=2.8cm,
+			text centered,
+			minimum height=1cm,
+			rounded corners=3pt,
+			font=\small,
+			dashed
+		},
+		data/.style={
+			cylinder,
+			draw,
+			fill=red!20,
+			text width=2cm,
+			text centered,
+			minimum height=0.8cm,
+			shape border rotate=90,
+			aspect=0.25,
+			font=\small
+		},
+		arrow/.style={
+			->,
+			>=Stealth,
+			thick
+		},
+		dataarrow/.style={
+			->,
+			>=Stealth,
+			thick,
+			dashed,
+			color=blue
+		},
+		dataarrowtodo/.style={
+			->,
+			>=Stealth,
+			thick,
+			dashed,
+			color=red
+		}
+	}
+
+	\begin{tikzpicture}[node distance=1.5cm and 1.2cm]
+
+		% Layer 1: Environment (Top)
+		\node[layer] (env_layer) at (0,0) {};
+		\node[above=0.2cm of env_layer.north, font=\Large\bfseries] {Environment Layer};
+
+		\node[component] (environment) at (env_layer.center) {Environment\\(Orchestrator)};
+
+		% Layer 2: Robot Control
+		\node[layer, below=2cm of env_layer] (robot_layer) {};
+		\node[above=0.2cm of robot_layer.north, font=\Large\bfseries] {Robot Control Layer};
+
+		\node[component] (robot) at (robot_layer.center) [xshift=-6cm] {Robot\\(High-level API)};
+		\node[component] (robotctrl) at (robot_layer.center) [xshift=-2cm] {RobotController\\(Abstract)};
+		\node[component] (niryo) at (robot_layer.center) [xshift=2cm] {NiryoRobot\\Controller};
+		\node[external] (pyniryo) at (robot_layer.center) [xshift=6cm] {pyniryo\\(External)};
+
+		% Layer 3: Vision
+		\node[layer, below=2cm of robot_layer] (vision_layer) {};
+		\node[above=0.2cm of vision_layer.north, font=\Large\bfseries] {Vision Layer};
+
+		\node[component] (framegrabber) at (vision_layer.center) [xshift=-6cm] {FrameGrabber\\(Abstract)};
+		\node[component] (niryofg) at (vision_layer.center) [xshift=-2cm] {NiryoFrame\\Grabber};
+		\node[external] (visualcortex) at (vision_layer.center) [xshift=6cm] {VisualCortex\\(vision\_detect)};
+		\node[component] (objects) at (vision_layer.center) [xshift=2cm] {Objects\\Collection};
+
+		% Layer 4: Workspace
+		\node[layer, below=2cm of vision_layer] (workspace_layer) {};
+		\node[above=0.2cm of workspace_layer.north, font=\Large\bfseries] {Workspace Layer};
+
+		\node[component] (workspace) at (workspace_layer.center) [xshift=-4cm] {Workspace\\(Abstract)};
+		\node[component] (niryows) at (workspace_layer.center) [xshift=0cm] {NiryoWorkspace};
+		\node[component] (workspaces) at (workspace_layer.center) [xshift=4cm] {Workspaces\\Collection};
+
+		% Layer 5: Communication
+		\node[layer, right=2cm of vision_layer] (comm_layer) {};
+		\node[above=0.2cm of comm_layer.north, font=\Large\bfseries] {Communication Layer};
+
+		\node[data] (redis) at (comm_layer.center) [xshift=-5cm] {Redis\\Server};
+		\node[external] (redisimg) at (comm_layer.center) [xshift=-1cm] {RedisImage\\Streamer};
+		\node[external] (redismsg) at (comm_layer.center) [xshift=3cm] {RedisMessage\\Broker};
+
+		% Layer 6: Interaction
+		\node[layer, right=2cm of env_layer] (interaction_layer) {};
+		\node[above=0.2cm of interaction_layer.north, font=\Large\bfseries] {Interaction Layer};
+
+		\node[external] (tts) at (interaction_layer.center) [xshift=0cm] {Text2Speech};
+
+		% Main data flow arrows (vertical)
+		\draw[arrow] (environment.west) to[bend right=10] (robot.north);
+		\draw[arrow] (robot) -- (robotctrl);
+		\draw[arrow] (robotctrl) -- (niryo);
+		\draw[arrow] (niryo) -- (pyniryo);
+
+		\draw[arrow] (environment) to[bend right=10] (framegrabber);
+		\draw[arrow] (framegrabber) -- (niryofg);
+
+		\draw[arrow] (environment) to[bend left=15] (visualcortex);
+		\draw[arrow] (visualcortex) -- (objects);
+
+		\draw[arrow] (environment) -- (workspaces);
+		\draw[arrow] (workspaces) -- (niryows);
+		\draw[arrow] (niryows) -- (workspace);
+
+		% Redis connections
+		\draw[dataarrow] (niryofg) to[bend right=15] node[left, xshift=-1.05cm, yshift=0.25cm, font=\tiny] {images} (redisimg.south);
+		\draw[dataarrow] (redisimg) -- (redis);
+		\draw[dataarrow] (redis) -- (visualcortex);
+		\draw[dataarrow] (visualcortex.south) to[bend right=15] node[right, xshift=3.0cm, yshift=0.0cm, font=\tiny] {detections} (redismsg.south);
+		\draw[dataarrow] (redismsg) to[bend left=20] (redis);
+		\draw[dataarrowtodo] (redis) to[bend right=20] (environment);
+
+		% TTS connection
+		\draw[arrow] (environment.east) -- (tts.west);
+
+		% Cross-layer connections
+		\draw[dataarrow] (objects.west) -- (robot.south);
+		\draw[dataarrow] (workspaces.north) -- (niryofg.south);
+		\draw[dataarrow] (niryows.north) to[bend left=10] (niryo.south);
+
+		% Annotations
+		\node[font=\tiny, text width=3cm, above right=0.05cm of environment] {
+			\textbf{Responsibilities:}\\
+			• Initialize subsystems\\
+			• Coordinate operations\\
+			• Manage object memory\\
+			• Background updates
+		};
+
+		\node[font=\tiny, text width=3cm, above right=0.05cm of robot] {
+			\textbf{Operations:}\\
+			• pick\_place\_object()\\
+			• pick\_object()\\
+			• place\_object()\\
+			• push\_object()
+		};
+
+		\node[font=\tiny, text width=3cm, above=0.05cm of visualcortex] {
+			\textbf{Detection Models:}\\
+			• OWL-V2\\
+			• YOLO-World\\
+			• Grounding-DINO\\
+			• SAM2 segmentation
+		};
+
+		\node[font=\tiny, text width=3cm, above right=0.05cm of redis] {
+			\textbf{Streams:}\\
+			• robot\_camera\\
+			• detected\_objects
+		};
+
+	\end{tikzpicture}
+
+\end{document}
