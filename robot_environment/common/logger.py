@@ -23,8 +23,28 @@ def log_start_end(logger: logging.Logger):
     """
 
     def decorator(func):
+        """
+        Decorator that wraps the function with logging.
+
+        Args:
+            func: Function to wrap.
+
+        Returns:
+            Wrapped function.
+        """
+
         @wraps(func)
         def wrapper(*args, **kwargs):
+            """
+            Wrapper function that logs start, end, and errors.
+
+            Args:
+                *args: Positional arguments.
+                **kwargs: Keyword arguments.
+
+            Returns:
+                Result of the wrapped function.
+            """
             logger.debug(f"START {func.__name__}")
             try:
                 result = func(*args, **kwargs)
@@ -46,8 +66,29 @@ def log_start_end_cls():
     """
 
     def decorator(func):
+        """
+        Decorator that wraps the class method with logging.
+
+        Args:
+            func: Method to wrap.
+
+        Returns:
+            Wrapped method.
+        """
+
         @wraps(func)
         def wrapper(self, *args, **kwargs):
+            """
+            Wrapper method that logs start, end, and errors using the instance logger.
+
+            Args:
+                self: Instance of the class.
+                *args: Positional arguments.
+                **kwargs: Keyword arguments.
+
+            Returns:
+                Result of the wrapped method.
+            """
             # Try to get logger from instance
             if hasattr(self, "_logger") and self._logger is not None:
                 logger = self._logger

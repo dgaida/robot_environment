@@ -1,3 +1,6 @@
+"""
+Niryo robot controller implementation for robot_environment.
+"""
 # robot class around Niryo robot for smart pick and place
 # Updated with proper logging
 from __future__ import annotations
@@ -95,7 +98,13 @@ class NiryoRobotController(RobotController):
 
         return PoseObjectPNP.convert_niryo_pose_object2pose_object(pose)
 
-    def get_camera_intrinsics(self):
+    def get_camera_intrinsics(self) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Get camera intrinsic matrix and distortion coefficients.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: (mtx, dist)
+        """
         # all calls of methods of the _robot (NiryoRobot) object are locked, because they are not safe thread
         with self._lock:
             if pyniryo_v == "pyniryo2":
@@ -106,6 +115,12 @@ class NiryoRobotController(RobotController):
         return mtx, dist
 
     def get_img_compressed(self) -> np.ndarray:
+        """
+        Get compressed image from the robot's camera.
+
+        Returns:
+            np.ndarray: Compressed image data.
+        """
         with self._lock:
             if pyniryo_v == "pyniryo2":
                 img_compressed = self._robot_ctrl.vision.get_img_compressed()
@@ -308,6 +323,19 @@ class NiryoRobotController(RobotController):
     def get_target_pose_from_rel_timeout(
         self, workspace_id: str, x_rel: float, y_rel: float, yaw: float, timeout: float = 0.75
     ) -> "PoseObjectPNP":
+        """
+        Calculate world coordinates from relative image coordinates with a timeout.
+
+        Args:
+            workspace_id: ID of the workspace.
+            x_rel: Relative x-coordinate (0-1).
+            y_rel: Relative y-coordinate (0-1).
+            yaw: Orientation in radians.
+            timeout: Timeout in seconds.
+
+        Returns:
+            PoseObjectPNP: Target pose in world coordinates.
+        """
         self._logger.debug(f"Thread {threading.current_thread().name} entering: {workspace_id}, {x_rel}, {y_rel}, {yaw}")
 
         if not self._lock.acquire(timeout=timeout):

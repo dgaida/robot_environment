@@ -200,3 +200,25 @@ max-line-length = 127
 
 [tool.ruff]
 target-version = "py310"
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = false
+ignore-magic = false
+ignore-semiprivate = false
+ignore-private = false
+ignore-property-decorators = false
+ignore-module = false
+ignore-nested-functions = false
+ignore-nested-classes = false
+ignore-setters = false
+fail-under = 95
+exclude = ["setup.py", "docs", "build", "tests", "examples"]
+ignore-regex = ["^get$", "^set$", "^test_.*$"]
+# possible values: 0 (low quality) to 2 (high quality)
+verbose = 2
+quiet = false
+whitelist-regex = []
+color = true
+generate-badge = "."
+badge-format = "svg"

@@ -1,24 +1,13 @@
-name: Publish Documentation
+name: Documentation
 
 on:
   push:
     branches:
       - master
-    paths:
-      - 'docs/**'
-      - 'mkdocs.yml'
-      - '**.py'
-      - 'requirements.txt'
-      - '.github/workflows/docs.yml'
+      - main
+    tags:
+      - 'v*'
   pull_request:
-    branches:
-      - master
-    paths:
-      - 'docs/**'
-      - 'mkdocs.yml'
-      - '**.py'
-      - 'requirements.txt'
-  workflow_dispatch:
 
 jobs:
   deploy:
@@ -26,30 +15,40 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-          cache: 'pip'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install mkdocs mkdocs-material mkdocstrings[python]
           pip install .
+          pip install mkdocs-material mkdocstrings[python] mkdocs-static-i18n mkdocs-mermaid2-plugin mike interrogate git-cliff
+
+      - name: Check API documentation coverage
+        run: interrogate -v robot_environment -g docs/assets/interrogate_badge.svg
+
+      - name: Generate Changelog
+        run: git-cliff -o CHANGELOG.md
 
       - name: Build documentation
         run: mkdocs build
 
-      - name: Deploy to GitHub Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
+      - name: Deploy versioned documentation
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            version=${GITHUB_REF#refs/tags/}
+            mike deploy --push --update-aliases $version latest
+          else
+            mike deploy --push --update-aliases dev
+          fi
+          mike set-default --push latest || mike set-default --push dev

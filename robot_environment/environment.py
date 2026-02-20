@@ -7,7 +7,10 @@ from .common.logger import log_start_end_cls
 import numpy as np
 import time
 
-from robot_workspace import Workspaces
+try:
+    from robot_workspace import Workspaces
+except ImportError:
+    from robot_workspace.workspaces.workspaces import Workspaces
 from robot_workspace import NiryoWorkspaces
 from robot_workspace import WidowXWorkspaces
 from .camera.framegrabber import FrameGrabber
@@ -35,7 +38,10 @@ from typing import TYPE_CHECKING, List, Optional, Dict, Tuple
 
 if TYPE_CHECKING:
     from robot_workspace import Workspace
-    from robot_workspace import Workspaces
+    try:
+        from robot_workspace import Workspaces
+    except ImportError:
+        from robot_workspace.workspaces.workspaces import Workspaces
     from .camera.framegrabber import FrameGrabber
     from .robot.robot import Robot
     from .robot.robot_controller import RobotController

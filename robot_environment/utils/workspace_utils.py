@@ -1,3 +1,6 @@
+"""
+Workspace utility functions for free space calculation and coordinate transformations.
+"""
 from __future__ import annotations
 import numpy as np
 import cv2
@@ -46,7 +49,17 @@ def calculate_largest_free_space(
     grid = np.zeros((grid_resolution, grid_resolution), dtype=int)
 
     # Map world coordinates to grid indices
-    def to_grid_coords(x, y):
+    def to_grid_coords(x: float, y: float) -> Tuple[int, int]:
+        """
+        Map world coordinates to grid indices.
+
+        Args:
+            x: World x-coordinate.
+            y: World y-coordinate.
+
+        Returns:
+            Tuple[int, int]: (u, v) grid indices.
+        """
         v = int((x_max - x) / workspace_height * grid_resolution)
         u = int((y_max - y) / workspace_width * grid_resolution)
         # Clip to ensure indices are within grid bounds
@@ -55,7 +68,17 @@ def calculate_largest_free_space(
         return u, v
 
     # Map grid indices back to world coordinates
-    def to_world_coords(u, v):
+    def to_world_coords(u: int, v: int) -> Tuple[float, float]:
+        """
+        Map grid indices back to world coordinates.
+
+        Args:
+            u: Grid u-index.
+            v: Grid v-index.
+
+        Returns:
+            Tuple[float, float]: (x, y) world coordinates.
+        """
         x = x_max - (v + 0.5) * (workspace_height / grid_resolution)
         y = y_max - (u + 0.5) * (workspace_width / grid_resolution)
         return x, y
