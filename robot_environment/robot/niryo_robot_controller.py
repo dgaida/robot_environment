@@ -1,6 +1,7 @@
 """
 Niryo robot controller implementation for robot_environment.
 """
+
 # robot class around Niryo robot for smart pick and place
 # Updated with proper logging
 from __future__ import annotations

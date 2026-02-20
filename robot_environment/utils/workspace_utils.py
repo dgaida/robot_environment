@@ -1,6 +1,7 @@
 """
 Workspace utility functions for free space calculation and coordinate transformations.
 """
+
 from __future__ import annotations
 import numpy as np
 import cv2

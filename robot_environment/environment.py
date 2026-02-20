@@ -38,6 +38,7 @@ from typing import TYPE_CHECKING, List, Optional, Dict, Tuple
 
 if TYPE_CHECKING:
     from robot_workspace import Workspace
+
     try:
         from robot_workspace import Workspaces
     except ImportError:

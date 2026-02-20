@@ -1,6 +1,7 @@
 """
 Main robot class for robot_environment.
 """
+
 # robot class around Niryo robot for smart pick and place
 # Updated with proper logging throughout
 from __future__ import annotations

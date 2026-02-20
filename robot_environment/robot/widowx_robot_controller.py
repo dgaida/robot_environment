@@ -1,6 +1,7 @@
 """
 WidowX robot controller implementation for robot_environment.
 """
+
 # robot class around WidowX robot for smart pick and place
 # Implementation based on InterbotixManipulatorXS API
 from __future__ import annotations

@@ -1,6 +1,7 @@
 """
 Frame grabber base class for robot_environment.
 """
+
 # abstract class FrameGrabber for the robot_environment package
 # should be Final
 # Documentation and type definitions are almost final (chatgpt might be able to improve it).

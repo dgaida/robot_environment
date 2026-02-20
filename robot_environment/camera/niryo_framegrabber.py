@@ -1,6 +1,7 @@
 """
 Niryo frame grabber implementation for robot_environment.
 """
+
 # class implementing a framegrabber for Niryo Ned2 robot arm
 # Updated with proper logging
 
@@ -116,7 +117,9 @@ class NiryoFrameGrabber(FrameGrabber):
 
         return self._current_frame
 
-    def publish_workspace_image(self, image: np.ndarray, workspace_id: str, robot_pose: Optional[Dict[str, float]] = None) -> str:
+    def publish_workspace_image(
+        self, image: np.ndarray, workspace_id: str, robot_pose: Optional[Dict[str, float]] = None
+    ) -> str:
         """
         Publish workspace image with robot context via Redis.
 

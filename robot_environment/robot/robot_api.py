@@ -1,6 +1,7 @@
 """
 Robot API definitions for robot_environment.
 """
+
 # abstract robot class around Niryo robot for smart pick and place - defines the functions that the LLM may call
 # a few TODOs
 # Documentation and type definitions are almost final (chatgpt can maybe improve it) - however, documentation in

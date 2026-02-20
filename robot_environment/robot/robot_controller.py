@@ -1,6 +1,7 @@
 """
 Robot controller base class for robot_environment.
 """
+
 # abstract class RobotController for the pnp_robot_genai package
 # should be final
 # Documentation and type definitions are final (class documentation could be improved with chatgpt)
