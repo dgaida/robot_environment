@@ -1,3 +1,7 @@
+"""
+WidowX frame grabber implementation for robot_environment.
+"""
+
 # framegrabber for WidowX robot arm - here Intel RealSense camera as third person camera
 # TODO: has to be implemented
 
@@ -17,6 +21,13 @@ class WidowXFrameGrabber(FrameGrabber):
 
     # *** CONSTRUCTORS ***
     def __init__(self, environment: "Environment", verbose: bool = False):
+        """
+        Initialize the WidowX framegrabber.
+
+        Args:
+            environment: Environment object this FrameGrabber is installed in.
+            verbose: Enable verbose logging.
+        """
         super().__init__(environment, verbose)
 
     # *** PUBLIC GET methods ***

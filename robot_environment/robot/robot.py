@@ -1,3 +1,7 @@
+"""
+Main robot class for robot_environment.
+"""
+
 # robot class around Niryo robot for smart pick and place
 # Updated with proper logging throughout
 from __future__ import annotations
@@ -33,14 +37,13 @@ class Robot(RobotAPI):
         self, environment: "Environment", use_simulation: bool = False, robot_id: str = "niryo", verbose: bool = False
     ):
         """
-        Creates robot object. Creates these objects:
-        - RobotController
+        Initialize the Robot.
 
         Args:
-            environment:
-            use_simulation: if True, then simulate the robot, else the real robot is used
-            robot_id: string defining the robot. can be "niryo" or "widowx"
-            verbose:
+            environment: Environment object this Robot is installed in.
+            use_simulation: If True, simulate the robot, else use the real robot.
+            robot_id: Robot identifier ("niryo" or "widowx").
+            verbose: Enable verbose logging.
         """
         super().__init__()
 
@@ -164,15 +167,10 @@ class Robot(RobotAPI):
             pick_coordinate (List): The world coordinates [x, y] where the object should be picked up. Use these
             coordinates to identify the object's exact position.
             place_coordinate (List): The world coordinates [x, y] where the object should be placed at.
-            location (Location): Specifies the relative placement position of the picked object with respect to an object
-            being at the 'place_coordinate'. Possible values are defined in the `Location` Enum:
-                - `Location.LEFT_NEXT_TO`: Left of the reference object.
-                - `Location.RIGHT_NEXT_TO`: Right of the reference object.
-                - `Location.ABOVE`: Above the reference object.
-                - `Location.BELOW`: Below the reference object.
-                - `Location.ON_TOP_OF`: On top of the reference object.
-                - `Location.INSIDE`: Inside the reference object.
-                - `Location.NONE`: No specific location relative to another object.
+            location: Specifies the relative placement position of the picked object with respect to an object
+                being at the 'place_coordinate'. Possible values are defined in the `Location` Enum:
+                `Location.LEFT_NEXT_TO`, `Location.RIGHT_NEXT_TO`, `Location.ABOVE`, `Location.BELOW`,
+                `Location.ON_TOP_OF`, `Location.INSIDE`, `Location.NONE`.
             z_offset (float): Additional height offset in meters to apply when picking (default: 0.001).
             Useful for picking objects that are stacked on top of other objects.
 
@@ -248,9 +246,9 @@ class Robot(RobotAPI):
 
         Args:
             place_coordinate: The world coordinates [x, y] of the target object.
-            location (str): Specifies the relative placement position of the picked object in relation to an object
-            being at the 'place_coordinate'. Possible positions: 'left next to', 'right next to', 'above', 'below',
-            'on top of', 'inside', or None. Set to None, if there is no location given in the task.
+            location: Specifies the relative placement position of the picked object in relation to an object
+                being at the 'place_coordinate'. Possible positions: 'left next to', 'right next to', 'above', 'below',
+                'on top of', 'inside', or None.
         Returns:
             bool: True
         """
@@ -348,14 +346,10 @@ class Robot(RobotAPI):
         An object cannot be picked if its shorter side is larger than the gripper.
 
         Args:
-            object_name (str): The name of the object to be pushed.
-            Ensure the name matches an object in the robot's environment.
+            object_name: The name of the object to be pushed.
             push_coordinate: The world coordinates [x, y] where the object to push is located.
-            These coordinates indicate the initial position of the object.
-            direction (str): The direction in which to push the object.
-            Valid options are: "up", "down", "left", "right".
-            distance: The distance (in millimeters) to push the object in the specified direction.
-            Ensure the value is within the robot's operating range.
+            direction: The direction in which to push the object ("up", "down", "left", "right").
+            distance: The distance (in millimeters) to push the object.
 
         Returns:
             bool: True
@@ -691,13 +685,20 @@ class Robot(RobotAPI):
     # *** PUBLIC properties ***
 
     def environment(self) -> Environment:
+        """
+        Returns the environment object.
+
+        Returns:
+            Environment: The environment instance.
+        """
         return self._environment
 
     def robot_in_motion(self) -> bool:
         """
-        :return: value of _robot_in_motion:
-        False: robot is not in motion
-        True: robot is in motion and therefore maybe cannot see the workspace markers
+        Check if the robot is currently in motion.
+
+        Returns:
+            bool: True if the robot is in motion, False otherwise.
         """
         return self._robot.is_in_motion()
 
@@ -710,7 +711,10 @@ class Robot(RobotAPI):
 
     def verbose(self) -> bool:
         """
-        Returns: True, if verbose is on, else False
+        Returns the verbosity status.
+
+        Returns:
+            bool: True if verbose is on, else False.
         """
         return self._verbose
 

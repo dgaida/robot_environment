@@ -1,3 +1,7 @@
+"""
+WidowX robot controller implementation for robot_environment.
+"""
+
 # robot class around WidowX robot for smart pick and place
 # Implementation based on InterbotixManipulatorXS API
 from __future__ import annotations
@@ -17,7 +21,7 @@ except ImportError:
     INTERBOTIX_AVAILABLE = False
     print("Warning: interbotix_xs_modules not available. WidowX controller will not function.")
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from .robot import Robot
@@ -83,12 +87,12 @@ class WidowXRobotController(RobotController):
                     print(f"Error getting pose: {e}")
                 return self.DEFAULT_HOME_POSE
 
-    def get_camera_intrinsics(self):
+    def get_camera_intrinsics(self) -> Tuple[np.ndarray, np.ndarray]:
         """
         Get camera intrinsics for the WidowX camera (if available).
 
         Returns:
-            tuple: (camera_matrix, distortion_coefficients)
+            Tuple[np.ndarray, np.ndarray]: (camera_matrix, distortion_coefficients)
         """
         # WidowX typically uses external camera (e.g., RealSense)
         # These are placeholder values - should be calibrated for your setup

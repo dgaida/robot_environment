@@ -1,3 +1,7 @@
+"""
+Frame grabber base class for robot_environment.
+"""
+
 # abstract class FrameGrabber for the robot_environment package
 # should be Final
 # Documentation and type definitions are almost final (chatgpt might be able to improve it).
@@ -20,10 +24,11 @@ class FrameGrabber(ABC):
     # *** CONSTRUCTORS ***
     def __init__(self, environment: "Environment", verbose: bool = False):
         """
+        Initialize the FrameGrabber.
 
         Args:
-            environment: Environment object this FrameGrabber is installed in
-            verbose:
+            environment: Environment object this FrameGrabber is installed in.
+            verbose: Enable verbose logging.
         """
         self._current_frame = None
         self._environment = environment
@@ -33,9 +38,10 @@ class FrameGrabber(ABC):
 
     def get_current_frame_shape(self) -> tuple[int, ...]:
         """
+        Return the shape of the current frame.
 
         Returns:
-
+            tuple[int, ...]: Shape of the frame.
         """
         return self._current_frame.shape
 
@@ -78,13 +84,20 @@ class FrameGrabber(ABC):
         return self._current_frame
 
     def environment(self) -> "Environment":
+        """
+        Returns the environment object.
+
+        Returns:
+            Environment: The environment instance.
+        """
         return self._environment
 
     def verbose(self) -> bool:
         """
+        Returns the verbosity status.
 
-        Returns: True, if verbose is on, else False
-
+        Returns:
+            bool: True if verbose is on, else False.
         """
         return self._verbose
 

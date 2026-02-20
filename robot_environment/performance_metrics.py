@@ -69,6 +69,13 @@ class PerformanceTimer:
     """Context manager for timing operations."""
 
     def __init__(self, metrics: "PerformanceMetrics", metric_name: str):
+        """
+        Initialize the PerformanceTimer.
+
+        Args:
+            metrics: PerformanceMetrics instance to record to.
+            metric_name: Name of the metric to record.
+        """
         self.metrics = metrics
         self.metric_name = metric_name
         self.start_time = None

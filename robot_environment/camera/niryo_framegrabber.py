@@ -1,3 +1,7 @@
+"""
+Niryo frame grabber implementation for robot_environment.
+"""
+
 # class implementing a framegrabber for Niryo Ned2 robot arm
 # Updated with proper logging
 
@@ -13,7 +17,7 @@ from robot_workspace import PoseObjectPNP
 
 from redis_robot_comm import RedisImageStreamer
 
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
 if TYPE_CHECKING:
     from ..environment import Environment
@@ -29,17 +33,17 @@ class NiryoFrameGrabber(FrameGrabber):
 
     # *** CONSTRUCTORS ***
     @log_start_end_cls()
-    def __init__(self, environment: "Environment", stream_name="robot_camera", verbose: bool = False):
+    def __init__(self, environment: "Environment", stream_name: str = "robot_camera", verbose: bool = False):
         """
-        Args:
-            environment: Environment object this FrameGrabber is installed in
-            verbose:
+        Initialize the Niryo framegrabber.
 
-        Returns:
-            object:
+        Args:
+            environment: Environment object this FrameGrabber is installed in.
+            stream_name: Name of the Redis stream for image publishing.
+            verbose: Enable verbose logging.
 
         Raises:
-            TypeError: robot must be an instance of NiryoRobotController.
+            TypeError: If the robot controller is not an instance of NiryoRobotController.
         """
         super().__init__(environment, verbose)
 
@@ -113,10 +117,19 @@ class NiryoFrameGrabber(FrameGrabber):
 
         return self._current_frame
 
-    def publish_workspace_image(self, image: np.ndarray, workspace_id: str, robot_pose: Dict[str, float] = None):
+    def publish_workspace_image(
+        self, image: np.ndarray, workspace_id: str, robot_pose: Optional[Dict[str, float]] = None
+    ) -> str:
         """
-        Publish workspace image with robot context
-        Image size can vary based on workspace and robot position
+        Publish workspace image with robot context via Redis.
+
+        Args:
+            image: The image to publish.
+            workspace_id: ID of the workspace shown in the image.
+            robot_pose: Optional robot pose metadata.
+
+        Returns:
+            str: The Redis stream ID of the published image.
         """
         metadata = {
             "workspace_id": workspace_id,
@@ -213,10 +226,22 @@ class NiryoFrameGrabber(FrameGrabber):
 
     # *** PUBLIC properties ***
 
-    def camera_matrix(self):
+    def camera_matrix(self) -> np.ndarray:
+        """
+        Returns the camera intrinsic matrix.
+
+        Returns:
+            np.ndarray: 3x3 intrinsic matrix.
+        """
         return self._mtx
 
-    def camera_dist_coeff(self):
+    def camera_dist_coeff(self) -> np.ndarray:
+        """
+        Returns the camera distortion coefficients.
+
+        Returns:
+            np.ndarray: Distortion coefficients.
+        """
         return self._dist
 
     # *** PRIVATE variables ***

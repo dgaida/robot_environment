@@ -1,3 +1,7 @@
+"""
+Robot controller base class for robot_environment.
+"""
+
 # abstract class RobotController for the pnp_robot_genai package
 # should be final
 # Documentation and type definitions are final (class documentation could be improved with chatgpt)
@@ -44,6 +48,9 @@ class RobotController(ABC):
 
     # Deleting (Calling destructor)
     def __del__(self):
+        """
+        Destructor for the RobotController.
+        """
         pass
 
     # *** PUBLIC SET methods ***
@@ -196,6 +203,12 @@ class RobotController(ABC):
         return self._robot_ctrl
 
     def robot(self) -> "Robot":
+        """
+        Returns the robot object.
+
+        Returns:
+            Robot: The robot instance.
+        """
         return self._robot
 
     def lock(self) -> threading.Lock:
