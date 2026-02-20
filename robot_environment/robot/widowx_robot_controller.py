@@ -20,7 +20,7 @@ except ImportError:
     INTERBOTIX_AVAILABLE = False
     print("Warning: interbotix_xs_modules not available. WidowX controller will not function.")
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from .robot import Robot

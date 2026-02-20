@@ -24,7 +24,7 @@ else:
 from pyniryo.api.exceptions import NiryoRobotException
 from pyniryo.api.exceptions import TcpCommandException
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from robot_workspace import PoseObjectPNP
