@@ -463,6 +463,15 @@
 <nav aria-label="Häufige Probleme" class="md-nav">
 <ul class="md-nav__list">
 <li class="md-nav__item">
+<a class="md-nav__link" href="#modulenotfounderror-no-module-named-text2speechengines">
+<span class="md-ellipsis">
+      
+        ModuleNotFoundError: No module named 'text2speech.engines'
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#keine-objekte-erkannt">
 <span class="md-ellipsis">
       
@@ -529,6 +538,15 @@
 <nav aria-label="Häufige Probleme" class="md-nav">
 <ul class="md-nav__list">
 <li class="md-nav__item">
+<a class="md-nav__link" href="#modulenotfounderror-no-module-named-text2speechengines">
+<span class="md-ellipsis">
+      
+        ModuleNotFoundError: No module named 'text2speech.engines'
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#keine-objekte-erkannt">
 <span class="md-ellipsis">
       
@@ -576,6 +594,18 @@
 <article class="md-content__inner md-typeset">
 <h1 id="fehlerbehebung-troubleshooting">Fehlerbehebung (Troubleshooting)<a class="headerlink" href="#fehlerbehebung-troubleshooting" title="Permanent link">¶</a></h1>
 <h2 id="haufige-probleme">Häufige Probleme<a class="headerlink" href="#haufige-probleme" title="Permanent link">¶</a></h2>
+<h3 id="modulenotfounderror-no-module-named-text2speechengines">ModuleNotFoundError: No module named 'text2speech.engines'<a class="headerlink" href="#modulenotfounderror-no-module-named-text2speechengines" title="Permanent link">¶</a></h3>
+<p>Dies ist ein bekanntes Problem bei der Installation des <code>text2speech</code>-Pakets, bei dem Unterpakete wie <code>engines</code> nicht korrekt mitinstalliert werden.</p>
+<p><strong>Lösung:</strong>
+Installieren Sie das <code>text2speech</code>-Paket im <strong>Editable-Modus</strong> aus seinem Quellcode-Verzeichnis:
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>/pfad/zu/text2speech/repository
+<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre></div></p>
+<p>Als Maintainer des <code>text2speech</code>-Repositories sollten Sie die <code>pyproject.toml</code> anpassen, um alle Unterpakete einzuschließen:
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">[tool.setuptools.packages.find]</span>
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="n">where</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"."</span><span class="p">]</span>
+<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="n">include</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"text2speech*"</span><span class="p">]</span>
+</code></pre></div></p>
 <h3 id="keine-objekte-erkannt">Keine Objekte erkannt<a class="headerlink" href="#keine-objekte-erkannt" title="Permanent link">¶</a></h3>
 <ul>
 <li>Überprüfen Sie die Redis-Verbindung.</li>
@@ -596,7 +626,7 @@
 </ul>
 <h2 id="debug-modus">Debug-Modus<a class="headerlink" href="#debug-modus" title="Permanent link">¶</a></h2>
 <p>Aktivieren Sie das ausführliche Logging beim Initialisieren der Umgebung:
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div></p>
 </article>
 </div>

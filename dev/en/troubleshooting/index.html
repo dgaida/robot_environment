@@ -473,10 +473,10 @@
 <nav aria-label="Frequently Asked Questions (FAQ)" class="md-nav">
 <ul class="md-nav__list">
 <li class="md-nav__item">
-<a class="md-nav__link" href="#1-why-do-i-get-a-modulenotfounderror-no-module-named-text2speech">
+<a class="md-nav__link" href="#1-why-do-i-get-a-modulenotfounderror-no-module-named-text2speechengines">
 <span class="md-ellipsis">
       
-        1. Why do I get a ModuleNotFoundError: No module named 'text2speech'?
+        1. Why do I get a ModuleNotFoundError: No module named 'text2speech.engines'?
       
     </span>
 </a>
@@ -708,10 +708,10 @@
 <nav aria-label="Frequently Asked Questions (FAQ)" class="md-nav">
 <ul class="md-nav__list">
 <li class="md-nav__item">
-<a class="md-nav__link" href="#1-why-do-i-get-a-modulenotfounderror-no-module-named-text2speech">
+<a class="md-nav__link" href="#1-why-do-i-get-a-modulenotfounderror-no-module-named-text2speechengines">
 <span class="md-ellipsis">
       
-        1. Why do I get a ModuleNotFoundError: No module named 'text2speech'?
+        1. Why do I get a ModuleNotFoundError: No module named 'text2speech.engines'?
       
     </span>
 </a>
@@ -925,12 +925,18 @@
 </ul>
 <hr/>
 <h2 id="frequently-asked-questions-faq">Frequently Asked Questions (FAQ)<a class="headerlink" href="#frequently-asked-questions-faq" title="Permanent link">¶</a></h2>
-<h3 id="1-why-do-i-get-a-modulenotfounderror-no-module-named-text2speech">1. Why do I get a <code>ModuleNotFoundError: No module named 'text2speech'</code>?<a class="headerlink" href="#1-why-do-i-get-a-modulenotfounderror-no-module-named-text2speech" title="Permanent link">¶</a></h3>
-<p>This usually means the <code>text2speech</code> package was not installed correctly or is not in your Python path.
-Ensure you ran:
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/dgaida/text2speech.git
-</code></pre></div>
-If you are running in a virtual environment, make sure it is activated.</p>
+<h3 id="1-why-do-i-get-a-modulenotfounderror-no-module-named-text2speechengines">1. Why do I get a <code>ModuleNotFoundError: No module named 'text2speech.engines'</code>?<a class="headerlink" href="#1-why-do-i-get-a-modulenotfounderror-no-module-named-text2speechengines" title="Permanent link">¶</a></h3>
+<p>This is a known issue in the <code>text2speech</code> package distribution where sub-packages like <code>engines</code> are not correctly included when installed as a regular package.</p>
+<p><strong>Solution:</strong>
+The best way to fix this is to install the <code>text2speech</code> package in <strong>editable mode</strong> from its source directory:
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>/path/to/text2speech/repository
+<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre></div></p>
+<p>If you are the maintainer of the <code>text2speech</code> repository, ensure the <code>pyproject.toml</code> correctly includes all sub-packages:
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">[tool.setuptools.packages.find]</span>
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="n">where</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"."</span><span class="p">]</span>
+<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="n">include</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"text2speech*"</span><span class="p">]</span>
+</code></pre></div></p>
 <h3 id="2-the-robot-moves-to-the-wrong-place-or-misses-the-object-what-should-i-do">2. The robot moves to the wrong place or misses the object. What should I do?<a class="headerlink" href="#2-the-robot-moves-to-the-wrong-place-or-misses-the-object-what-should-i-do" title="Permanent link">¶</a></h3>
 <p>First, check if the workspace is correctly calibrated. Use <code>env.get_workspace_by_id("your_ws_id").get_bounds()</code> to see the world coordinates the system is using.
 Second, ensure you are using <strong>fresh</strong> detections. Always move to an observation pose and wait a second before calling <code>get_detected_objects()</code>.</p>
@@ -952,27 +958,27 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 <ol>
 <li>
 <p><strong>Verify camera is working:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">redis_robot_comm</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisImageStreamer</span>
-<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="n">streamer</span> <span class="o">=</span> <span class="n">RedisImageStreamer</span><span class="p">(</span><span class="n">stream_name</span><span class="o">=</span><span class="s2">"robot_camera"</span><span class="p">)</span>
-<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="n">img</span><span class="p">,</span> <span class="n">metadata</span> <span class="o">=</span> <span class="n">streamer</span><span class="o">.</span><span class="n">get_latest_image</span><span class="p">()</span>
-<a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Image shape: </span><span class="si">{</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># Should be (480, 640, 3)</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">redis_robot_comm</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisImageStreamer</span>
+<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="n">streamer</span> <span class="o">=</span> <span class="n">RedisImageStreamer</span><span class="p">(</span><span class="n">stream_name</span><span class="o">=</span><span class="s2">"robot_camera"</span><span class="p">)</span>
+<a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="n">img</span><span class="p">,</span> <span class="n">metadata</span> <span class="o">=</span> <span class="n">streamer</span><span class="o">.</span><span class="n">get_latest_image</span><span class="p">()</span>
+<a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Image shape: </span><span class="si">{</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># Should be (480, 640, 3)</span>
 </code></pre></div></p>
 </li>
 <li>
 <p><strong>Check Redis is running:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a>docker<span class="w"> </span>ps<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>redis
-<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a>
-<a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="c1"># If not running:</span>
-<a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">6379</span>:6379<span class="w"> </span>redis:alpine
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a>docker<span class="w"> </span>ps<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>redis
+<a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a>
+<a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="c1"># If not running:</span>
+<a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">6379</span>:6379<span class="w"> </span>redis:alpine
 </code></pre></div></p>
 </li>
 <li>
 <p><strong>Verify camera thread is started:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="c1"># In server initialization</span>
-<a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span>
-<a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a>    <span class="o">...</span>
-<a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a>    <span class="n">start_camera_thread</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Must be True!</span>
-<a href="#__codelineno-3-5" id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="c1"># In server initialization</span>
+<a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span>
+<a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a>    <span class="o">...</span>
+<a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a>    <span class="n">start_camera_thread</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Must be True!</span>
+<a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="p">)</span>
 </code></pre></div></p>
 </li>
 <li>
@@ -985,11 +991,11 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 </li>
 <li>
 <p><strong>Verify object labels:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="n">labels</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_object_labels_as_string</span><span class="p">()</span>
-<a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Recognizable objects: </span><span class="si">{</span><span class="n">labels</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a>
-<a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="c1"># Add custom labels if needed</span>
-<a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="n">env</span><span class="o">.</span><span class="n">add_object_name2object_labels</span><span class="p">(</span><span class="s2">"your_object"</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="n">labels</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_object_labels_as_string</span><span class="p">()</span>
+<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Recognizable objects: </span><span class="si">{</span><span class="n">labels</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a>
+<a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="c1"># Add custom labels if needed</span>
+<a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="n">env</span><span class="o">.</span><span class="n">add_object_name2object_labels</span><span class="p">(</span><span class="s2">"your_object"</span><span class="p">)</span>
 </code></pre></div></p>
 </li>
 </ol>
@@ -1003,12 +1009,12 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 <ol>
 <li>
 <p><strong>Recalibrate camera transformation:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="c1"># Check workspace calibration</span>
-<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="n">workspace</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_workspace_by_id</span><span class="p">(</span><span class="s2">"niryo_ws"</span><span class="p">)</span>
-<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Workspace bounds: </span><span class="si">{</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a>
-<a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="c1"># Verify transformation parameters</span>
-<a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="c1"># May need to recalibrate camera-to-world transform</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="c1"># Check workspace calibration</span>
+<a href="#__codelineno-6-2" id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="n">workspace</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_workspace_by_id</span><span class="p">(</span><span class="s2">"niryo_ws"</span><span class="p">)</span>
+<a href="#__codelineno-6-3" id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Workspace bounds: </span><span class="si">{</span><span class="n">workspace</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a href="#__codelineno-6-4" id="__codelineno-6-4" name="__codelineno-6-4"></a>
+<a href="#__codelineno-6-5" id="__codelineno-6-5" name="__codelineno-6-5"></a><span class="c1"># Verify transformation parameters</span>
+<a href="#__codelineno-6-6" id="__codelineno-6-6" name="__codelineno-6-6"></a><span class="c1"># May need to recalibrate camera-to-world transform</span>
 </code></pre></div></p>
 </li>
 <li>
@@ -1021,25 +1027,25 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 </li>
 <li>
 <p><strong>Update detection immediately before pick:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="c1"># ✅ Good: Fresh detection</span>
-<a href="#__codelineno-6-2" id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="n">objects</span> <span class="o">=</span> <span class="n">get_detected_objects</span><span class="p">()</span>
-<a href="#__codelineno-6-3" id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="n">obj</span> <span class="o">=</span> <span class="n">objects</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<a href="#__codelineno-6-4" id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="n">pick_object</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="s1">'label'</span><span class="p">],</span> <span class="p">[</span><span class="n">obj</span><span class="p">[</span><span class="s1">'x'</span><span class="p">],</span> <span class="n">obj</span><span class="p">[</span><span class="s1">'y'</span><span class="p">]])</span>
-<a href="#__codelineno-6-5" id="__codelineno-6-5" name="__codelineno-6-5"></a>
-<a href="#__codelineno-6-6" id="__codelineno-6-6" name="__codelineno-6-6"></a><span class="c1"># ❌ Bad: Stale coordinates</span>
-<a href="#__codelineno-6-7" id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="n">pick_object</span><span class="p">(</span><span class="s2">"pencil"</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.15</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.05</span><span class="p">])</span>  <span class="c1"># May have moved!</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="c1"># ✅ Good: Fresh detection</span>
+<a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="n">objects</span> <span class="o">=</span> <span class="n">get_detected_objects</span><span class="p">()</span>
+<a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="n">obj</span> <span class="o">=</span> <span class="n">objects</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="n">pick_object</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="s1">'label'</span><span class="p">],</span> <span class="p">[</span><span class="n">obj</span><span class="p">[</span><span class="s1">'x'</span><span class="p">],</span> <span class="n">obj</span><span class="p">[</span><span class="s1">'y'</span><span class="p">]])</span>
+<a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a>
+<a href="#__codelineno-7-6" id="__codelineno-7-6" name="__codelineno-7-6"></a><span class="c1"># ❌ Bad: Stale coordinates</span>
+<a href="#__codelineno-7-7" id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="n">pick_object</span><span class="p">(</span><span class="s2">"pencil"</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.15</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.05</span><span class="p">])</span>  <span class="c1"># May have moved!</span>
 </code></pre></div></p>
 </li>
 <li>
 <p><strong>Verify coordinate system understanding:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a>Niryo workspace (top view):
-<a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a>    Y-axis →
-<a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a>    ┌─────────┐
-<a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a>    │         │
-<a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a>X ↓ │ Center  │
-<a href="#__codelineno-7-6" id="__codelineno-7-6" name="__codelineno-7-6"></a>    │  (0,0)  │
-<a href="#__codelineno-7-7" id="__codelineno-7-7" name="__codelineno-7-7"></a>    │         │
-<a href="#__codelineno-7-8" id="__codelineno-7-8" name="__codelineno-7-8"></a>    └─────────┘
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a>Niryo workspace (top view):
+<a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a>    Y-axis →
+<a href="#__codelineno-8-3" id="__codelineno-8-3" name="__codelineno-8-3"></a>    ┌─────────┐
+<a href="#__codelineno-8-4" id="__codelineno-8-4" name="__codelineno-8-4"></a>    │         │
+<a href="#__codelineno-8-5" id="__codelineno-8-5" name="__codelineno-8-5"></a>X ↓ │ Center  │
+<a href="#__codelineno-8-6" id="__codelineno-8-6" name="__codelineno-8-6"></a>    │  (0,0)  │
+<a href="#__codelineno-8-7" id="__codelineno-8-7" name="__codelineno-8-7"></a>    │         │
+<a href="#__codelineno-8-8" id="__codelineno-8-8" name="__codelineno-8-8"></a>    └─────────┘
 </code></pre></div></p>
 </li>
 </ol>
@@ -1053,37 +1059,37 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 <ol>
 <li>
 <p><strong>Use faster detection model:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="c1"># In Environment initialization</span>
-<a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="n">visual_cortex</span> <span class="o">=</span> <span class="n">VisualCortex</span><span class="p">(</span>
-<a href="#__codelineno-8-3" id="__codelineno-8-3" name="__codelineno-8-3"></a>    <span class="n">objdetect_model_id</span><span class="o">=</span><span class="s2">"yoloworld"</span><span class="p">,</span>  <span class="c1"># Faster than owlv2</span>
-<a href="#__codelineno-8-4" id="__codelineno-8-4" name="__codelineno-8-4"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">"cuda"</span>  <span class="c1"># Use GPU if available</span>
-<a href="#__codelineno-8-5" id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-9-1" id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="c1"># In Environment initialization</span>
+<a href="#__codelineno-9-2" id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="n">visual_cortex</span> <span class="o">=</span> <span class="n">VisualCortex</span><span class="p">(</span>
+<a href="#__codelineno-9-3" id="__codelineno-9-3" name="__codelineno-9-3"></a>    <span class="n">objdetect_model_id</span><span class="o">=</span><span class="s2">"yoloworld"</span><span class="p">,</span>  <span class="c1"># Faster than owlv2</span>
+<a href="#__codelineno-9-4" id="__codelineno-9-4" name="__codelineno-9-4"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">"cuda"</span>  <span class="c1"># Use GPU if available</span>
+<a href="#__codelineno-9-5" id="__codelineno-9-5" name="__codelineno-9-5"></a><span class="p">)</span>
 </code></pre></div></p>
 </li>
 <li>
 <p><strong>Reduce camera update rate:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-9-1" id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="c1"># In camera thread</span>
-<a href="#__codelineno-9-2" id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># Update every 0.5s instead of 0.1s</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="c1"># In camera thread</span>
+<a href="#__codelineno-10-2" id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># Update every 0.5s instead of 0.1s</span>
 </code></pre></div></p>
 </li>
 <li>
 <p><strong>Check GPU availability:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<a href="#__codelineno-10-2" id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"CUDA available: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a href="#__codelineno-10-3" id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GPU: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">get_device_name</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a href="#__codelineno-10-4" id="__codelineno-10-4" name="__codelineno-10-4"></a>
-<a href="#__codelineno-10-5" id="__codelineno-10-5" name="__codelineno-10-5"></a><span class="c1"># If no GPU:</span>
-<a href="#__codelineno-10-6" id="__codelineno-10-6" name="__codelineno-10-6"></a><span class="c1"># - Use CPU with yoloworld model</span>
-<a href="#__codelineno-10-7" id="__codelineno-10-7" name="__codelineno-10-7"></a><span class="c1"># - Or add GPU to system</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-11-1" id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a href="#__codelineno-11-2" id="__codelineno-11-2" name="__codelineno-11-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"CUDA available: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a href="#__codelineno-11-3" id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GPU: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">get_device_name</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a href="#__codelineno-11-4" id="__codelineno-11-4" name="__codelineno-11-4"></a>
+<a href="#__codelineno-11-5" id="__codelineno-11-5" name="__codelineno-11-5"></a><span class="c1"># If no GPU:</span>
+<a href="#__codelineno-11-6" id="__codelineno-11-6" name="__codelineno-11-6"></a><span class="c1"># - Use CPU with yoloworld model</span>
+<a href="#__codelineno-11-7" id="__codelineno-11-7" name="__codelineno-11-7"></a><span class="c1"># - Or add GPU to system</span>
 </code></pre></div></p>
 </li>
 <li>
 <p><strong>Optimize detection parameters:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-11-1" id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
-<a href="#__codelineno-11-2" id="__codelineno-11-2" name="__codelineno-11-2"></a>    <span class="s1">'confidence_threshold'</span><span class="p">:</span> <span class="mf">0.20</span><span class="p">,</span>  <span class="c1"># Higher = fewer false positives</span>
-<a href="#__codelineno-11-3" id="__codelineno-11-3" name="__codelineno-11-3"></a>    <span class="s1">'iou_threshold'</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
-<a href="#__codelineno-11-4" id="__codelineno-11-4" name="__codelineno-11-4"></a>    <span class="s1">'max_detections'</span><span class="p">:</span> <span class="mi">50</span>  <span class="c1"># Lower = faster</span>
-<a href="#__codelineno-11-5" id="__codelineno-11-5" name="__codelineno-11-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-12-1" id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+<a href="#__codelineno-12-2" id="__codelineno-12-2" name="__codelineno-12-2"></a>    <span class="s1">'confidence_threshold'</span><span class="p">:</span> <span class="mf">0.20</span><span class="p">,</span>  <span class="c1"># Higher = fewer false positives</span>
+<a href="#__codelineno-12-3" id="__codelineno-12-3" name="__codelineno-12-3"></a>    <span class="s1">'iou_threshold'</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+<a href="#__codelineno-12-4" id="__codelineno-12-4" name="__codelineno-12-4"></a>    <span class="s1">'max_detections'</span><span class="p">:</span> <span class="mi">50</span>  <span class="c1"># Lower = faster</span>
+<a href="#__codelineno-12-5" id="__codelineno-12-5" name="__codelineno-12-5"></a><span class="p">}</span>
 </code></pre></div></p>
 </li>
 </ol>
@@ -1098,18 +1104,18 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 <ol>
 <li>
 <p><strong>Check robot connection:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-12-1" id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="c1"># For Niryo</span>
-<a href="#__codelineno-12-2" id="__codelineno-12-2" name="__codelineno-12-2"></a><span class="n">robot</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">robot</span><span class="p">()</span>
-<a href="#__codelineno-12-3" id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="n">status</span> <span class="o">=</span> <span class="n">robot</span><span class="o">.</span><span class="n">robot_ctrl</span><span class="p">()</span><span class="o">.</span><span class="n">get_hardware_status</span><span class="p">()</span>
-<a href="#__codelineno-12-4" id="__codelineno-12-4" name="__codelineno-12-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Robot connected: </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-13-1" id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="c1"># For Niryo</span>
+<a href="#__codelineno-13-2" id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="n">robot</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">robot</span><span class="p">()</span>
+<a href="#__codelineno-13-3" id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="n">status</span> <span class="o">=</span> <span class="n">robot</span><span class="o">.</span><span class="n">robot_ctrl</span><span class="p">()</span><span class="o">.</span><span class="n">get_hardware_status</span><span class="p">()</span>
+<a href="#__codelineno-13-4" id="__codelineno-13-4" name="__codelineno-13-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Robot connected: </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div></p>
 </li>
 <li>
 <p><strong>Verify simulation vs. real mode:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-13-1" id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="c1"># TODO</span>
-<a href="#__codelineno-13-2" id="__codelineno-13-2" name="__codelineno-13-2"></a>
-<a href="#__codelineno-13-3" id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="c1"># --no-simulation flag for real robot</span>
-<a href="#__codelineno-13-4" id="__codelineno-13-4" name="__codelineno-13-4"></a><span class="c1"># Without flag = simulation mode</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-14-1" id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="c1"># TODO</span>
+<a href="#__codelineno-14-2" id="__codelineno-14-2" name="__codelineno-14-2"></a>
+<a href="#__codelineno-14-3" id="__codelineno-14-3" name="__codelineno-14-3"></a><span class="c1"># --no-simulation flag for real robot</span>
+<a href="#__codelineno-14-4" id="__codelineno-14-4" name="__codelineno-14-4"></a><span class="c1"># Without flag = simulation mode</span>
 </code></pre></div></p>
 </li>
 <li>
@@ -1122,14 +1128,14 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 </li>
 <li>
 <p><strong>Verify coordinates are reachable:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-14-1" id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="c1"># Check workspace bounds</span>
-<a href="#__codelineno-14-2" id="__codelineno-14-2" name="__codelineno-14-2"></a><span class="n">upper_left</span> <span class="o">=</span> <span class="n">get_workspace_coordinate_from_point</span><span class="p">(</span><span class="s2">"niryo_ws"</span><span class="p">,</span> <span class="s2">"upper left corner"</span><span class="p">)</span>
-<a href="#__codelineno-14-3" id="__codelineno-14-3" name="__codelineno-14-3"></a><span class="n">lower_right</span> <span class="o">=</span> <span class="n">get_workspace_coordinate_from_point</span><span class="p">(</span><span class="s2">"niryo_ws"</span><span class="p">,</span> <span class="s2">"lower right corner"</span><span class="p">)</span>
-<a href="#__codelineno-14-4" id="__codelineno-14-4" name="__codelineno-14-4"></a>
-<a href="#__codelineno-14-5" id="__codelineno-14-5" name="__codelineno-14-5"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Valid X range: [</span><span class="si">{</span><span class="n">lower_right</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">upper_left</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
-<a href="#__codelineno-14-6" id="__codelineno-14-6" name="__codelineno-14-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Valid Y range: [</span><span class="si">{</span><span class="n">lower_right</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">upper_left</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
-<a href="#__codelineno-14-7" id="__codelineno-14-7" name="__codelineno-14-7"></a>
-<a href="#__codelineno-14-8" id="__codelineno-14-8" name="__codelineno-14-8"></a><span class="c1"># Niryo: X=[0.163, 0.337], Y=[-0.087, 0.087]</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-15-1" id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="c1"># Check workspace bounds</span>
+<a href="#__codelineno-15-2" id="__codelineno-15-2" name="__codelineno-15-2"></a><span class="n">upper_left</span> <span class="o">=</span> <span class="n">get_workspace_coordinate_from_point</span><span class="p">(</span><span class="s2">"niryo_ws"</span><span class="p">,</span> <span class="s2">"upper left corner"</span><span class="p">)</span>
+<a href="#__codelineno-15-3" id="__codelineno-15-3" name="__codelineno-15-3"></a><span class="n">lower_right</span> <span class="o">=</span> <span class="n">get_workspace_coordinate_from_point</span><span class="p">(</span><span class="s2">"niryo_ws"</span><span class="p">,</span> <span class="s2">"lower right corner"</span><span class="p">)</span>
+<a href="#__codelineno-15-4" id="__codelineno-15-4" name="__codelineno-15-4"></a>
+<a href="#__codelineno-15-5" id="__codelineno-15-5" name="__codelineno-15-5"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Valid X range: [</span><span class="si">{</span><span class="n">lower_right</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">upper_left</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
+<a href="#__codelineno-15-6" id="__codelineno-15-6" name="__codelineno-15-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Valid Y range: [</span><span class="si">{</span><span class="n">lower_right</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">upper_left</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
+<a href="#__codelineno-15-7" id="__codelineno-15-7" name="__codelineno-15-7"></a>
+<a href="#__codelineno-15-8" id="__codelineno-15-8" name="__codelineno-15-8"></a><span class="c1"># Niryo: X=[0.163, 0.337], Y=[-0.087, 0.087]</span>
 </code></pre></div></p>
 </li>
 </ol>
@@ -1143,7 +1149,7 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 <ol>
 <li>
 <p><strong>Clear collision flag:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-15-1" id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="n">clear_collision_detected</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-16-1" id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="n">clear_collision_detected</span><span class="p">()</span>
 </code></pre></div></p>
 </li>
 <li>
@@ -1156,14 +1162,14 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 </li>
 <li>
 <p><strong>Adjust movement parameters:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-16-1" id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="c1"># In robot controller (if accessible)</span>
-<a href="#__codelineno-16-2" id="__codelineno-16-2" name="__codelineno-16-2"></a><span class="n">robot_ctrl</span><span class="o">.</span><span class="n">set_collision_threshold</span><span class="p">(</span><span class="n">higher_value</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-17-1" id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="c1"># In robot controller (if accessible)</span>
+<a href="#__codelineno-17-2" id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="n">robot_ctrl</span><span class="o">.</span><span class="n">set_collision_threshold</span><span class="p">(</span><span class="n">higher_value</span><span class="p">)</span>
 </code></pre></div></p>
 </li>
 <li>
 <p><strong>Move to safe observation pose:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-17-1" id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="n">move2observation_pose</span><span class="p">(</span><span class="s2">"niryo_ws"</span><span class="p">)</span>
-<a href="#__codelineno-17-2" id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="n">clear_collision_detected</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-18-1" id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="n">move2observation_pose</span><span class="p">(</span><span class="s2">"niryo_ws"</span><span class="p">)</span>
+<a href="#__codelineno-18-2" id="__codelineno-18-2" name="__codelineno-18-2"></a><span class="n">clear_collision_detected</span><span class="p">()</span>
 </code></pre></div></p>
 </li>
 </ol>
@@ -1177,18 +1183,18 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 <ol>
 <li>
 <p><strong>Check object size:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-18-1" id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="n">obj</span> <span class="o">=</span> <span class="n">get_detected_object</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span>
-<a href="#__codelineno-18-2" id="__codelineno-18-2" name="__codelineno-18-2"></a><span class="k">if</span> <span class="n">obj</span><span class="p">[</span><span class="s1">'width_m'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.05</span><span class="p">:</span>
-<a href="#__codelineno-18-3" id="__codelineno-18-3" name="__codelineno-18-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"Object too large for gripper!"</span><span class="p">)</span>
-<a href="#__codelineno-18-4" id="__codelineno-18-4" name="__codelineno-18-4"></a>    <span class="c1"># Use push_object() instead</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-19-1" id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="n">obj</span> <span class="o">=</span> <span class="n">get_detected_object</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span>
+<a href="#__codelineno-19-2" id="__codelineno-19-2" name="__codelineno-19-2"></a><span class="k">if</span> <span class="n">obj</span><span class="p">[</span><span class="s1">'width_m'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.05</span><span class="p">:</span>
+<a href="#__codelineno-19-3" id="__codelineno-19-3" name="__codelineno-19-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"Object too large for gripper!"</span><span class="p">)</span>
+<a href="#__codelineno-19-4" id="__codelineno-19-4" name="__codelineno-19-4"></a>    <span class="c1"># Use push_object() instead</span>
 </code></pre></div></p>
 </li>
 <li>
 <p><strong>Verify gripper calibration:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-19-1" id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="c1"># Test gripper</span>
-<a href="#__codelineno-19-2" id="__codelineno-19-2" name="__codelineno-19-2"></a><span class="n">robot</span><span class="o">.</span><span class="n">robot_ctrl</span><span class="p">()</span><span class="o">.</span><span class="n">open_gripper</span><span class="p">()</span>
-<a href="#__codelineno-19-3" id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-<a href="#__codelineno-19-4" id="__codelineno-19-4" name="__codelineno-19-4"></a><span class="n">robot</span><span class="o">.</span><span class="n">robot_ctrl</span><span class="p">()</span><span class="o">.</span><span class="n">close_gripper</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-20-1" id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="c1"># Test gripper</span>
+<a href="#__codelineno-20-2" id="__codelineno-20-2" name="__codelineno-20-2"></a><span class="n">robot</span><span class="o">.</span><span class="n">robot_ctrl</span><span class="p">()</span><span class="o">.</span><span class="n">open_gripper</span><span class="p">()</span>
+<a href="#__codelineno-20-3" id="__codelineno-20-3" name="__codelineno-20-3"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<a href="#__codelineno-20-4" id="__codelineno-20-4" name="__codelineno-20-4"></a><span class="n">robot</span><span class="o">.</span><span class="n">robot_ctrl</span><span class="p">()</span><span class="o">.</span><span class="n">close_gripper</span><span class="p">()</span>
 </code></pre></div></p>
 </li>
 <li>
@@ -1201,11 +1207,11 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 </li>
 <li>
 <p><strong>Adjust grasp approach angle:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-20-1" id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="c1"># Object rotation affects grasp success</span>
-<a href="#__codelineno-20-2" id="__codelineno-20-2" name="__codelineno-20-2"></a><span class="n">obj</span> <span class="o">=</span> <span class="n">get_detected_object</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span>
-<a href="#__codelineno-20-3" id="__codelineno-20-3" name="__codelineno-20-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Object rotation: </span><span class="si">{</span><span class="n">obj</span><span class="p">[</span><span class="s1">'rotation_rad'</span><span class="p">]</span><span class="si">}</span><span class="s2"> rad"</span><span class="p">)</span>
-<a href="#__codelineno-20-4" id="__codelineno-20-4" name="__codelineno-20-4"></a>
-<a href="#__codelineno-20-5" id="__codelineno-20-5" name="__codelineno-20-5"></a><span class="c1"># Robot adjusts approach automatically</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-21-1" id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="c1"># Object rotation affects grasp success</span>
+<a href="#__codelineno-21-2" id="__codelineno-21-2" name="__codelineno-21-2"></a><span class="n">obj</span> <span class="o">=</span> <span class="n">get_detected_object</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span>
+<a href="#__codelineno-21-3" id="__codelineno-21-3" name="__codelineno-21-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Object rotation: </span><span class="si">{</span><span class="n">obj</span><span class="p">[</span><span class="s1">'rotation_rad'</span><span class="p">]</span><span class="si">}</span><span class="s2"> rad"</span><span class="p">)</span>
+<a href="#__codelineno-21-4" id="__codelineno-21-4" name="__codelineno-21-4"></a>
+<a href="#__codelineno-21-5" id="__codelineno-21-5" name="__codelineno-21-5"></a><span class="c1"># Robot adjusts approach automatically</span>
 </code></pre></div></p>
 </li>
 </ol>
@@ -1213,14 +1219,14 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 <h2 id="hardware-problems">Hardware Problems<a class="headerlink" href="#hardware-problems" title="Permanent link">¶</a></h2>
 <h3 id="niryo-robot-specific">Niryo Robot Specific<a class="headerlink" href="#niryo-robot-specific" title="Permanent link">¶</a></h3>
 <p><strong>Issue: Robot not responding</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-21-1" id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="c1"># Check Niryo connection</span>
-<a href="#__codelineno-21-2" id="__codelineno-21-2" name="__codelineno-21-2"></a>ping<span class="w"> </span>&lt;robot_ip&gt;
-<a href="#__codelineno-21-3" id="__codelineno-21-3" name="__codelineno-21-3"></a>
-<a href="#__codelineno-21-4" id="__codelineno-21-4" name="__codelineno-21-4"></a><span class="c1"># Default: 192.168.1.xxx</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-22-1" id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="c1"># Check Niryo connection</span>
+<a href="#__codelineno-22-2" id="__codelineno-22-2" name="__codelineno-22-2"></a>ping<span class="w"> </span>&lt;robot_ip&gt;
+<a href="#__codelineno-22-3" id="__codelineno-22-3" name="__codelineno-22-3"></a>
+<a href="#__codelineno-22-4" id="__codelineno-22-4" name="__codelineno-22-4"></a><span class="c1"># Default: 192.168.1.xxx</span>
 </code></pre></div></p>
 <p><strong>Issue: Calibration needed</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-22-1" id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="c1"># Run calibration</span>
-<a href="#__codelineno-22-2" id="__codelineno-22-2" name="__codelineno-22-2"></a><span class="n">robot</span><span class="o">.</span><span class="n">robot_ctrl</span><span class="p">()</span><span class="o">.</span><span class="n">calibrate</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-23-1" id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="c1"># Run calibration</span>
+<a href="#__codelineno-23-2" id="__codelineno-23-2" name="__codelineno-23-2"></a><span class="n">robot</span><span class="o">.</span><span class="n">robot_ctrl</span><span class="p">()</span><span class="o">.</span><span class="n">calibrate</span><span class="p">()</span>
 </code></pre></div></p>
 <p><strong>Issue: Learning mode activated</strong>
 - Manually disable learning mode on robot
@@ -1228,8 +1234,8 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 <hr/>
 <h3 id="widowx-robot-specific">WidowX Robot Specific<a class="headerlink" href="#widowx-robot-specific" title="Permanent link">¶</a></h3>
 <p><strong>Issue: Joint limits</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-23-1" id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="c1"># WidowX has different workspace</span>
-<a href="#__codelineno-23-2" id="__codelineno-23-2" name="__codelineno-23-2"></a><span class="c1"># Adjust coordinates accordingly</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-24-1" id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="c1"># WidowX has different workspace</span>
+<a href="#__codelineno-24-2" id="__codelineno-24-2" name="__codelineno-24-2"></a><span class="c1"># Adjust coordinates accordingly</span>
 </code></pre></div></p>
 <p><strong>Issue: Power supply</strong>
 - Ensure adequate power (12V)
@@ -1237,17 +1243,17 @@ Note that the real Niryo robot requires a specific IP address (default is <code>
 <hr/>
 <h3 id="camera-issues">Camera Issues<a class="headerlink" href="#camera-issues" title="Permanent link">¶</a></h3>
 <p><strong>Issue: Poor image quality</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-24-1" id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="c1"># Adjust camera settings</span>
-<a href="#__codelineno-24-2" id="__codelineno-24-2" name="__codelineno-24-2"></a><span class="n">camera</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_EXPOSURE</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span><span class="p">)</span>
-<a href="#__codelineno-24-3" id="__codelineno-24-3" name="__codelineno-24-3"></a><span class="n">camera</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_BRIGHTNESS</span><span class="p">,</span> <span class="mi">130</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-25-1" id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="c1"># Adjust camera settings</span>
+<a href="#__codelineno-25-2" id="__codelineno-25-2" name="__codelineno-25-2"></a><span class="n">camera</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_EXPOSURE</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span><span class="p">)</span>
+<a href="#__codelineno-25-3" id="__codelineno-25-3" name="__codelineno-25-3"></a><span class="n">camera</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_BRIGHTNESS</span><span class="p">,</span> <span class="mi">130</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>Issue: Wrong camera selected</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-25-1" id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="c1"># List available cameras</span>
-<a href="#__codelineno-25-2" id="__codelineno-25-2" name="__codelineno-25-2"></a><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
-<a href="#__codelineno-25-3" id="__codelineno-25-3" name="__codelineno-25-3"></a>    <span class="n">cap</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoCapture</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-<a href="#__codelineno-25-4" id="__codelineno-25-4" name="__codelineno-25-4"></a>    <span class="k">if</span> <span class="n">cap</span><span class="o">.</span><span class="n">isOpened</span><span class="p">():</span>
-<a href="#__codelineno-25-5" id="__codelineno-25-5" name="__codelineno-25-5"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Camera </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> available"</span><span class="p">)</span>
-<a href="#__codelineno-25-6" id="__codelineno-25-6" name="__codelineno-25-6"></a>    <span class="n">cap</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-26-1" id="__codelineno-26-1" name="__codelineno-26-1"></a><span class="c1"># List available cameras</span>
+<a href="#__codelineno-26-2" id="__codelineno-26-2" name="__codelineno-26-2"></a><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+<a href="#__codelineno-26-3" id="__codelineno-26-3" name="__codelineno-26-3"></a>    <span class="n">cap</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoCapture</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<a href="#__codelineno-26-4" id="__codelineno-26-4" name="__codelineno-26-4"></a>    <span class="k">if</span> <span class="n">cap</span><span class="o">.</span><span class="n">isOpened</span><span class="p">():</span>
+<a href="#__codelineno-26-5" id="__codelineno-26-5" name="__codelineno-26-5"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Camera </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> available"</span><span class="p">)</span>
+<a href="#__codelineno-26-6" id="__codelineno-26-6" name="__codelineno-26-6"></a>    <span class="n">cap</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
 </code></pre></div></p>
 <hr/>
 <h2 id="getting-help">Getting Help<a class="headerlink" href="#getting-help" title="Permanent link">¶</a></h2>
