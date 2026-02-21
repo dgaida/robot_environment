@@ -3,6 +3,7 @@ import re
 import os
 import sys
 
+
 def update_version():
     pyproject_path = "pyproject.toml"
     if not os.path.exists(pyproject_path):
@@ -20,7 +21,7 @@ def update_version():
 
     current_version = match.group(1)
     try:
-        major, minor, patch = map(int, current_version.split('.'))
+        major, minor, patch = map(int, current_version.split("."))
     except ValueError:
         print(f"Error: Invalid version format: {current_version}")
         sys.exit(1)
@@ -30,7 +31,7 @@ def update_version():
     print(f"Updating version from {current_version} to {new_version}")
 
     # Update pyproject.toml
-    new_content = re.sub(r'(^version\s*=\s*")([^"]+)(")', rf'\g<1>{new_version}\g<3>', content, flags=re.MULTILINE)
+    new_content = re.sub(r'(^version\s*=\s*")([^"]+)(")', rf"\g<1>{new_version}\g<3>", content, flags=re.MULTILINE)
     with open(pyproject_path, "w") as f:
         f.write(new_content)
 
@@ -39,7 +40,7 @@ def update_version():
     if os.path.exists(init_path):
         with open(init_path, "r") as f:
             init_content = f.read()
-        new_init_content = re.sub(r'(__version__\s*=\s*")([^"]+)(")', rf'\g<1>{new_version}\g<3>', init_content)
+        new_init_content = re.sub(r'(__version__\s*=\s*")([^"]+)(")', rf"\g<1>{new_version}\g<3>", init_content)
         if init_content != new_init_content:
             with open(init_path, "w") as f:
                 f.write(new_init_content)
@@ -55,7 +56,7 @@ def update_version():
         with open(readme_path, "r") as f:
             readme_content = f.read()
         # Look for the badge pattern: badge/version-X.Y.Z-blue
-        new_readme_content = re.sub(r'(badge/version-)([^/-]+)(-blue)', rf'\g<1>{new_version}\g<3>', readme_content)
+        new_readme_content = re.sub(r"(badge/version-)([^/-]+)(-blue)", rf"\g<1>{new_version}\g<3>", readme_content)
         if readme_content != new_readme_content:
             with open(readme_path, "w") as f:
                 f.write(new_readme_content)
@@ -64,6 +65,7 @@ def update_version():
             print(f"No version badge found to update in {readme_path}")
     else:
         print(f"Warning: {readme_path} not found")
+
 
 if __name__ == "__main__":
     update_version()
