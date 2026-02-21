@@ -14,13 +14,22 @@ Common issues and solutions for the Robot Environment system.
 
 ## Frequently Asked Questions (FAQ)
 
-### 1. Why do I get a `ModuleNotFoundError: No module named 'text2speech'`?
-This usually means the `text2speech` package was not installed correctly or is not in your Python path.
-Ensure you ran:
+### 1. Why do I get a `ModuleNotFoundError: No module named 'text2speech.engines'`?
+This is a known issue in the `text2speech` package distribution where sub-packages like `engines` are not correctly included when installed as a regular package.
+
+**Solution:**
+The best way to fix this is to install the `text2speech` package in **editable mode** from its source directory:
 ```bash
-pip install git+https://github.com/dgaida/text2speech.git
+cd /path/to/text2speech/repository
+pip install -e .
 ```
-If you are running in a virtual environment, make sure it is activated.
+
+If you are the maintainer of the `text2speech` repository, ensure the `pyproject.toml` correctly includes all sub-packages:
+```toml
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["text2speech*"]
+```
 
 ### 2. The robot moves to the wrong place or misses the object. What should I do?
 First, check if the workspace is correctly calibrated. Use `env.get_workspace_by_id("your_ws_id").get_bounds()` to see the world coordinates the system is using.
