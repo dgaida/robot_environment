@@ -2,6 +2,23 @@
 
 ## Häufige Probleme
 
+### ModuleNotFoundError: No module named 'text2speech.engines'
+Dies ist ein bekanntes Problem bei der Installation des `text2speech`-Pakets, bei dem Unterpakete wie `engines` nicht korrekt mitinstalliert werden.
+
+**Lösung:**
+Installieren Sie das `text2speech`-Paket im **Editable-Modus** aus seinem Quellcode-Verzeichnis:
+```bash
+cd /pfad/zu/text2speech/repository
+pip install -e .
+```
+
+Als Maintainer des `text2speech`-Repositories sollten Sie die `pyproject.toml` anpassen, um alle Unterpakete einzuschließen:
+```toml
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["text2speech*"]
+```
+
 ### Keine Objekte erkannt
 - Überprüfen Sie die Redis-Verbindung.
 - Stellen Sie sicher, dass der Visions-Dienst (`vision_detect_segment`) läuft.
