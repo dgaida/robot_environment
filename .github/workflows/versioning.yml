@@ -1,0 +1,52 @@
+name: Automated Versioning
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    # Skip if the commit was made by the bot to avoid loops
+    if: github.event.head_commit.author.name != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Update version files
+        run: python3 scripts/increment_version.py
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml README.md
+          if [ -f robot_environment/__init__.py ]; then
+            git add robot_environment/__init__.py
+          fi
+
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: bump version to $(grep '^version =' pyproject.toml | cut -d '\"' -f 2) [skip ci]"
+            git push origin master
+          fi
+
+      - name: Create and push tag
+        run: |
+          VERSION=$(grep '^version =' pyproject.toml | cut -d '"' -f 2)
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
