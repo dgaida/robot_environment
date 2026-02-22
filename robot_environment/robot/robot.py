@@ -292,17 +292,17 @@ class Robot(RobotAPI):
                 place_pose.z += 0.02
             elif location == Location.INSIDE:
                 place_pose.z += 0.01
-            elif location == Location.RIGHT_NEXT_TO:
+            elif location == Location.RIGHT_NEXT_TO and obj_where_to_place:
                 place_pose.y -= obj_where_to_place.width_m() / 2 + y_off
-            elif location == Location.LEFT_NEXT_TO:
+            elif location == Location.LEFT_NEXT_TO and obj_where_to_place:
                 place_pose.y += obj_where_to_place.width_m() / 2 + y_off
-            elif location == Location.BELOW:
+            elif location == Location.BELOW and obj_where_to_place:
                 # print(obj_where_to_place.height_m(), self._object_last_picked.width_m(), x_off)
                 # TODO: nutze hier auch width, da width immer die größere größe ist und nicht eine koordinatenrichtugn hat
                 #  ich muss anstatt width und height eine größe haben dim_x und dim_y, die a x und y koordinate gebunden sind
                 #  ich habe das in object klasse repariert, width geht immer entlang y-achse jetzt. prüfen hier
                 place_pose.x -= obj_where_to_place.height_m() / 2 + x_off
-            elif location == Location.ABOVE:
+            elif location == Location.ABOVE and obj_where_to_place:
                 # TODO: nutze hier auch width, da width immer die größere größe ist und nicht eine koordinatenrichtugn hat
                 #  ich habe das in object klasse repariert, width geht immer entlang y-achse jetzt. prüfen hier
                 print(obj_where_to_place.height_m(), self._object_last_picked.width_m(), x_off)

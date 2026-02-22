@@ -1,0 +1,53 @@
+# Code Coverage Report and Missing Lines
+# Date: 2025-05-15
+# Total Coverage: 93%
+
+files:
+  robot_environment/camera/framegrabber.py:
+    coverage: 95%
+    missing_lines: [84]
+  robot_environment/camera/niryo_framegrabber.py:
+    coverage: 93%
+    missing_lines: [101, 202, 215, 216, 217]
+  robot_environment/camera/widowx_framegrabber.py:
+    coverage: 75%
+    missing_lines: [31, 48]
+  robot_environment/common/logger.py:
+    coverage: 89%
+    missing_lines: [101, 102, 103, 104, 123, 124, 125]
+  robot_environment/common/logger_config.py:
+    coverage: 83%
+    missing_lines: [46, 47, 48, 49, 50]
+  robot_environment/config.py:
+    coverage: 96%
+    missing_lines: [83, 109, 145, 163, 183, 202, 409, 415, 424]
+  robot_environment/environment.py:
+    coverage: 93%
+    missing_lines: [116, 117, 224, 225, 231, 282, 291, 292, 293, 294, 303, 319, 333, 340, 341, 352, 353, 369, 370, 506, 785]
+  robot_environment/object_memory_manager.py:
+    coverage: 95%
+    missing_lines: [255, 291, 292, 295, 321, 387, 392, 432, 433, 434]
+  robot_environment/performance_metrics.py:
+    coverage: 96%
+    missing_lines: [274, 427, 444, 514, 515, 523, 524]
+  robot_environment/robot/command_processor.py:
+    coverage: 100%
+    missing_lines: []
+  robot_environment/robot/niryo_robot_controller.py:
+    coverage: 92%
+    missing_lines: [20, 96, 129, 163, 164, 165, 185, 220, 274, 275, 276, 308, 360, 361, 362, 450, 451]
+  robot_environment/robot/robot.py:
+    coverage: 94%
+    missing_lines: [275, 314, 333, 390, 551, 555, 569, 573, 632, 633, 671, 672, 673, 674, 675, 676, 677, 678, 679, 680, 681]
+  robot_environment/robot/robot_api.py:
+    coverage: 88%
+    missing_lines: [171]
+  robot_environment/robot/robot_controller.py:
+    coverage: 97%
+    missing_lines: [195]
+  robot_environment/robot/widowx_robot_controller.py:
+    coverage: 82%
+    missing_lines: [53, 85, 86, 87, 88, 119, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 177, 215, 265, 331, 348, 349, 368, 409, 410, 411]
+  robot_environment/utils/workspace_utils.py:
+    coverage: 100%
+    missing_lines: []
