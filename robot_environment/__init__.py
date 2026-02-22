@@ -7,7 +7,7 @@ integrated computer vision, workspace management, and manipulation capabilities.
 
 from .environment import Environment
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = "Daniel Gaida"
 
 __all__ = [
