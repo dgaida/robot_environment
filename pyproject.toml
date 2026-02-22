@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "robot-environment"
-version = "0.1.1"
+version = "0.1.2"
 description = "A comprehensive Python framework for robotic pick-and-place operations with vision-based object detection"
 readme = "README.md"
 requires-python = ">=3.8"
