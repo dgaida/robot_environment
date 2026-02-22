@@ -3,26 +3,16 @@ Integration tests to increase code coverage for robot_environment.
 Targeting specifically the missing lines identified in the coverage report.
 """
 
-import pytest
-import logging
-import inspect
-import os
-import json
-import yaml
-import time
-from unittest.mock import Mock, patch, MagicMock, PropertyMock
+from unittest.mock import Mock, patch, MagicMock
 from robot_environment.common.logger import log_start_end_cls
 from robot_environment.environment import Environment
-from robot_workspace import PoseObjectPNP, Objects, Object, Location
+from robot_workspace import PoseObjectPNP
 from robot_environment.robot.niryo_robot_controller import NiryoRobotController
-from robot_environment.robot.widowx_robot_controller import WidowXRobotController
 from robot_environment.config import (
-    RobotConfig, CameraConfig, VisionConfig, RobotControlConfig,
-    MemoryConfig, RedisConfig, WorkspaceConfig, RobotType, TTSConfig, ConfigManager, get_config
+    RobotConfig, CameraConfig, RobotControlConfig,
+    MemoryConfig, ConfigManager, get_config
 )
-from robot_environment.object_memory_manager import ObjectMemoryManager
 from robot_environment.robot.command_processor import parse_robot_command
-from robot_environment.performance_metrics import PerformanceMetrics, PerformanceMonitor
 from robot_environment.common.logger_config import set_verbose, get_package_logger
 import numpy as np
 
@@ -136,5 +126,7 @@ def test_niryo_controller_boost():
                   ctrl.get_target_pose_from_rel("ws", 0, 0, 0)
 
         ctrl._robot_ctrl.close_connection.side_effect = Exception()
-        try: ctrl._shutdown()
-        except: pass
+        try:
+            ctrl._shutdown()
+        except Exception:
+            pass

@@ -4,7 +4,6 @@ Example: Searching for a pen and performing pick-and-place.
 
 import argparse
 import cv2
-import numpy as np
 import time
 import os
 from robot_environment import Environment
@@ -12,7 +11,8 @@ from robot_workspace import Location
 
 
 def draw_detections(image, objects):
-    if image is None: return image
+    if image is None:
+        return image
     canvas = image.copy()
     for obj in objects:
         try:
@@ -22,14 +22,16 @@ def draw_detections(image, objects):
                 cv2.drawContours(overlay, [contour], -1, (0, 255, 0), -1)
                 cv2.addWeighted(overlay, 0.3, canvas, 0.7, 0, canvas)
                 cv2.drawContours(canvas, [contour], -1, (0, 255, 0), 2)
-        except: pass
+        except Exception:
+            pass
         try:
             contour = obj.largest_contour()
             if contour is not None and len(contour) > 0:
                 x, y, w, h = cv2.boundingRect(contour)
                 cv2.rectangle(canvas, (x, y), (x + w, y + h), (255, 0, 0), 2)
                 cv2.putText(canvas, obj.label(), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-        except: pass
+        except Exception:
+            pass
     return canvas
 
 
