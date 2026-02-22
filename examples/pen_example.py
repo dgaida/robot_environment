@@ -51,7 +51,9 @@ def example_search_pick_place_pen(env, show_gui=True):
     if pen:
         target = env.get_workspace_coordinate_from_point(env.get_workspace_home_id(), "lower right corner")
         if target:
-            env.robot().pick_place_object(object_name="pen", pick_coordinate=pen.xy_com(), place_coordinate=target, location=Location.NONE)
+            env.robot().pick_place_object(
+                object_name="pen", pick_coordinate=pen.xy_com(), place_coordinate=target, location=Location.NONE
+            )
 
 
 def example_print_all_objects(env):
@@ -71,10 +73,11 @@ def main():
 
     env = Environment(el_api_key="key", use_simulation=args.sim, robot_id=args.robot, verbose=args.verbose)
     try:
-        example_search_pick_place_pen(env, show_gui='DISPLAY' in os.environ)
+        example_search_pick_place_pen(env, show_gui="DISPLAY" in os.environ)
         example_print_all_objects(env)
     finally:
         env.cleanup()
+
 
 if __name__ == "__main__":
     main()

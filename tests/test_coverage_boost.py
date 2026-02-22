@@ -8,10 +8,7 @@ from robot_environment.common.logger import log_start_end_cls
 from robot_environment.environment import Environment
 from robot_workspace import PoseObjectPNP
 from robot_environment.robot.niryo_robot_controller import NiryoRobotController
-from robot_environment.config import (
-    RobotConfig, CameraConfig, RobotControlConfig,
-    MemoryConfig, ConfigManager, get_config
-)
+from robot_environment.config import RobotConfig, CameraConfig, RobotControlConfig, MemoryConfig, ConfigManager, get_config
 from robot_environment.robot.command_processor import parse_robot_command
 from robot_environment.common.logger_config import set_verbose, get_package_logger
 import numpy as np
@@ -19,6 +16,7 @@ import numpy as np
 # -----------------------------------------------------------------------------
 # Config Coverage
 # -----------------------------------------------------------------------------
+
 
 def test_config_boost(tmp_path):
     config = RobotConfig.get_default_niryo()
@@ -36,15 +34,20 @@ def test_config_boost(tmp_path):
     manager.save(json_file, format="json")
     get_config()
 
+
 # -----------------------------------------------------------------------------
 # Command Processor & Logger
 # -----------------------------------------------------------------------------
 
+
 def test_cp_logger_boost():
     parse_robot_command(None)
+
     class NoLog:
         @log_start_end_cls()
-        def run(self): return 1
+        def run(self):
+            return 1
+
     n = NoLog()
     n.run()
     n._logger = Mock()
@@ -54,17 +57,22 @@ def test_cp_logger_boost():
     set_verbose(logger, True)
     set_verbose(logger, False)
 
+
 # -----------------------------------------------------------------------------
 # Environment & Robot
 # -----------------------------------------------------------------------------
 
+
 def test_env_robot_boost():
-    with patch("robot_environment.environment.Robot") as mock_robot_cls, \
-         patch("robot_environment.environment.NiryoFrameGrabber") as mock_fg_cls, \
-         patch("robot_environment.environment.NiryoWorkspaces") as mock_ws_cls, \
-         patch("robot_environment.environment.RedisMessageBroker") as mock_broker_cls, \
-         patch("robot_environment.environment.RedisLabelManager") as mock_labels_cls, \
-         patch("robot_environment.environment.Text2Speech"):
+    with patch("robot_environment.environment.Robot") as mock_robot_cls, patch(
+        "robot_environment.environment.NiryoFrameGrabber"
+    ) as mock_fg_cls, patch("robot_environment.environment.NiryoWorkspaces") as mock_ws_cls, patch(
+        "robot_environment.environment.RedisMessageBroker"
+    ) as mock_broker_cls, patch(
+        "robot_environment.environment.RedisLabelManager"
+    ) as mock_labels_cls, patch(
+        "robot_environment.environment.Text2Speech"
+    ):
 
         m_ws = MagicMock()
         mock_ws_cls.return_value = m_ws
@@ -83,7 +91,7 @@ def test_env_robot_boost():
 
         env.get_robot_pose()
         with patch.object(env, "get_object_labels", return_value=[[]]):
-             env.get_object_labels_as_string()
+            env.get_object_labels_as_string()
 
         mock_broker_cls.return_value.get_latest_objects.return_value = None
         env.get_detected_objects()
@@ -94,36 +102,43 @@ def test_env_robot_boost():
         env.verbose = True
         env._current_workspace_id = "ws"
         with patch.object(env._memory_manager, "update", return_value=(1, 1)):
-             with patch.object(env._memory_manager, "get_memory_stats", return_value={"ws": {"object_count":1, "manual_updates":0, "visible":True}}):
-                  gen = env.update_camera_and_objects()
-                  next(gen)
+            with patch.object(
+                env._memory_manager,
+                "get_memory_stats",
+                return_value={"ws": {"object_count": 1, "manual_updates": 0, "visible": True}},
+            ):
+                gen = env.update_camera_and_objects()
+                next(gen)
 
         env.cleanup()
+
 
 # -----------------------------------------------------------------------------
 # Niryo Controller
 # -----------------------------------------------------------------------------
 
+
 def test_niryo_controller_boost():
     mock_robot = MagicMock()
     with patch("robot_environment.robot.niryo_robot_controller.NiryoRobot"):
         from pyniryo import NiryoRobotException
+
         ctrl = NiryoRobotController(mock_robot, True)
         ctrl._robot_ctrl = MagicMock()
         ctrl._robot_ctrl.get_camera_intrinsics.return_value = (np.eye(3), np.zeros(5))
 
         with patch("robot_environment.robot.niryo_robot_controller.pyniryo_v", "pyniryo"):
-             ctrl.get_camera_intrinsics()
+            ctrl.get_camera_intrinsics()
 
         ctrl._robot_ctrl.push_object.side_effect = Exception()
-        ctrl.robot_push_object(PoseObjectPNP(0,0,0), "up", 10)
+        ctrl.robot_push_object(PoseObjectPNP(0, 0, 0), "up", 10)
 
         ctrl._robot_ctrl.calibrate.side_effect = Exception()
         ctrl.calibrate()
 
         with patch.object(ctrl, "_lock"):
-             with patch.object(ctrl._robot_ctrl, "get_target_pose_from_rel", side_effect=NiryoRobotException("Fail")):
-                  ctrl.get_target_pose_from_rel("ws", 0, 0, 0)
+            with patch.object(ctrl._robot_ctrl, "get_target_pose_from_rel", side_effect=NiryoRobotException("Fail")):
+                ctrl.get_target_pose_from_rel("ws", 0, 0, 0)
 
         ctrl._robot_ctrl.close_connection.side_effect = Exception()
         try:
