@@ -148,8 +148,9 @@ class Environment:
 
         # Current workspace tracking
         # self._current_workspace_id: Optional[str] = None
-        self._current_workspace_id = self._workspaces.get_workspace_home_id()
-        self._logger.debug(f"Set initial workspace to: {self._current_workspace_id}")
+        if self._workspaces is not None:
+            self._current_workspace_id = self._workspaces.get_workspace_home_id()
+            self._logger.debug(f"Set initial workspace to: {self._current_workspace_id}")
 
         # Redis-based communication
         self._object_broker = RedisMessageBroker()
@@ -219,6 +220,10 @@ class Environment:
         Args:
             visualize: If True, displays the updated camera feed
         """
+        if self._workspaces is None:
+            self._logger.error("Workspaces not initialized - cannot update camera and objects")
+            return
+
         # FIX: Get home workspace ID and set it as current
         home_workspace_id = self._workspaces.get_workspace_home_id()
 

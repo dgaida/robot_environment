@@ -10,6 +10,7 @@ from robot_workspace import Objects
 from robot_workspace import PoseObjectPNP
 from robot_workspace import NiryoWorkspace
 from robot_workspace import Location
+from robot_workspace.config import WorkspaceConfig, PoseConfig
 
 
 @pytest.fixture
@@ -31,7 +32,11 @@ def integrated_workspace():
 
     mock_env.get_robot_target_pose_from_rel = mock_get_target_pose
 
-    workspace = NiryoWorkspace("test_ws", mock_env)
+    # Create configuration for the workspace
+    pose = PoseConfig(x=0.2, y=0.0, z=0.3, roll=0.0, pitch=1.57, yaw=0.0)
+    config = WorkspaceConfig(id="test_ws", observation_pose=pose)
+
+    workspace = NiryoWorkspace.from_config(config, mock_env)
     workspace.set_img_shape((640, 480, 3))
 
     return workspace
