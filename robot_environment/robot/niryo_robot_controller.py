@@ -312,7 +312,10 @@ class NiryoRobotController(RobotController):
                 obj_coords = PoseObjectPNP.convert_niryo_pose_object2pose_object(obj_coords)
 
             except (NiryoRobotException, UnicodeDecodeError, SyntaxError, TcpCommandException) as e:
-                self._logger.error(f"Thread {threading.current_thread().name} Error: {e}", exc_info=True)
+                if "does not exist" in str(e):
+                    self._logger.warning(f"Workspace '{workspace_id}' does not exist on the robot. Returning zero pose.")
+                else:
+                    self._logger.error(f"Thread {threading.current_thread().name} Error: {e}", exc_info=True)
                 obj_coords = PoseObjectPNP(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
             finally:
                 self._logger.debug(f"Thread {threading.current_thread().name} releasing lock")
