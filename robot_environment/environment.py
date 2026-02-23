@@ -779,7 +779,9 @@ class Environment:
 
         # Convert dictionaries to Object instances
         # Use current workspace for coordinate transformation if available, else use home workspace
-        workspace = self.get_workspace_by_id(self._current_workspace_id) if self._current_workspace_id else self.get_workspace(0)
+        workspace = (
+            self.get_workspace_by_id(self._current_workspace_id) if self._current_workspace_id else self.get_workspace(0)
+        )
         return Objects.dict_list_to_objects(objects_dict_list, workspace)
 
     def get_object_labels(self) -> List[List[str]]:
