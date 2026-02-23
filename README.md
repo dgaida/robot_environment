@@ -5,12 +5,15 @@
 </p>
 
 ![Infografik](docs/assets/infografik.png)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://dgaida.github.io/robot_environment/)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/dgaida/robot_environment/graphs/commit-activity)
+![Last commit](https://img.shields.io/github/last-commit/dgaida/robot_environment)
 
 **A comprehensive Python framework for robotic pick-and-place operations with vision-based object detection and manipulation capabilities**
 
 ![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)](https://github.com/dgaida/robot_environment/releases)
+[[![Version](https://img.shields.io/github/v/tag/dgaida/robot_environment?label=version)](https://github.com/dgaida/robot_environment/tags)](https://github.com/dgaida/robot_environment/releases)
 [![codecov](https://codecov.io/gh/dgaida/robot_environment/branch/master/graph/badge.svg)](https://codecov.io/gh/dgaida/robot_environment)
 [![Code Quality](https://github.com/dgaida/robot_environment/actions/workflows/lint.yml/badge.svg)](https://github.com/dgaida/robot_environment/actions/workflows/lint.yml)
 [![Tests](https://github.com/dgaida/robot_environment/actions/workflows/tests.yml/badge.svg)](https://github.com/dgaida/robot_environment/actions/workflows/tests.yml)
