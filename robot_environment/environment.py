@@ -156,6 +156,13 @@ class Environment:
         self._object_broker = RedisMessageBroker()
         self._label_manager = RedisLabelManager()
 
+        # Verify Redis connection
+        try:
+            if hasattr(self._object_broker, "test_connection") and not self._object_broker.test_connection():
+                self._logger.warning("Could not connect to Redis server. Object detection will not work.")
+        except Exception as e:
+            self._logger.warning(f"Error checking Redis connection: {e}")
+
         # Start performance monitor if enabled
         if self._performance_monitor:
             self._performance_monitor.start()
@@ -764,11 +771,18 @@ class Environment:
 
         if not objects_dict_list:
             if self.verbose:
-                print("No fresh object detections from Redis")
+                self._logger.info(
+                    "No fresh object detections from Redis. "
+                    "Ensure 'vision_detect_segment' is running and publishing to the correct channel."
+                )
             return Objects()
 
         # Convert dictionaries to Object instances
-        return Objects.dict_list_to_objects(objects_dict_list, self.get_workspace(0))
+        # Use current workspace for coordinate transformation if available, else use home workspace
+        workspace = (
+            self.get_workspace_by_id(self._current_workspace_id) if self._current_workspace_id else self.get_workspace(0)
+        )
+        return Objects.dict_list_to_objects(objects_dict_list, workspace)
 
     def get_object_labels(self) -> List[List[str]]:
         """

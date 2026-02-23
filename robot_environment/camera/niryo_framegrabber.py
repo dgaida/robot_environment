@@ -97,10 +97,13 @@ class NiryoFrameGrabber(FrameGrabber):
 
             if myworkspace is not None:
                 myworkspace.set_img_shape(img_work.shape)
+                workspace_id = myworkspace.id()
             else:
                 self._logger.debug(f"No visible workspace: {myworkspace}")
+                workspace_id = "unknown"
         else:
             current_frame = img
+            workspace_id = "none"
 
         self._current_frame = current_frame
 
@@ -113,7 +116,7 @@ class NiryoFrameGrabber(FrameGrabber):
         # Break the loop if ESC key is pressed
         # cv2.waitKey(0)
 
-        self.publish_workspace_image(self._current_frame, "id")
+        self.publish_workspace_image(self._current_frame, workspace_id)
 
         return self._current_frame
 
